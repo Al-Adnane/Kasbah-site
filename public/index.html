@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kasbah — The Fortress for AI Agents</title>
+  <meta name="description" content="Kasbah is a permission layer that AI cannot bypass. Preview actions. Understand risk. Allow or block — before it happens." />
+  <meta property="og:title" content="Kasbah — The Fortress for AI Agents" />
+  <meta property="og:description" content="Permission before action." />
+  <meta property="og:image" content="/og.png" />
+  <meta name="theme-color" content="#C1440E" />
+  <link rel="icon" href="/kasbah-logo.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="#top">
+      <img src="/kasbah-logo.png" class="logo" alt="Kasbah logo" />
+      <div class="brandText">
+        <div class="brandName">KASBAH</div>
+        <div class="brandTag">The Fortress for AI Agents</div>
+      </div>
+    </a>
+    <div class="navLinks">
+      <a href="#demo">Demo</a>
+      <a href="#download">Download</a>
+      <a href="#engineers">Engineers</a>
+      <button class="btn small primary" id="btnInstall">Install</button>
+    </div>
+  </header>
+
+  <main id="top" class="wrap">
+    <section class="hero">
+      <div class="heroBg" aria-hidden="true"></div>
+      <div class="heroCard">
+        <h1>AI should <span class="accent">ask first</span>.</h1>
+        <p class="sub">
+          Kasbah is a permission layer that AI cannot bypass.<br/>
+          Preview actions. Understand risk. Allow or block — before it happens.
+        </p>
+        <div class="heroCtas">
+          <a class="btn primary" href="#demo">Try live demo</a>
+          <button class="btn ghost" id="btnInstall2">Install Kasbah</button>
+          <a class="btn ghost" href="#download">Downloads</a>
+        </div>
+        <div class="micro">
+          Born in Morocco. Trusted globally.
+        </div>
+      </div>
+    </section>
+
+    <section id="demo" class="demo">
+      <div class="sectionHead">
+        <div class="kicker">Live demo</div>
+        <h2>Kasbah Checkpoint</h2>
+        <p class="muted">A simple moment of permission — understandable in 5 seconds.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panelTop">
+          <div class="lights"><span></span><span></span><span></span></div>
+          <div class="pTitle">Checkpoint</div>
+          <div class="live"><span class="pulse"></span><span id="liveTxt">waiting</span></div>
+        </div>
+
+        <div class="toggle">
+          <button class="tbtn" data-s="safe">Safe</button>
+          <button class="tbtn" data-s="sensitive">Sensitive</button>
+          <button class="tbtn" data-s="risky">Risky</button>
+        </div>
+
+        <div class="rows">
+          <div class="row"><div class="key">AI wants to</div><div class="val" id="want">—</div></div>
+          <div class="row"><div class="key">Risk</div><div class="val"><span class="badge" id="risk">—</span></div></div>
+          <div class="row"><div class="key">Reason</div><div class="val muted" id="why">—</div></div>
+          <div class="row"><div class="key">Decision</div><div class="val" id="decision">—</div></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="allow">Allow (single-use)</button>
+          <button class="btn danger" id="block">Block</button>
+        </div>
+
+        <div class="hint" id="hint">Click a scenario to start.</div>
+        <div class="proof muted">Not a popup: approvals are enforced and cannot be replayed.</div>
+      </div>
+    </section>
+
+    <section id="download" class="download">
+      <div class="sectionHead">
+        <div class="kicker">Download</div>
+        <h2>Use Kasbah today</h2>
+        <p class="muted">These links are local files in this site — no 404s.</p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="cardTitle">Install as an App (recommended)</div>
+          <div class="muted smallp">Works on macOS, Windows, iOS, Android — same link.</div>
+          <button class="btn primary full" id="btnInstall">Install Kasbah</button>
+          <div class="muted tiny" id="installHint">If you don’t see install: iPhone Safari → Share → Add to Home Screen.</div>
+        </div>
+
+        <div class="card">
+          <div class="cardTitle">Chrome / Brave / Edge Extension</div>
+          <div class="muted smallp">Developer preview (ZIP). Install in 60 seconds.</div>
+          <a class="btn ghost full" href="/downloads/kasbah-chrome-extension.zip" download>Download extension (ZIP)</a>
+          <details class="how">
+            <summary>Install steps</summary>
+            <div class="muted tiny">
+              1) Unzip<br/>2) Chrome → Extensions → Developer mode<br/>
+              3) Load unpacked → select the folder<br/>4) Pin Kasbah → use it
+            </div>
+          </details>
+        </div>
+
+        <div class="card">
+          <div class="cardTitle">Safari Extension</div>
+          <div class="muted smallp">Preview package + instructions inside.</div>
+          <a class="btn ghost full" href="/downloads/kasbah-safari-extension.zip" download>Download Safari package (ZIP)</a>
+          <details class="how">
+            <summary>Reality check</summary>
+            <div class="muted tiny">
+              Safari extensions require signing (Xcode). This ZIP is a placeholder so the download works today.
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="engineers" class="engineers">
+      <div class="sectionHead">
+        <div class="kicker">For engineers</div>
+        <h2>The system behind the demo</h2>
+        <p class="muted">
+          Single-use approvals, replay protection, cryptographic audit — the proof layer.
+        </p>
+      </div>
+
+      <div class="engineCtas">
+        <a class="btn ghost" href="https://kasbahdemo.space.z.ai" target="_blank" rel="noreferrer">See technical prototype</a>
+        <a class="btn ghost" href="https://github.com/Al-Adnane/Kasbah-Core" target="_blank" rel="noreferrer">Kasbah-Core on GitHub</a>
+      </div>
+
+      <div class="heritage">
+        <div class="heritageLeft">
+          <h3>Born in Morocco. Trusted globally.</h3>
+          <p class="muted">
+            Moroccan kasbahs protected cities through architecture, not rules.
+            Kasbah applies the same principle to AI systems: strong walls, clear gates, no bypass.
+          </p>
+        </div>
+        <img class="heroImg" src="/kasbah-hero.png" alt="Kasbah visual"/>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footBrand">
+        <img src="/kasbah-logo.png" class="logoSm" alt="Kasbah"/>
+        <div>
+          <div class="brandNameSm">KASBAH</div>
+          <div class="muted tiny">Permission before action.</div>
+        </div>
+      </div>
+      <div class="muted tiny">© 2026 Kasbah</div>
+    </footer>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
