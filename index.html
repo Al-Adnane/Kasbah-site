@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kasbah Guard</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#1e1e1e">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon.svg">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #fffcf8;
+      color: #1e1e1e;
+    }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 64px 24px;
+    }
+    h1 {
+      font-size: 42px;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    p {
+      font-size: 18px;
+      color: #6b625a;
+    }
+    .card {
+      margin-top: 48px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+    .btn {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-weight: 600;
+      background: #1e1e1e;
+      color: #ffffff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .muted {
+      font-size: 14px;
+      color: #6b625a;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>See what your AI is about to do — before it does it.</h1>
+    <p>Kasbah Guard is a pre-execution control layer for AI systems.</p>
+
+    <div class="card">
+      <h2>Install Kasbah Guard</h2>
+      <p>Use it like a real app. No account. No setup.</p>
+
+      <button id="pwa-install" class="btn" style="display:none;">
+        Install Kasbah
+      </button>
+
+      <div id="pwa-fallback" class="muted">
+        iPhone: Share → Add to Home Screen · Desktop: Install icon in address bar
+      </div>
+
+      <div id="pwa-status" class="muted"></div>
+    </div>
+  </main>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+
+    let deferredPrompt = null;
+    const installBtn = document.getElementById("pwa-install");
+    const fallback = document.getElementById("pwa-fallback");
+    const statusEl = document.getElementById("pwa-status");
+
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true;
+
+    if (isStandalone) {
+      fallback.style.display = "none";
+      statusEl.textContent = "Kasbah is already installed.";
+    }
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = "inline-flex";
+      fallback.style.display = "none";
+      statusEl.textContent = "Ready to install.";
+    });
+
+    installBtn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const res = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      statusEl.textContent =
+        res.outcome === "accepted" ? "Installing…" : "Install dismissed.";
+    });
+
+    window.addEventListener("appinstalled", () => {
+      installBtn.style.display = "none";
+      fallback.style.display = "none";
+      statusEl.textContent = "Installed.";
+    });
+  </script>
+</body>
+</html>
