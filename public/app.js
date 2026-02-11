@@ -1,4 +1,3 @@
-
 (() => {
   // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(a => {
@@ -11,33 +10,56 @@
     });
   });
 
-  // Install prompt
-  let deferredPrompt = null;
+  // PWA install
+  let deferred = null;
+  const installHint = () => document.getElementById('installHint');
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
-    deferredPrompt = e;
-    document.body.classList.add('can-install');
-    const hint = document.getElementById('installHint');
-    if (hint) hint.textContent = 'Install is ready — click “Install Kasbah”.';
+    deferred = e;
+    const h = installHint();
+    if (h) h.textContent = 'Install is ready — click “Install Kasbah”.';
   });
 
-  const install = async () => {
-    if (!deferredPrompt) {
-      const hint = document.getElementById('installHint');
-      if (hint) hint.textContent = 'On iPhone Safari: Share → Add to Home Screen. On Desktop: look for “Install app” in the address bar.';
+  async function doInstall(){
+    if (!deferred) {
+      const h = installHint();
+      if (h) h.textContent = 'If you don’t see Install: iPhone Safari → Share → Add to Home Screen. Desktop Chrome → Install icon in the address bar.';
       return;
     }
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-  };
+    deferred.prompt();
+    await deferred.userChoice;
+    deferred = null;
+  }
 
-  ['btnInstall','btnInstall2'].forEach(id => {
+  ['btnInstall','btnInstall2','btnInstallTop'].forEach(id => {
     const b = document.getElementById(id);
-    if (b) b.addEventListener('click', install);
+    if (b) b.addEventListener('click', doInstall);
   });
 
-  // Demo scenarios (non-tech, story-first)
+  // Hero mini demo
+  const heroWant = document.getElementById('heroWant');
+  const heroRisk = document.getElementById('heroRisk');
+  const heroWhy  = document.getElementById('heroWhy');
+  const heroLive = document.getElementById('heroLive');
+  const heroAllow= document.getElementById('heroAllow');
+  const heroBlock= document.getElementById('heroBlock');
+
+  let heroUsed = false;
+  heroAllow?.addEventListener('click', () => {
+    if (heroUsed) {
+      heroLive.textContent = 'replay blocked';
+      return;
+    }
+    heroUsed = true;
+    heroLive.textContent = 'approved';
+  });
+  heroBlock?.addEventListener('click', () => {
+    heroUsed = false;
+    heroLive.textContent = 'blocked';
+  });
+
+  // Main demo scenarios
   const scenarios = {
     safe: {
       want: 'Summarize a PDF you uploaded',
@@ -47,7 +69,7 @@
     sensitive: {
       want: 'Email a draft response to a client',
       risk: 'Medium',
-      reason: 'Outbound action — you should approve wording before sending.'
+      reason: 'Outbound action — approve wording before it goes out.'
     },
     risky: {
       want: 'Change billing details for Customer A',
@@ -68,7 +90,7 @@
   let used = false;
   let current = 'sensitive';
 
-  const setScenario = (k) => {
+  function setScenario(k){
     current = k;
     used = false;
     const s = scenarios[k];
@@ -79,38 +101,34 @@
     liveTxt.textContent = 'waiting';
     allowBtn.disabled = false;
     blockBtn.disabled = false;
-    hint.textContent = 'Click Allow or Block.';
+    hint.textContent = 'Click Allow, then click Allow again to see replay protection (demo).';
     document.querySelectorAll('.tbtn').forEach(b => b.classList.toggle('active', b.dataset.s === k));
-  };
+  }
 
-  document.querySelectorAll('.tbtn').forEach(b => {
-    b.addEventListener('click', () => setScenario(b.dataset.s));
-  });
+  document.querySelectorAll('.tbtn').forEach(b => b.addEventListener('click', () => setScenario(b.dataset.s)));
 
   allowBtn?.addEventListener('click', () => {
     if (used) {
       decisionEl.textContent = 'DENY (replay blocked)';
       liveTxt.textContent = 'blocked';
-      hint.textContent = 'That approval was single-use. Replay prevented.';
+      hint.textContent = 'Single-use approval. Second attempt is rejected (replay protection).';
       return;
     }
     used = true;
     decisionEl.textContent = 'ALLOW (single-use approval issued)';
     liveTxt.textContent = 'approved';
-    hint.textContent = 'Approved once. Try clicking Allow again (replay proof).';
   });
 
   blockBtn?.addEventListener('click', () => {
     used = false;
     decisionEl.textContent = 'BLOCK';
     liveTxt.textContent = 'blocked';
-    hint.textContent = 'Blocked. You can pick a new scenario.';
   });
 
-  // Register SW
+  setScenario(current);
+
+  // Minimal SW register if you add sw.js later
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(()=>{});
   }
-
-  setScenario(current);
 })();

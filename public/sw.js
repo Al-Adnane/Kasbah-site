@@ -1,8 +1,6 @@
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open('kasbah-v3').then(c => c.addAll([
-    '/', '/index.html', '/style.css', '/app.js',
-    '/kasbah-logo.png', '/kasbah-hero.png', '/og.png',
-    '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'
+  e.waitUntil(caches.open('kasbah-v1').then(c => c.addAll([
+    '/', '/index.html', '/style.css', '/app.js', '/manifest.webmanifest', '/kasbah-logo.png'
   ])));
   self.skipWaiting();
 });
