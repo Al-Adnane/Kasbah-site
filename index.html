@@ -2,127 +2,325 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kasbah Guard</title>
-
-  <!-- PWA -->
-  <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#1e1e1e">
-  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/icons/icon.svg">
-
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kasbah Guard - Permission before AI actions</title>
+  <meta name="description" content="Kasbah Guard is a local-first permission checkpoint for AI actions. macOS app + browser extensions. Works with ChatGPT and Claude." />
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: #fffcf8;
-      color: #1e1e1e;
-    }
-    main {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 64px 24px;
-    }
-    h1 {
-      font-size: 42px;
-      line-height: 1.15;
-      margin-bottom: 16px;
-    }
-    p {
-      font-size: 18px;
-      color: #6b625a;
-    }
-    .card {
-      margin-top: 48px;
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 32px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.08);
-    }
-    .btn {
-      appearance: none;
-      border: none;
-      border-radius: 999px;
-      padding: 14px 20px;
-      font-size: 16px;
-      font-weight: 600;
-      background: #1e1e1e;
-      color: #ffffff;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .muted {
-      font-size: 14px;
-      color: #6b625a;
-      margin-top: 12px;
-    }
+    :root{--bg:#fffcf8;--card:#ffffff;--ink:#1e1e1e;--muted:#6b625a;--b:#e7ded6;--soft:#fcf9f6;--shadow:0 18px 60px rgba(0,0,0,.08);--r:20px}
+    *{box-sizing:border-box}html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif;background:var(--bg);color:var(--ink)}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+    .top{position:sticky;top:0;z-index:50;background:rgba(255,252,248,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--b)}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logoBox{width:34px;height:34px;border-radius:12px;background:var(--ink);display:grid;place-items:center;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+    .logoMark{width:18px;height:18px;border-radius:6px;background:var(--bg);position:relative}
+    .logoMark:after{content:"";position:absolute;left:50%;top:20%;width:3px;height:60%;transform:translateX(-50%);background:var(--ink);border-radius:99px}
+    .brandName{font-weight:1000;letter-spacing:-.02em}
+    .pill{font-size:12px;font-weight:900;padding:6px 10px;border-radius:999px;background:#ebdfd7;color:#3a2e26;border:1px solid #e3d7cf}
+    .navRight{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:11px 14px;border-radius:999px;font-weight:1000;border:0;cursor:pointer;user-select:none;transition:transform .06s ease,opacity .15s ease;white-space:nowrap;font-size:13px}
+    .btn:active{transform:translateY(1px)}
+    .btnPrimary{background:var(--ink);color:var(--bg)}
+    .btnGhost{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+    .btnSoft{background:var(--soft);border:1px solid var(--b);color:var(--ink)}
+    .hero{padding:54px 0 28px}
+    .heroGrid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;align-items:stretch}
+    h1{margin:0 0 12px;font-size:54px;line-height:1.02;letter-spacing:-0.03em}
+    .lead{margin:0 0 18px;font-size:18px;color:var(--muted);line-height:1.5}
+    .heroCard{background:var(--card);border:1px solid var(--b);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;height:100%}
+    .heroRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .kpiRow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+    .kpi{background:var(--soft);border:1px solid var(--b);border-radius:16px;padding:12px}
+    .kpi b{display:block;font-size:14px}
+    .kpi span{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+    .shot{height:100%;display:flex;flex-direction:column;gap:10px}
+    .mock{flex:1;background:var(--ink);border-radius:var(--r);border:1px solid #111;box-shadow:0 30px 90px rgba(0,0,0,.18);padding:14px;color:var(--bg);overflow:hidden}
+    .mockTop{display:flex;align-items:center;justify-content:space-between;font-weight:900;font-size:12px;opacity:.95}
+    .mockPanel{margin-top:12px;background:rgba(255,252,248,.08);border:1px solid rgba(255,252,248,.16);border-radius:16px;padding:12px}
+    .mockPanel .t{font-weight:1000;font-size:12px}
+    .mockPanel .p{margin-top:8px;font-size:12px;opacity:.9;line-height:1.5}
+    .mockBtns{display:flex;gap:10px;margin-top:12px}
+    .mockBtn{border-radius:999px;padding:8px 12px;font-weight:1000;font-size:12px;border:1px solid rgba(255,252,248,.25);background:rgba(255,252,248,.06);color:var(--bg)}
+    .mockBtn.primary{background:var(--bg);color:var(--ink);border-color:var(--bg)}
+    .section{padding:24px 0}
+    .section h2{margin:0 0 10px;font-size:22px;letter-spacing:-.01em}
+    .section p{margin:0 0 14px;color:var(--muted);line-height:1.55}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .card{background:var(--card);border:1px solid var(--b);border-radius:var(--r);padding:14px;box-shadow:0 12px 50px rgba(0,0,0,.05)}
+    .card .h{font-weight:1000;margin-bottom:6px}
+    .card .small{font-size:12px;color:var(--muted);line-height:1.5}
+    .card .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .code{background:var(--soft);border:1px solid var(--b);border-radius:16px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;overflow:auto;white-space:pre}
+    .hr{height:1px;background:var(--b);margin:18px 0}
+    .faq{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .footer{padding:28px 0 34px;border-top:1px solid var(--b);color:var(--muted);font-size:12px}
+    .footerRow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .badge{display:inline-flex;align-items:center;gap:8px;background:var(--soft);border:1px solid var(--b);border-radius:999px;padding:8px 10px;color:var(--ink);font-weight:900;font-size:12px}
+    .dot{width:10px;height:10px;border-radius:50%;background:#9d174d}
+    .dot.ok{background:#1f7a4a}
+    @media (max-width:980px){.heroGrid{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.faq{grid-template-columns:1fr}h1{font-size:44px}}
   </style>
 </head>
-
 <body>
-  <main>
-    <h1>See what your AI is about to do — before it does it.</h1>
-    <p>Kasbah Guard is a pre-execution control layer for AI systems.</p>
-
-    <div class="card">
-      <h2>Install Kasbah Guard</h2>
-      <p>Use it like a real app. No account. No setup.</p>
-
-      <button id="pwa-install" class="btn" style="display:none;">
-        Install Kasbah
-      </button>
-
-      <div id="pwa-fallback" class="muted">
-        iPhone: Share → Add to Home Screen · Desktop: Install icon in address bar
+  <header class="top">
+    <div class="wrap">
+      <div class="nav">
+        <a class="brand" href="/">
+          <div class="logoBox"><div class="logoMark"></div></div>
+          <div>
+            <div class="brandName">Kasbah Guard</div>
+            <div style="margin-top:2px"><span class="pill">Local-first</span></div>
+          </div>
+        </a>
+        <div class="navRight">
+          <a class="btn btnSoft" href="#downloads">Downloads</a>
+          <a class="btn btnSoft" href="#quickstart">Quickstart</a>
+          <a class="btn btnSoft" href="/dev.html">Live Demo</a>
+          <a class="btn btnPrimary" id="ctaDownload" href="#downloads">Get Kasbah Guard</a>
+        </div>
       </div>
-
-      <div id="pwa-status" class="muted"></div>
     </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div class="heroGrid">
+          <div class="heroCard">
+            <h1>Permission before AI actions.</h1>
+            <p class="lead">
+              Kasbah Guard is a local authority layer that decides whether an AI action is allowed &mdash; before it happens.
+              It works where you work: <b>ChatGPT</b>, <b>Claude</b>, and the browser.
+            </p>
+            <div class="heroRow">
+              <a class="btn btnPrimary" href="#downloads">Download</a>
+              <a class="btn btnGhost" href="#quickstart">Install in 3 minutes</a>
+              <a class="btn btnSoft" href="https://github.com/Al-Adnane/Kasbah-Core">GitHub</a>
+            </div>
+            <div class="kpiRow">
+              <div class="kpi"><b>Local authority</b><span>Guard runs on your device (127.0.0.1)</span></div>
+              <div class="kpi"><b>Single-use tickets</b><span>Replay blocked by design</span></div>
+              <div class="kpi"><b>Default-deny</b><span>If Guard is off, actions don't execute</span></div>
+            </div>
+          </div>
+
+          <div class="shot">
+            <div class="mock">
+              <div class="mockTop"><div>Kasbah Guard</div><div style="opacity:.8">Local authority</div></div>
+              <div class="mockPanel">
+                <div class="t">Permission required</div>
+                <div class="p">AI wants to send a message on CHATGPT.<br/>Requesting a local ticket...</div>
+                <div class="mockBtns">
+                  <div class="mockBtn">Block</div>
+                  <div class="mockBtn primary">Allow</div>
+                </div>
+              </div>
+              <div class="mockPanel">
+                <div class="t">Audit</div>
+                <div class="p">DECIDE &rarr; ticket issued<br/>CONSUME &rarr; ALLOW (single-use)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="downloads">
+      <div class="wrap">
+        <h2>Downloads</h2>
+        <p>Real files. Real installs. No fake buttons.</p>
+
+        <div class="grid">
+          <div class="card">
+            <div class="h">macOS App (DMG)</div>
+            <div class="small">
+              The desktop app runs the local guard service and provides the control center + audit log.
+              <br/><b>Safari extension</b> is bundled via the macOS app (Apple's requirement).
+            </div>
+            <div class="row">
+              <a class="btn btnPrimary" href="/downloads/KasbahGuard-macOS.dmg">Download DMG</a>
+            </div>
+            <div class="hr"></div>
+            <div class="small">Requires macOS 11+ (Big Sur or later)</div>
+          </div>
+
+          <div class="card">
+            <div class="h">Chrome / Edge / Opera Extension</div>
+            <div class="small">
+              Manual dev install (unpacked). This is what intercepts "Send" on ChatGPT/Claude and calls the local Guard.
+            </div>
+            <div class="row">
+              <a class="btn btnPrimary" href="/downloads/kasbah-extension-dev.zip">Download ZIP</a>
+            </div>
+            <div class="hr"></div>
+            <div class="small">Load as unpacked extension in developer mode</div>
+          </div>
+
+          <div class="card">
+            <div class="h">Safari</div>
+            <div class="small">
+              Safari extensions must be bundled in a macOS app and enabled through Safari settings. Install the DMG first.
+            </div>
+            <div class="row">
+              <a class="btn btnGhost" href="#quickstart">Setup instructions</a>
+            </div>
+            <div class="hr"></div>
+            <div class="small"><b>Status:</b> bundled in DMG</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="quickstart">
+      <div class="wrap">
+        <h2>Quickstart</h2>
+        <p>Install, intercept Send on ChatGPT/Claude, see audit events.</p>
+
+        <div class="grid">
+          <div class="card">
+            <div class="h">1) Install the DMG</div>
+            <div class="small">
+              Download &rarr; open &rarr; drag Kasbah Guard to Applications &rarr; run it.
+              Ensure the Guard service shows as ON.
+            </div>
+            <div class="hr"></div>
+            <div class="badge"><span class="dot" id="svcDot"></span><span id="svcTxt">Checking local guard...</span></div>
+          </div>
+
+          <div class="card">
+            <div class="h">2) Install the extension</div>
+            <div class="small">
+              Chrome/Edge/Opera &rarr; Extensions &rarr; Developer mode &rarr; Load unpacked &rarr; select the unzipped folder.
+            </div>
+            <div class="hr"></div>
+            <div class="code">Chrome:  chrome://extensions
+Edge:    edge://extensions
+Opera:   opera://extensions</div>
+          </div>
+
+          <div class="card">
+            <div class="h">3) Test the interception</div>
+            <div class="small">
+              Go to ChatGPT or Claude &rarr; type a message &rarr; click Send. Kasbah should intercept the action and show a permission modal.
+            </div>
+            <div class="hr"></div>
+            <div class="row">
+              <a class="btn btnSoft" href="https://chatgpt.com" target="_blank" rel="noopener">Open ChatGPT</a>
+              <a class="btn btnSoft" href="https://claude.ai" target="_blank" rel="noopener">Open Claude</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <h2>Developer tools</h2>
+        <p>For debugging the guard service and ticket flow.</p>
+        <div class="row" style="display:flex;gap:10px">
+          <a class="btn btnGhost" href="/dev.html">Open dev console</a>
+          <a class="btn btnSoft" href="#downloads">Back to downloads</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how-it-works">
+      <div class="wrap">
+        <h2>How it works</h2>
+        <div class="grid">
+          <div class="card">
+            <div class="h">Extension intercepts</div>
+            <div class="small">When you click Send on ChatGPT or Claude, the extension blocks the action and requests a ticket from the local guard.</div>
+          </div>
+          <div class="card">
+            <div class="h">Guard issues ticket</div>
+            <div class="small">The local guard service (running on 127.0.0.1:8788) issues a single-use ticket with a 60-second expiry.</div>
+          </div>
+          <div class="card">
+            <div class="h">You decide</div>
+            <div class="small">A permission modal appears. Click Allow to consume the ticket and send, or Block to deny. Replaying a used ticket is rejected.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq">
+      <div class="wrap">
+        <h2>FAQ</h2>
+
+        <div class="faq">
+          <div class="card">
+            <div class="h">Why "local-first"?</div>
+            <div class="small">
+              A guard is meaningless if it depends on a cloud service. Local-first makes Kasbah the authority on your device.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">Will this work on Safari?</div>
+            <div class="small">
+              Yes, but Safari requires the extension to be bundled in a macOS app and enabled through Safari settings.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">Does Kasbah read my messages?</div>
+            <div class="small">
+              The extension sends only metadata (message length and a short preview) to the local guard. Your full message content stays in the browser.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">What does "default deny" mean?</div>
+            <div class="small">
+              If the local guard is off or unreachable, the extension does not allow the action to proceed. No silent bypass.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
+  <footer class="footer">
+    <div class="wrap">
+      <div class="footerRow">
+        <div>&copy; <span id="y"></span> Kasbah Guard</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <a href="#downloads">Downloads</a>
+          <span>&middot;</span>
+          <a href="#quickstart">Quickstart</a>
+          <span>&middot;</span>
+          <a href="https://github.com/Al-Adnane/Kasbah-Core">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js");
+    document.getElementById("y").textContent = String(new Date().getFullYear());
+
+    var DOT = document.getElementById("svcDot");
+    var TXT = document.getElementById("svcTxt");
+    var GUARD = "http://127.0.0.1:8788/status";
+
+    function setSvc(ok) {
+      DOT.className = "dot " + (ok ? "ok" : "");
+      TXT.textContent = ok ? "Local guard ON (127.0.0.1:8788)" : "Local guard OFF (open the DMG app)";
     }
 
-    let deferredPrompt = null;
-    const installBtn = document.getElementById("pwa-install");
-    const fallback = document.getElementById("pwa-fallback");
-    const statusEl = document.getElementById("pwa-status");
-
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.navigator.standalone === true;
-
-    if (isStandalone) {
-      fallback.style.display = "none";
-      statusEl.textContent = "Kasbah is already installed.";
+    function poll() {
+      fetch(GUARD, { cache: "no-store" })
+        .then(function(r) { setSvc(r.ok); })
+        .catch(function() { setSvc(false); });
     }
+    poll();
+    setInterval(poll, 4000);
 
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.style.display = "inline-flex";
-      fallback.style.display = "none";
-      statusEl.textContent = "Ready to install.";
-    });
-
-    installBtn.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const res = await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      statusEl.textContent =
-        res.outcome === "accepted" ? "Installing…" : "Install dismissed.";
-    });
-
-    window.addEventListener("appinstalled", () => {
-      installBtn.style.display = "none";
-      fallback.style.display = "none";
-      statusEl.textContent = "Installed.";
-    });
+    var cta = document.getElementById("ctaDownload");
+    var ua = navigator.userAgent || "";
+    if (/Macintosh|Mac OS X/.test(ua)) cta.textContent = "Download for macOS";
   </script>
 </body>
 </html>
