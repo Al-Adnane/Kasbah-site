@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Kasbah Guard",
+  "version": "0.1.0",
+  "description": "Permission checkpoint for AI actions. Intercepts Send on ChatGPT and Claude, requires local guard approval.",
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*"
+      ],
+      "js": ["src/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
