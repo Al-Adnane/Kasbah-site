@@ -10,13 +10,14 @@
   },
   "app": {
     "windows": [
-      { "title": "Kasbah Guard", "width": 1200, "height": 800, "resizable": true }
+      { "title": "Kasbah Guard", "width": 1100, "height": 740, "resizable": true, "center": true }
     ],
     "security": { "csp": null }
   },
   "bundle": {
     "active": true,
     "targets": ["dmg", "app"],
-    "icon": ["icons/icon.png"]
+    "icon": ["icons/icon.png"],
+    "resources": ["extension/**/*"]
   }
 }
