@@ -1,11 +1,11 @@
 {
-  "name": "Kasbah — The Fortress for AI Agents",
+  "name": "Kasbah",
   "short_name": "Kasbah",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#C1440E",
+  "background_color": "#fffcf8",
+  "theme_color": "#1e1e1e",
   "icons": [
-    { "src": "/kasbah-logo.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }
