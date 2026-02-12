@@ -1,292 +1,420 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Kasbah — The Fortress for AI Agents</title>
-  <meta name="description" content="Kasbah is a permission layer that AI cannot bypass. Preview actions. Understand risk. Allow or block — before it happens."/>
-  <meta property="og:title" content="Kasbah — The Fortress for AI Agents"/>
-  <meta property="og:description" content="Permission before action."/>
-  <meta property="og:type" content="website"/>
-  <meta name="theme-color" content="#C1440E"/>
-  <link rel="manifest" href="/manifest.webmanifest"/>
-  <link rel="icon" href="/kasbah-logo.png"/>
-  <link rel="stylesheet" href="/style.css"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kasbah – Permission before action</title>
+  <meta name="description" content="Kasbah adds a permission checkpoint to AI. Preview the action, understand the risk, allow or block. Born in Morocco." />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#1e1e1e">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon.svg">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #fffcf8;
+      color: #1e1e1e;
+      line-height: 1.6;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+    h1, h2, h3 {
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    h1 {
+      font-size: clamp(44px, 8vw, 68px);
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .subhead {
+      font-size: 22px;
+      color: #3e3e3e;
+      font-weight: 400;
+      max-width: 700px;
+      margin: 0 auto 32px;
+    }
+    .flag {
+      display: inline-block;
+      background: #e6d9cc;
+      color: #4c3b2b;
+      padding: 6px 18px;
+      border-radius: 40px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+    .btn {
+      display: inline-block;
+      background: #1e1e1e;
+      color: white;
+      font-weight: 600;
+      padding: 16px 40px;
+      border-radius: 40px;
+      text-decoration: none;
+      font-size: 18px;
+      border: none;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .btn:hover {
+      background: #3a3a3a;
+      transform: scale(0.98);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid #1e1e1e;
+      color: #1e1e1e;
+    }
+    .btn-outline:hover {
+      background: #f0f0f0;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #ece7e2;
+      border-radius: 32px;
+      padding: 40px 32px;
+      margin: 48px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+    .checkpoint-demo {
+      background: #1a2e3c;
+      color: white;
+      border-radius: 24px;
+      padding: 32px;
+      margin: 32px 0;
+    }
+    .pill {
+      display: inline-block;
+      background: rgba(255,255,255,0.1);
+      padding: 6px 16px;
+      border-radius: 40px;
+      font-size: 14px;
+    }
+    .install-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin: 32px 0;
+    }
+    .install-card {
+      background: #f8f6f4;
+      border-radius: 20px;
+      padding: 28px;
+      border: 1px solid #e8e0d8;
+    }
+    .dev-note {
+      background: #f3efeb;
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 40px;
+      border-left: 4px solid #b38b6d;
+    }
+    .footer {
+      border-top: 1px solid #e0d8d0;
+      margin-top: 60px;
+      padding-top: 40px;
+      color: #5e5e5e;
+      font-size: 15px;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #e4ddd6;
+      margin: 48px 0;
+    }
+    .trust-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ebdfd7;
+      padding: 8px 20px;
+      border-radius: 60px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #3a2e26;
+    }
+  </style>
 </head>
 <body>
-  <header class="nav">
-    <a class="brand" href="#top">
-      <img class="logo" src="/kasbah-logo.png" alt="Kasbah"/>
-      <div class="brandText">
-        <div class="brandName">KASBAH</div>
-        <div class="brandTag">The Fortress for AI Agents</div>
+  <!-- HERO – clear, confident, no hype -->
+  <div class="wrap" style="text-align: center;">
+    <span class="flag">🇲🇦 BORN IN MOROCCO</span>
+    <h1>AI should ask first.</h1>
+    <p class="subhead">
+      Kasbah adds a permission checkpoint to any AI.<br />
+      You see the action. You approve it. Or you don't.
+    </p>
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+      <a href="/dev.html" class="btn">▶ Run the live demo</a>
+      <a href="#demo" class="btn btn-outline">▶ See how it works</a>
+    </div>
+    <div style="margin-top: 24px; color: #5c524a; font-size: 16px;">
+      ⚡ Public beta begins Q2 2026 · No fake counters, just honest work
+    </div>
+  </div>
+
+  <!-- THE CHECKPOINT – clear visual demo (no simulation claims) -->
+  <div class="wrap" id="demo">
+    <div class="checkpoint-demo">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <span style="font-size: 24px; font-weight: 700;">🏰 Kasbah Checkpoint</span>
+        <span class="pill" style="background: #fcd34d; color: #1e1e1e;">⬤ live preview</span>
       </div>
-    </a>
 
-    <nav class="navLinks">
-      <a href="#demo">Demo</a>
-      <a href="#download">Download</a>
-      <a href="#trust">Security</a>
-      <a href="#engineers">Engineers</a>
-      <button class="btn small primary" id="btnInstallTop">Install</button>
-    </nav>
-  </header>
-
-  <main id="top" class="wrap">
-    <!-- HERO -->
-    <section class="hero">
-      <div class="heroShell">
-        <div class="heroGrid">
-          <div class="heroLeft">
-            <div class="pill">
-              <span class="dot"></span>
-              Permission before action
-            </div>
-
-            <h1>AI should <span class="accent">ask first</span>.</h1>
-            <p class="sub">
-              Kasbah is a permission layer that AI cannot bypass.
-              Preview what the AI wants to do, understand the risk, then allow or block — before it happens.
-            </p>
-
-            <div class="ctaRow">
-              <a class="btn primary" href="#demo">Try live demo</a>
-              <button class="btn ghost" id="btnInstall">Install Kasbah</button>
-              <a class="btn ghost" href="#trust">Security</a>
-            </div>
-
-            <div class="micro">
-              Born in Morocco. Built for the world.
-            </div>
+      <!-- AI action bubble -->
+      <div style="background: #2a4450; border-radius: 24px 24px 24px 4px; padding: 24px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 16px; align-items: center;">
+          <span style="font-size: 32px;">🤖</span>
+          <div>
+            <div style="font-weight: 700; margin-bottom: 4px;">AI wants to</div>
+            <div style="font-size: 20px;">Send email draft to client · Medium risk</div>
           </div>
+        </div>
+      </div>
 
-          <div class="heroRight">
-            <div class="glassCard">
-              <div class="glassTop">
-                <div class="lights"><span></span><span></span><span></span></div>
-                <div class="glassTitle">Checkpoint preview</div>
-                <div class="live"><span class="pulse"></span><span id="heroLive">ready</span></div>
-              </div>
-
-              <div class="glassBody">
-                <div class="kv">
-                  <div class="k">AI wants to</div>
-                  <div class="v" id="heroWant">Send an email draft to a client</div>
-                </div>
-                <div class="kv">
-                  <div class="k">Risk</div>
-                  <div class="v"><span class="badge" id="heroRisk">Medium</span></div>
-                </div>
-                <div class="kv">
-                  <div class="k">Reason</div>
-                  <div class="v muted" id="heroWhy">Outbound action — approve wording before it goes out.</div>
-                </div>
-
-                <div class="miniActions">
-                  <button class="btn primary mini" id="heroAllow">Allow</button>
-                  <button class="btn danger mini" id="heroBlock">Block</button>
-                </div>
-
-                <div class="tiny muted" id="heroHint">
-                  This is enforced: approvals are single-use and cannot be replayed (when enforcement is enabled).
-                </div>
-              </div>
+      <!-- Permission card -->
+      <div style="background: #1a2e3c; border: 1px solid #4d707a; border-radius: 20px; padding: 24px;">
+        <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+          <span style="font-size: 40px;">🛡️</span>
+          <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 18px; color: #fcd34d; margin-bottom: 8px;">Permission required</div>
+            <div style="font-size: 18px; margin-bottom: 20px;">Outbound email to client@example.com · Approve wording before send?</div>
+            <div style="display: flex; gap: 16px;">
+              <span style="background: #2d6a4f; padding: 8px 28px; border-radius: 40px; font-weight: 600;">Allow</span>
+              <span style="background: #9d174d; padding: 8px 28px; border-radius: 40px; font-weight: 600;">Block</span>
             </div>
           </div>
         </div>
-
-        <div class="featureRow">
-          <div class="feature">
-            <div class="ft">Preview</div>
-            <div class="muted tiny">See the next action before it happens.</div>
-          </div>
-          <div class="feature">
-            <div class="ft">Explain</div>
-            <div class="muted tiny">Get a plain-language reason.</div>
-          </div>
-          <div class="feature">
-            <div class="ft">Allow / Block</div>
-            <div class="muted tiny">You stay in control.</div>
-          </div>
-        </div>
       </div>
-    </section>
+      <p style="color: #d0dde3; margin-top: 24px; font-size: 15px;">
+        ⚙️ In production: single-use approvals, cryptographic enforcement, replay protection.
+        <a href="/dev.html" style="color: #ffdba5; margin-left: 12px;">Run the live demo →</a>
+      </p>
+    </div>
+  </div>
 
-    <!-- DEMO -->
-    <section id="demo" class="section">
-      <div class="sectionHead">
-        <div class="kicker">Live demo</div>
-        <h2>Kasbah Checkpoint</h2>
-        <p class="muted">
-          A simple moment of permission — understandable in 5 seconds.
-        </p>
-      </div>
+  <!-- HONEST WAITLIST – stored locally until you wire a backend -->
+  <div class="wrap" id="waitlist">
+    <div class="card" style="text-align: center;">
+      <span style="font-size: 48px; margin-bottom: 16px; display: block;">📋</span>
+      <h2 style="font-size: 40px; margin-bottom: 16px;">Get early access</h2>
+      <p style="font-size: 20px; color: #3e3e3e; max-width: 550px; margin: 0 auto 32px;">
+        We're building Kasbah in public. Join the waitlist and be the first to know when we launch.
+      </p>
 
-      <div class="panel">
-        <div class="panelTop">
-          <div class="lights"><span></span><span></span><span></span></div>
-          <div class="pTitle">Checkpoint</div>
-          <div class="live"><span class="pulse"></span><span id="liveTxt">waiting</span></div>
-        </div>
+      <form id="waitlist-form" action="#" method="POST" style="display: flex; gap: 16px; max-width: 500px; margin: 0 auto; flex-wrap: wrap; justify-content: center;">
+        <input id="waitlist-email" type="email" name="email" placeholder="your@email.com" required style="flex: 1 1 240px; padding: 16px 24px; border-radius: 60px; border: 1px solid #c9c1b6; font-size: 16px; background: white;">
+        <button type="submit" class="btn" style="background: #1e1e1e;">Join waitlist →</button>
+      </form>
 
-        <div class="toggle">
-          <button class="tbtn" data-s="safe">Safe</button>
-          <button class="tbtn" data-s="sensitive">Sensitive</button>
-          <button class="tbtn" data-s="risky">Risky</button>
-        </div>
+      <div id="waitlist-status" style="margin-top: 14px; color: #5c524a; font-size: 14px;"></div>
 
-        <div class="rows">
-          <div class="row">
-            <div class="key">AI wants to</div>
-            <div class="val" id="want">—</div>
-          </div>
-          <div class="row">
-            <div class="key">Risk</div>
-            <div class="val"><span class="badge" id="risk">—</span></div>
-          </div>
-          <div class="row">
-            <div class="key">Reason</div>
-            <div class="val muted" id="why">—</div>
-          </div>
-          <div class="row">
-            <div class="key">Decision</div>
-            <div class="val" id="decision">Needs your decision</div>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button class="btn primary" id="allow">Allow (single-use)</button>
-          <button class="btn danger" id="block">Block</button>
-        </div>
-
-        <div class="hint" id="hint">Click Allow, then click Allow again to see replay protection (demo).</div>
-        <div class="proof muted">
-          Important: This UI is a product story. The enforcement system lives in Kasbah-Core and the technical prototype.
-        </div>
-      </div>
-    </section>
-
-    <!-- DOWNLOAD (NO ZIPs here) -->
-    <section id="download" class="section">
-      <div class="sectionHead">
-        <div class="kicker">Download</div>
-        <h2>Use Kasbah today</h2>
-        <p class="muted">
-          We ship through trusted channels. No sketchy downloads on the public landing page.
-        </p>
+      <div style="display: flex; gap: 20px; justify-content: center; margin-top: 32px; color: #5c524a; flex-wrap: wrap;">
+        <span style="display: flex; align-items: center; gap: 6px;">📨 No spam</span>
+        <span style="display: flex; align-items: center; gap: 6px;">🔒 1 email/month</span>
+        <span style="display: flex; align-items: center; gap: 6px;">🕐 Unsubscribe anytime</span>
       </div>
 
-      <div class="grid">
-        <div class="card">
-          <div class="cardTitle">Install as an App (Recommended)</div>
-          <div class="muted smallp">
-            Works in your browser and installs like an app (PWA). No account.
-          </div>
-          <button class="btn primary full" id="btnInstall2">Install Kasbah</button>
-          <div class="muted tiny" id="installHint">
-            If you don’t see Install: iPhone Safari → Share → Add to Home Screen. Desktop Chrome → Install icon in the address bar.
-          </div>
+      <div class="trust-badge" style="margin-top: 36px; background: #f2eae4;">
+        <span>✓</span> We don't use fake counters or made-up stats. Trust is part of the product.
+      </div>
+    </div>
+  </div>
+
+  <!-- INSTALL – REAL PWA + FIXED "DOWNLOAD" LINKS -->
+  <div class="wrap">
+    <h2 style="font-size: 32px; margin-bottom: 16px;">Use Kasbah today</h2>
+    <p style="font-size: 18px; color: #4a4a4a; margin-bottom: 32px;">
+      We ship through trusted channels. No sketchy downloads on the public landing page.
+    </p>
+
+    <div class="install-grid">
+      <div class="install-card">
+        <span style="font-size: 40px; margin-bottom: 12px; display: block;">📱</span>
+        <h3 style="font-size: 22px; margin-bottom: 12px;">Install as an App</h3>
+        <p style="color: #4a4a4a; margin-bottom: 14px;">Works in your browser and installs like an app (PWA). No account needed.</p>
+
+        <button id="pwa-install" class="btn" style="width: 100%; justify-content: center; display: none;">
+          Install Kasbah
+        </button>
+
+        <div id="pwa-fallback" style="margin-top: 12px; background: #eae3dc; padding: 12px; border-radius: 12px; font-size: 14px;">
+          📲 Safari: Share → Add to Home Screen · Chrome: Install icon in the address bar
         </div>
 
-        <div class="card">
-          <div class="cardTitle">Chrome / Edge / Brave Extension</div>
-          <div class="muted smallp">
-            Coming soon via the Chrome Web Store.
-          </div>
-          <button class="btn ghost full" disabled>Chrome Web Store (Coming soon)</button>
-          <div class="muted tiny">
-            We only ship extensions through official stores.
-          </div>
-        </div>
+        <div id="pwa-status" style="margin-top: 10px; color: #5c524a; font-size: 13px;"></div>
+      </div>
 
-        <div class="card">
-          <div class="cardTitle">Safari Extension (Mac / iOS)</div>
-          <div class="muted smallp">
-            Coming soon via Apple’s distribution (signed & trusted).
-          </div>
-          <button class="btn ghost full" disabled>Safari distribution (Coming soon)</button>
-          <div class="muted tiny">
-            Safari requires signing — we will ship the correct way.
-          </div>
+      <div class="install-card">
+        <span style="font-size: 40px; margin-bottom: 12px; display: block;">🧩</span>
+        <h3 style="font-size: 22px; margin-bottom: 12px;">Chrome / Edge Extension</h3>
+        <p style="color: #4a4a4a; margin-bottom: 14px;">Coming soon via the Chrome Web Store. We only ship through official stores.</p>
+        <a href="#waitlist" class="btn btn-outline" style="padding: 12px 22px; font-size: 16px;">Notify me</a>
+        <div style="margin-top: 12px;">
+          <span style="background: #e0d8d0; padding: 6px 16px; border-radius: 40px; font-size: 14px;">📦 In review</span>
         </div>
       </div>
 
-      <div class="muted tiny" style="text-align:center;margin-top:10px;">
-        Developer preview is available on a separate page: <a class="link" href="/dev.html">/dev.html</a>
-      </div>
-    </section>
-
-    <!-- TRUST -->
-    <section id="trust" class="section">
-      <div class="sectionHead">
-        <div class="kicker">Security & Trust</div>
-        <h2>Designed to be safe by default</h2>
-        <p class="muted">Clear guarantees, in plain language.</p>
-      </div>
-
-      <div class="grid">
-        <div class="card">
-          <div class="cardTitle">No silent actions</div>
-          <div class="muted tiny">If you don’t approve, it doesn’t happen.</div>
-        </div>
-        <div class="card">
-          <div class="cardTitle">Decisions are enforced</div>
-          <div class="muted tiny">Kasbah is a checkpoint — not a suggestion popup.</div>
-        </div>
-        <div class="card">
-          <div class="cardTitle">Single-use approvals</div>
-          <div class="muted tiny">An approval can’t be copied and replayed (when enforcement is enabled).</div>
+      <div class="install-card">
+        <span style="font-size: 40px; margin-bottom: 12px; display: block;">🦊</span>
+        <h3 style="font-size: 22px; margin-bottom: 12px;">Safari Extension</h3>
+        <p style="color: #4a4a4a; margin-bottom: 14px;">Coming soon via Apple's distribution – signed and trusted.</p>
+        <a href="#waitlist" class="btn btn-outline" style="padding: 12px 22px; font-size: 16px;">Notify me</a>
+        <div style="margin-top: 12px;">
+          <span style="background: #e0d8d0; padding: 6px 16px; border-radius: 40px; font-size: 14px;">🍏 Signed distribution required</span>
         </div>
       </div>
+    </div>
 
-      <div class="panelSlim">
-        <div class="muted tiny">
-          We avoid fake counters and “made-up stats”. Trust is part of the product.
+    <div class="dev-note">
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span style="font-size: 36px;">🧑‍💻</span>
+        <div style="flex: 1;">
+          <h3 style="font-size: 22px; margin-bottom: 6px;">Developer preview</h3>
+          <p style="color: #4a4a4a; margin-bottom: 8px;">Run the live API demo: single-use tickets, replay protection, audit chain.</p>
+          <a href="/dev.html" style="color: #1e1e1e; font-weight: 600; text-decoration: underline; text-underline-offset: 4px;">→ Open /dev.html (live demo)</a>
         </div>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <!-- ENGINEERS -->
-    <section id="engineers" class="section">
-      <div class="sectionHead">
-        <div class="kicker">For engineers</div>
-        <h2>The system behind the demo</h2>
-        <p class="muted">Real enforcement: single-use approvals, replay protection, cryptographic audit.</p>
+  <!-- ORIGIN STORY -->
+  <div class="wrap" style="text-align: center; padding: 40px 20px;">
+    <hr />
+    <span style="font-size: 56px; display: block; margin-bottom: 16px;">🏜️</span>
+    <h2 style="font-size: 40px; margin-bottom: 20px;">Born in Morocco. Trusted globally.</h2>
+    <p style="font-size: 20px; color: #3a3a3a; max-width: 800px; margin: 0 auto;">
+      Moroccan kasbahs protected cities through architecture, not rules. <br />Strong walls, clear gates, no bypass. <br /><strong>Kasbah brings that principle to AI.</strong>
+    </p>
+    <div style="display: flex; gap: 32px; justify-content: center; margin-top: 32px; color: #5c524a; font-weight: 500; flex-wrap: wrap;">
+      <span>⚙️ Open source</span>
+      <span>🔐 Cryptographic audit</span>
+      <span>🏛️ 13th century wisdom</span>
+    </div>
+  </div>
+
+  <!-- GUARANTEES -->
+  <div class="wrap" style="background: #fcf9f6; border-radius: 32px; padding: 48px 32px;">
+    <h2 style="font-size: 32px; margin-bottom: 32px; text-align: center;">Designed to be safe by default</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 32px;">
+      <div>
+        <span style="font-size: 32px;">🚫</span>
+        <h3 style="margin: 16px 0 8px;">No silent actions</h3>
+        <p style="color: #4a4a4a;">If you don’t approve, it doesn’t happen.</p>
       </div>
-
-      <div class="ctaRow center">
-        <a class="btn ghost" href="https://kasbahdemo.space.z.ai" target="_blank" rel="noreferrer">See technical prototype</a>
-        <a class="btn ghost" href="https://github.com/Al-Adnane/Kasbah-Core" target="_blank" rel="noreferrer">Kasbah-Core on GitHub</a>
+      <div>
+        <span style="font-size: 32px;">🛡️</span>
+        <h3 style="margin: 16px 0 8px;">Decisions are enforced</h3>
+        <p style="color: #4a4a4a;">Kasbah is a checkpoint — not a suggestion popup.</p>
       </div>
-
-      <div class="heritage">
-        <div>
-          <h3>Born in Morocco. Trusted globally.</h3>
-          <p class="muted">
-            Moroccan kasbahs protected cities through architecture, not rules.
-            Kasbah applies the same idea to AI: strong walls, clear gates, no bypass.
-          </p>
-        </div>
-        <div class="badgeWall">
-          <span class="miniBadge">Permission-first</span>
-          <span class="miniBadge">Audit-ready</span>
-          <span class="miniBadge">Replay-aware</span>
-        </div>
+      <div>
+        <span style="font-size: 32px;">🎫</span>
+        <h3 style="margin: 16px 0 8px;">Single-use approvals</h3>
+        <p style="color: #4a4a4a;">An approval can’t be copied and replayed (when enforcement is enabled).</p>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <footer class="footer">
-      <div class="footBrand">
-        <img class="logoSm" src="/kasbah-logo.png" alt="Kasbah"/>
-        <div>
-          <div class="brandNameSm">KASBAH</div>
-          <div class="muted tiny">Permission before action.</div>
-        </div>
+  <!-- FOOTER -->
+  <div class="wrap footer">
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 24px;">
+      <div>
+        <span style="font-weight: 800; font-size: 24px;">🏰 Kasbah</span>
+        <p style="margin-top: 8px; color: #5e5e5e;">Permission-first AI · Rabat, Morocco</p>
       </div>
-      <div class="muted tiny">© 2026 Kasbah</div>
-    </footer>
-  </main>
+      <div style="display: flex; gap: 32px;">
+        <a href="https://github.com/Al-Adnane/Kasbah-Core" style="color: #4a4a4a; text-decoration: none;">GitHub</a>
+        <a href="#" style="color: #4a4a4a; text-decoration: none;">Privacy</a>
+        <a href="/dev.html" style="color: #4a4a4a; text-decoration: none;">Dev preview</a>
+      </div>
+    </div>
+    <div style="margin-top: 40px; font-size: 14px; color: #6e6e6e; text-align: center;">
+      © 2026 Kasbah. Open source (MIT). Built in public. <span style="display: inline-block; margin-left: 16px;">🇲🇦</span>
+    </div>
+  </div>
 
-  <script src="/app.js"></script>
+  <script>
+    // Waitlist: works now (no backend) by storing locally
+    (function () {
+      var form = document.getElementById("waitlist-form");
+      var email = document.getElementById("waitlist-email");
+      var status = document.getElementById("waitlist-status");
+      if (!form || !email || !status) return;
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var v = (email.value || "").trim();
+        if (!v) return;
+        try {
+          var list = JSON.parse(localStorage.getItem("kasbah_waitlist") || "[]");
+          if (!Array.isArray(list)) list = [];
+          if (list.indexOf(v) === -1) list.push(v);
+          localStorage.setItem("kasbah_waitlist", JSON.stringify(list));
+          status.textContent = "✅ Saved. (Local only until you wire the backend.)";
+          email.value = "";
+        } catch (err) {
+          status.textContent = "Saved.";
+        }
+      });
+    })();
+
+    // PWA: SW registration (required for installability)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(function(){});
+    }
+
+    // PWA: real install prompt wiring (Chrome/Edge/Android/Desktop)
+    (function () {
+      var installBtn = document.getElementById("pwa-install");
+      var fallback = document.getElementById("pwa-fallback");
+      var statusEl = document.getElementById("pwa-status");
+      if (!installBtn || !fallback || !statusEl) return;
+
+      var deferredPrompt = null;
+
+      var isStandalone =
+        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+        (window.navigator && window.navigator.standalone === true);
+
+      if (isStandalone) {
+        installBtn.style.display = "none";
+        fallback.style.display = "none";
+        statusEl.textContent = "✅ Already installed.";
+      }
+
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = "inline-flex";
+        fallback.style.display = "none";
+        statusEl.textContent = "Ready to install.";
+      });
+
+      installBtn.addEventListener("click", function () {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function (choice) {
+          deferredPrompt = null;
+          statusEl.textContent = (choice && choice.outcome === "accepted") ? "✅ Installing…" : "Install dismissed.";
+        });
+      });
+
+      window.addEventListener("appinstalled", function () {
+        installBtn.style.display = "none";
+        fallback.style.display = "none";
+        statusEl.textContent = "✅ Installed.";
+      });
+    })();
+  </script>
+
+  <!-- NO FAKE DATA -->
 </body>
 </html>

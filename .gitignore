@@ -1,0 +1,8 @@
+.DS_Store
+**/.DS_Store
+node_modules/
+**/node_modules/
+src-tauri/target/
+**/src-tauri/target/
+kasbah-guard-dist/apps/desktop/node_modules/
+kasbah-guard-dist/apps/desktop/src-tauri/target/
