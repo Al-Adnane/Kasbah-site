@@ -145,7 +145,7 @@
               <a class="btn btnPrimary" href="/downloads/KasbahGuard-macOS.dmg">Download DMG</a>
             </div>
             <div class="hr"></div>
-            <div class="small">Requires macOS 11+ (Big Sur or later)</div>
+            <div class="small">Requires macOS 11+. Not code-signed yet &mdash; run <code style="background:#f0ebe6;padding:2px 5px;border-radius:4px;font-size:11px">xattr -cr /Applications/KasbahGuard.app</code> after install.</div>
           </div>
 
           <div class="card">
@@ -184,8 +184,13 @@
           <div class="card">
             <div class="h">1) Install the DMG</div>
             <div class="small">
-              Download &rarr; open &rarr; drag Kasbah Guard to Applications &rarr; run it.
-              Ensure the Guard service shows as ON.
+              Download &rarr; open DMG &rarr; drag Kasbah Guard to Applications.
+              <br/><br/>
+              <b>macOS will say "damaged" because the app is not code-signed yet.</b> This is normal for developer builds. Fix it by running this in Terminal:
+            </div>
+            <div class="code">xattr -cr /Applications/KasbahGuard.app</div>
+            <div class="small" style="margin-top:8px">
+              Then open the app. Ensure the Guard service shows as ON.
             </div>
             <div class="hr"></div>
             <div class="badge"><span class="dot" id="svcDot"></span><span id="svcTxt">Checking local guard...</span></div>
