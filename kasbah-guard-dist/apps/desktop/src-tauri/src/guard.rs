@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 const PORT: u16 = 8788;
 const TTL_MS: u64 = 60_000;
-const MAX_EVENTS: usize = 200;
+const MAX_EVENTS: usize = 500;
 
 fn now_ms() -> u64 {
     SystemTime::now()
@@ -31,6 +31,65 @@ fn simple_id() -> String {
     )
 }
 
+// ── Risk scoring (server-side validation of extension's local scan) ──
+
+const SECRET_MARKERS: &[&str] = &[
+    "api_key", "apikey", "api-key",
+    "secret", "password", "passwd", "pwd",
+    "-----begin", "private key",
+    "sk-", "token=", "bearer",
+    "akia", "ghp_", "gho_", "ghu_", "ghs_", "ghr_",
+    "xoxb-", "xoxp-", "xoxr-", "xoxs-",
+    "mongodb://", "postgres://", "mysql://", "redis://",
+];
+
+fn policy_preflight(text: &str) -> (u16, String, String) {
+    let lower = text.to_lowercase();
+    let mut risk: u16 = 10;
+    let mut reasons = Vec::new();
+
+    // Check for secret patterns
+    let mut secrets_found = Vec::new();
+    for marker in SECRET_MARKERS {
+        if lower.contains(marker) {
+            secrets_found.push(*marker);
+        }
+    }
+    if !secrets_found.is_empty() {
+        risk += 75;
+        reasons.push(format!("Sensitive patterns: {}", secrets_found.join(", ")));
+    }
+
+    // Length checks
+    if text.len() > 5000 {
+        risk += 25;
+        reasons.push(format!("Very large message ({} chars)", text.len()));
+    } else if text.len() > 2500 {
+        risk += 15;
+        reasons.push(format!("Large message ({} chars)", text.len()));
+    }
+
+    risk = risk.min(100);
+
+    let decision = if risk >= 85 {
+        "WARN".to_string()
+    } else if risk >= 50 {
+        "REVIEW".to_string()
+    } else {
+        "ALLOW".to_string()
+    };
+
+    let reason = if reasons.is_empty() {
+        "No issues detected".to_string()
+    } else {
+        reasons.join("; ")
+    };
+
+    (risk, decision, reason)
+}
+
+// ── Data structures ──
+
 #[derive(Clone)]
 struct Event {
     ts_ms: u64,
@@ -42,11 +101,21 @@ struct TicketState {
     exp_ms: u64,
     consumed: bool,
     meta: serde_json::Value,
+    risk: u16,
+}
+
+struct Stats {
+    total: u32,
+    allowed: u32,
+    denied: u32,
+    replay_blocked: u32,
+    secrets_caught: u32,
 }
 
 struct State {
     tickets: HashMap<String, TicketState>,
     events: VecDeque<Event>,
+    stats: Stats,
 }
 
 impl State {
@@ -54,6 +123,13 @@ impl State {
         Self {
             tickets: HashMap::new(),
             events: VecDeque::new(),
+            stats: Stats {
+                total: 0,
+                allowed: 0,
+                denied: 0,
+                replay_blocked: 0,
+                secrets_caught: 0,
+            },
         }
     }
 
@@ -118,7 +194,10 @@ pub fn spawn_guard_service() {
         // Seed startup event
         {
             let mut g = state.lock().unwrap();
-            g.push_event("STARTUP", serde_json::json!({"message": "Kasbah Guard local authority started", "port": PORT}));
+            g.push_event(
+                "STARTUP",
+                serde_json::json!({"message": "Kasbah Guard started", "port": PORT}),
+            );
         }
 
         for mut request in server.incoming_requests() {
@@ -133,16 +212,26 @@ pub fn spawn_guard_service() {
             let st = Arc::clone(&state);
 
             match (method.as_str(), url.as_str()) {
+                // ── Health check ──
                 ("GET", "/status") => {
+                    let g = st.lock().unwrap();
                     let body = serde_json::json!({
                         "ok": true,
-                        "service": "kasbah-guard-local",
+                        "service": "kasbah-guard",
                         "port": PORT,
-                        "ts_ms": now_ms()
+                        "ts_ms": now_ms(),
+                        "stats": {
+                            "total": g.stats.total,
+                            "allowed": g.stats.allowed,
+                            "denied": g.stats.denied,
+                            "replay_blocked": g.stats.replay_blocked,
+                            "secrets_caught": g.stats.secrets_caught
+                        }
                     });
                     respond(request, 200, &body.to_string());
                 }
 
+                // ── Issue ticket with risk assessment ──
                 ("POST", "/decide") => {
                     let raw = read_body(&mut request);
                     let parsed: Result<serde_json::Value, _> = serde_json::from_str(&raw);
@@ -152,28 +241,56 @@ pub fn spawn_guard_service() {
                             let ticket = simple_id();
                             let exp_ms = now_ms().saturating_add(TTL_MS);
 
+                            // Extract preview for server-side risk scoring
+                            let preview = req_val
+                                .get("meta")
+                                .and_then(|m| m.get("preview"))
+                                .and_then(|p| p.as_str())
+                                .unwrap_or("");
+
+                            let (risk, preflight_decision, reason) = policy_preflight(preview);
+
+                            // Count secrets
+                            let client_secrets = req_val
+                                .get("meta")
+                                .and_then(|m| m.get("secrets"))
+                                .and_then(|s| s.as_array())
+                                .map(|a| a.len())
+                                .unwrap_or(0);
+
                             let meta = serde_json::json!({
                                 "product": req_val.get("product"),
                                 "host": req_val.get("host"),
                                 "action": req_val.get("action"),
-                                "meta": req_val.get("meta")
+                                "meta": req_val.get("meta"),
+                                "risk": risk,
+                                "preflight": preflight_decision,
+                                "reason": reason
                             });
 
                             let mut g = st.lock().unwrap();
+
+                            if client_secrets > 0 {
+                                g.stats.secrets_caught += 1;
+                            }
+
                             g.tickets.insert(
                                 ticket.clone(),
                                 TicketState {
                                     exp_ms,
                                     consumed: false,
                                     meta: meta.clone(),
+                                    risk,
                                 },
                             );
                             g.push_event(
                                 "DECIDE",
                                 serde_json::json!({
                                     "ticket": &ticket,
-                                    "exp_ms": exp_ms,
-                                    "meta": &meta
+                                    "risk": risk,
+                                    "preflight": &preflight_decision,
+                                    "reason": &reason,
+                                    "secrets": client_secrets
                                 }),
                             );
 
@@ -181,16 +298,24 @@ pub fn spawn_guard_service() {
                                 "ok": true,
                                 "decision": "PENDING",
                                 "ticket": ticket,
-                                "exp_ms": exp_ms
+                                "exp_ms": exp_ms,
+                                "risk": risk,
+                                "preflight": preflight_decision,
+                                "reason": reason
                             });
                             respond(request, 200, &res.to_string());
                         }
                         Err(_) => {
-                            respond(request, 400, r#"{"ok":false,"error":"invalid JSON"}"#);
+                            respond(
+                                request,
+                                400,
+                                r#"{"ok":false,"error":"invalid JSON"}"#,
+                            );
                         }
                     }
                 }
 
+                // ── Consume ticket (single-use, replay-protected) ──
                 ("POST", "/consume") => {
                     let raw = read_body(&mut request);
                     let parsed: Result<serde_json::Value, _> = serde_json::from_str(&raw);
@@ -213,23 +338,31 @@ pub fn spawn_guard_service() {
 
                             {
                                 let mut g = st.lock().unwrap();
+                                g.stats.total += 1;
+
                                 if let Some(t) = g.tickets.get_mut(&ticket_str) {
                                     let now = now_ms();
                                     if now > t.exp_ms {
                                         reason = "expired ticket".to_string();
+                                        g.stats.denied += 1;
                                     } else if t.consumed {
                                         reason = "replay blocked".to_string();
+                                        g.stats.replay_blocked += 1;
+                                        g.stats.denied += 1;
                                     } else {
                                         t.consumed = true;
                                         if choice == "ALLOW" {
                                             decision = "ALLOW".to_string();
                                             reason = "user allowed".to_string();
+                                            g.stats.allowed += 1;
                                         } else {
                                             reason = "user blocked".to_string();
+                                            g.stats.denied += 1;
                                         }
                                     }
                                 } else {
                                     reason = "unknown ticket".to_string();
+                                    g.stats.denied += 1;
                                 }
 
                                 g.push_event(
@@ -251,12 +384,17 @@ pub fn spawn_guard_service() {
                             respond(request, 200, &res.to_string());
                         }
                         Err(_) => {
-                            respond(request, 400, r#"{"ok":false,"error":"invalid JSON"}"#);
+                            respond(
+                                request,
+                                400,
+                                r#"{"ok":false,"error":"invalid JSON"}"#,
+                            );
                         }
                     }
                 }
 
-                ("GET", "/events") => {
+                // ── Event stream ──
+                ("GET", _) if url.starts_with("/events") => {
                     let g = st.lock().unwrap();
                     let events: Vec<serde_json::Value> = g
                         .events
@@ -269,8 +407,22 @@ pub fn spawn_guard_service() {
                             })
                         })
                         .collect();
-                    let body = serde_json::to_string(&events).unwrap_or_else(|_| "[]".to_string());
+                    let body =
+                        serde_json::to_string(&events).unwrap_or_else(|_| "[]".to_string());
                     respond(request, 200, &body);
+                }
+
+                // ── Stats endpoint ──
+                ("GET", "/stats") => {
+                    let g = st.lock().unwrap();
+                    let body = serde_json::json!({
+                        "total": g.stats.total,
+                        "allowed": g.stats.allowed,
+                        "denied": g.stats.denied,
+                        "replay_blocked": g.stats.replay_blocked,
+                        "secrets_caught": g.stats.secrets_caught
+                    });
+                    respond(request, 200, &body.to_string());
                 }
 
                 _ => {
