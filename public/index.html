@@ -3,159 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kasbah — The Sovereign Intent Layer for AI</title>
-  <meta name="description" content="The seatbelt for the agentic era. Kasbah sits between intent and execution — ensuring every AI action is something you actually wanted.">
+  <title>Kasbah — AI action firewall</title>
+  <meta name="description" content="Kasbah checks every AI action before it runs. Blocks leaked secrets, flags risky sends, stops irreversible mistakes. Runs on your device.">
   <link rel="icon" href="/favicon.ico"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    :root{--red:#C1440E;--sky:#1E3A8A;--stone:#D4C5B9;--mid:#0F172A;--green:#065F46;--gold:#F59E0B;--warm:#FFF8F0}
+    :root{--red:#C1440E;--sky:#1E3A8A;--stone:#D4C5B9;--mid:#0F172A;--green:#059669}
     body{font-family:'Inter',system-ui,sans-serif;background:var(--mid);color:#fff;line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-
     .glow{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;
-      background:radial-gradient(ellipse at 25% 20%,rgba(193,68,14,.1) 0%,transparent 55%),
-                 radial-gradient(ellipse at 75% 80%,rgba(30,58,138,.08) 0%,transparent 55%)}
-
-    .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+      background:radial-gradient(ellipse at 25% 20%,rgba(193,68,14,.08) 0%,transparent 55%),
+                 radial-gradient(ellipse at 75% 80%,rgba(30,58,138,.06) 0%,transparent 55%)}
+    .wrap{max-width:1060px;margin:0 auto;padding:0 24px}
 
     /* NAV */
-    nav{position:sticky;top:0;z-index:50;background:rgba(15,23,42,.9);backdrop-filter:blur(20px);border-bottom:1px solid rgba(212,197,185,.06)}
-    .nav-in{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    nav{position:sticky;top:0;z-index:50;background:rgba(15,23,42,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(212,197,185,.06)}
+    .nav-in{max-width:1060px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
     .n-brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:15px;color:var(--stone);text-decoration:none}
     .n-logo{width:28px;height:28px}
-    .n-links{display:flex;align-items:center;gap:28px}
-    .n-links a{color:rgba(212,197,185,.6);text-decoration:none;font-size:13px;font-weight:500;transition:color .2s}
+    .n-links{display:flex;align-items:center;gap:24px}
+    .n-links a{color:rgba(212,197,185,.55);text-decoration:none;font-size:13px;font-weight:500;transition:color .2s}
     .n-links a:hover{color:#fff}
-    .n-dl{font-size:13px;font-weight:700;padding:9px 20px;border-radius:999px;background:var(--red);color:#fff;border:0;cursor:pointer;text-decoration:none;transition:all .2s}
+    .n-dl{font-size:13px;font-weight:700;padding:9px 20px;border-radius:999px;background:var(--red);color:#fff;border:0;cursor:pointer;text-decoration:none;transition:all .15s}
     .n-dl:hover{box-shadow:0 4px 20px rgba(193,68,14,.5);transform:translateY(-1px)}
 
-    /* HERO */
-    .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:100px 24px 80px;text-align:center}
-    .h-badge{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--stone);padding:8px 18px;border-radius:999px;border:1px solid rgba(212,197,185,.15);background:rgba(212,197,185,.04);margin-bottom:40px}
-    .h-badge .pulse{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 2s infinite}
-    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(193,68,14,.5)}50%{box-shadow:0 0 0 8px rgba(193,68,14,0)}}
-    h1{font-size:clamp(36px,7vw,72px);font-weight:900;line-height:1.05;letter-spacing:-.03em;margin-bottom:28px}
+    /* ─── HERO ─── */
+    .hero{min-height:92vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:100px 24px 60px;text-align:center}
+    h1{font-size:clamp(36px,7vw,68px);font-weight:900;line-height:1.06;letter-spacing:-.03em;margin-bottom:20px}
     .grad{background:linear-gradient(135deg,var(--red),#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .lead{font-size:clamp(17px,2.5vw,22px);color:rgba(255,255,255,.7);max-width:720px;margin:0 auto 12px;font-weight:400;line-height:1.6}
-    .sub{font-size:15px;color:rgba(255,255,255,.4);max-width:600px;margin:0 auto 44px;font-weight:300;line-height:1.7}
-    .ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:48px}
-    .btn{padding:16px 32px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;border:none;font-family:inherit;text-decoration:none;display:inline-block}
-    .btn-p{background:var(--red);color:#fff;box-shadow:0 4px 24px rgba(193,68,14,.35)}
-    .btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(193,68,14,.55)}
-    .btn-s{background:transparent;color:var(--stone);border:2px solid rgba(212,197,185,.25)}
-    .btn-s:hover{background:rgba(212,197,185,.06);color:#fff;border-color:rgba(212,197,185,.4)}
+    .lead{font-size:clamp(17px,2.2vw,21px);color:rgba(255,255,255,.65);max-width:560px;margin:0 auto 36px;font-weight:400;line-height:1.55}
+    .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .btn{padding:15px 30px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;border:none;font-family:inherit;text-decoration:none;display:inline-block}
+    .btn-p{background:var(--red);color:#fff;box-shadow:0 4px 20px rgba(193,68,14,.3)}
+    .btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(193,68,14,.5)}
+    .btn-s{background:transparent;color:var(--stone);border:2px solid rgba(212,197,185,.2)}
+    .btn-s:hover{background:rgba(212,197,185,.05);color:#fff;border-color:rgba(212,197,185,.35)}
+    .trust{display:flex;gap:20px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+    .trust span{font-size:12px;color:rgba(255,255,255,.35);font-weight:500}
 
-    /* QUOTE */
-    .quote-bar{max-width:740px;margin:0 auto;padding:28px 32px;background:rgba(193,68,14,.06);border-left:3px solid var(--red);border-radius:0 8px 8px 0}
-    .quote-bar p{font-size:18px;font-weight:500;color:rgba(255,255,255,.85);font-style:italic;line-height:1.6}
-    .quote-bar .attr{font-style:normal;font-size:13px;color:rgba(255,255,255,.4);margin-top:8px;font-weight:400}
+    /* ─── PRODUCT SHOT ─── */
+    .shot{padding:0 24px 80px;text-align:center}
+    .shot-box{max-width:820px;margin:0 auto;background:#000;border:1px solid rgba(212,197,185,.12);border-radius:14px;overflow:hidden;position:relative}
+    .shot-bar{background:rgba(15,23,42,.8);padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(212,197,185,.08)}
+    .shot-dot{width:10px;height:10px;border-radius:50%}
+    .shot-label{font-size:11px;color:rgba(212,197,185,.5);margin-left:auto;font-weight:600}
+    .shot-body{padding:32px 28px;text-align:left}
+    .shot-scene{margin-bottom:24px}
+    .shot-line{font:13px/2 ui-monospace,SFMono-Regular,monospace;color:rgba(212,197,185,.6)}
+    .shot-line .hl{color:var(--red);font-weight:700}
+    .shot-line .ok{color:var(--green);font-weight:700}
+    .shot-line .warn{color:#F59E0B;font-weight:700}
 
-    /* PROBLEM */
-    .problem{padding:100px 24px 80px}
-    .sec-label{font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--red);margin-bottom:16px}
-    .problem h2{font-size:clamp(28px,5vw,48px);font-weight:900;line-height:1.1;margin-bottom:24px;letter-spacing:-.02em}
-    .problem .desc{font-size:17px;color:rgba(255,255,255,.6);max-width:800px;line-height:1.7;margin-bottom:48px}
-    .fear-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-    .fear{background:rgba(15,23,42,.6);border:1px solid rgba(212,197,185,.08);border-radius:12px;padding:28px;transition:border-color .3s}
-    .fear:hover{border-color:rgba(193,68,14,.25)}
-    .fear .icon{font-size:28px;margin-bottom:14px}
-    .fear h4{font-size:15px;font-weight:800;margin-bottom:8px}
-    .fear p{font-size:13px;color:rgba(255,255,255,.5);line-height:1.6}
-    .fear .stat{font-size:28px;font-weight:900;color:var(--red);margin-top:12px}
+    /* The modal mockup */
+    .mockup-modal{background:#fafaf9;border:1px solid #e4e4e7;border-radius:14px;max-width:420px;margin:20px auto 0;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .mm-hdr{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e4e4e7}
+    .mm-brand{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#18181b}
+    .mm-mark{width:20px;height:20px;border-radius:5px;background:#18181b;display:grid;place-items:center}
+    .mm-mark-i{width:8px;height:8px;border-radius:3px;background:#fafaf9}
+    .mm-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;color:#fff;background:#dc2626}
+    .mm-body{padding:14px 16px}
+    .mm-alert{background:#fef2f2;border:1px solid #fecaca;border-radius:9px;padding:11px 13px;margin-bottom:10px}
+    .mm-alert-t{font-size:12px;font-weight:800;color:#991b1b;margin-bottom:2px}
+    .mm-alert-d{font-size:11px;color:#991b1b;line-height:1.4}
+    .mm-pre{background:#f4f4f5;border:1px solid #e4e4e7;border-radius:7px;padding:9px 11px;font:10px/1.5 ui-monospace,monospace;color:#52525b;margin-bottom:10px;word-break:break-all}
+    .mm-msg{font-size:11px;color:#71717a;margin-bottom:12px}
+    .mm-btns{display:flex;gap:8px;justify-content:flex-end}
+    .mm-btn{font-size:11px;font-weight:700;padding:8px 14px;border-radius:999px;cursor:default;border:none;font-family:inherit}
+    .mm-btn-block{background:transparent;border:1.5px solid #e4e4e7;color:#18181b}
+    .mm-btn-allow{background:#18181b;color:#fafaf9}
 
-    /* FIVE VERBS */
-    .verbs{padding:80px 24px;background:rgba(0,0,0,.2)}
-    .verbs h2{text-align:center;font-size:clamp(28px,5vw,48px);font-weight:900;margin-bottom:16px}
-    .verbs .tagline{text-align:center;font-size:17px;color:rgba(255,255,255,.5);margin-bottom:56px}
-    .verb-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
-    .verb{background:rgba(15,23,42,.7);border:1px solid rgba(212,197,185,.08);border-radius:14px;padding:24px 20px;text-align:center;transition:all .3s;position:relative;overflow:hidden}
-    .verb:hover{border-color:var(--red);transform:translateY(-4px);box-shadow:0 8px 32px rgba(193,68,14,.15)}
-    .verb::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--red);transform:scaleX(0);transition:transform .3s}
-    .verb:hover::before{transform:scaleX(1)}
-    .verb .v-icon{font-size:32px;margin-bottom:12px}
-    .verb h4{font-size:14px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;color:var(--red)}
-    .verb p{font-size:12px;color:rgba(255,255,255,.5);line-height:1.5}
-    .verb .stop{font-size:11px;font-weight:700;color:var(--stone);margin-top:12px;padding:6px 10px;background:rgba(212,197,185,.06);border-radius:6px;display:inline-block}
+    /* ─── HOW ─── */
+    .how{padding:80px 24px}
+    .sec-hdr{text-align:center;margin-bottom:48px}
+    .sec-hdr h2{font-size:clamp(26px,4.5vw,42px);font-weight:900;margin-bottom:10px;letter-spacing:-.02em}
+    .sec-hdr p{font-size:16px;color:rgba(255,255,255,.45)}
+    .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .how-card{background:rgba(15,23,42,.5);border:1px solid rgba(212,197,185,.08);border-radius:14px;padding:28px;transition:border-color .3s}
+    .how-card:hover{border-color:rgba(193,68,14,.2)}
+    .how-num{font-size:32px;font-weight:900;color:var(--red);margin-bottom:12px}
+    .how-card h3{font-size:16px;font-weight:800;margin-bottom:8px}
+    .how-card p{font-size:13px;color:rgba(255,255,255,.5);line-height:1.6}
 
-    /* DEMO */
-    .demo{padding:100px 24px}
-    .sec-hdr{text-align:center;margin-bottom:56px}
-    .sec-hdr h2{font-size:clamp(28px,5vw,48px);font-weight:900;margin-bottom:12px}
-    .sec-hdr p{font-size:17px;color:rgba(255,255,255,.5)}
-    .cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px;margin:0 auto}
-    .card{background:rgba(15,23,42,.7);backdrop-filter:blur(16px);border:1px solid rgba(212,197,185,.1);border-radius:14px;padding:28px;transition:transform .3s,border-color .3s}
-    .card:hover{transform:translateY(-3px);border-color:rgba(212,197,185,.2)}
-    .card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-    .cd{width:12px;height:12px;border-radius:50%;animation:glow 2s infinite}
-    .cd-g{background:var(--sky);box-shadow:0 0 14px rgba(30,58,138,.5)}
-    .cd-r{background:var(--red);box-shadow:0 0 14px rgba(193,68,14,.5)}
-    @keyframes glow{0%,100%{opacity:1}50%{opacity:.55}}
-    .card h3{font-size:18px;font-weight:700}
-    .explain{color:rgba(255,255,255,.55);margin-bottom:16px;font-size:14px;line-height:1.7}
-    .code{background:rgba(0,0,0,.45);border:1px solid rgba(212,197,185,.08);border-radius:8px;padding:16px;margin-bottom:16px;overflow-x:auto;font:13px/1.8 ui-monospace,SFMono-Regular,monospace}
-    .cm{color:#6a737d}.st{color:var(--stone)}.kw{color:var(--red)}.fn{color:var(--sky)}
-    .term{background:#000;border:1px solid rgba(212,197,185,.15);border-radius:8px;padding:16px;min-height:100px;font:12px/1.7 ui-monospace,monospace;color:var(--stone);margin-top:10px;white-space:pre-wrap}
-    .term.ok{border-color:var(--sky);box-shadow:0 0 20px rgba(30,58,138,.2)}
-    .term.err{border-color:var(--red);box-shadow:0 0 20px rgba(193,68,14,.2)}
-    .dbtn{margin-top:12px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:var(--red);color:#fff;transition:all .2s;font-family:inherit}
-    .dbtn:hover{box-shadow:0 4px 16px rgba(193,68,14,.4)}
-    .dbtn:disabled{opacity:.5;cursor:not-allowed}
+    /* ─── WHAT IT CATCHES ─── */
+    .catches{padding:60px 24px 80px;background:rgba(0,0,0,.15)}
+    .catch-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:800px;margin:0 auto}
+    .catch{display:flex;align-items:flex-start;gap:14px;background:rgba(15,23,42,.5);border:1px solid rgba(212,197,185,.06);border-radius:10px;padding:18px 20px}
+    .catch-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+    .catch h4{font-size:14px;font-weight:700;margin-bottom:3px}
+    .catch p{font-size:12px;color:rgba(255,255,255,.45);line-height:1.5}
+    .catch .example{font:11px/1.4 ui-monospace,monospace;color:var(--red);margin-top:6px;background:rgba(193,68,14,.06);padding:4px 8px;border-radius:4px;display:inline-block}
 
-    /* TECHNOLOGY */
-    .tech{padding:80px 24px}
-    .tech h2{text-align:center;font-size:clamp(28px,5vw,44px);font-weight:900;margin-bottom:16px}
-    .tech .tagline{text-align:center;font-size:16px;color:rgba(255,255,255,.5);margin-bottom:48px}
-    .tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-    .tech-card{background:rgba(15,23,42,.5);border:1px solid rgba(212,197,185,.08);border-radius:14px;padding:32px;text-align:center;transition:border-color .3s}
-    .tech-card:hover{border-color:rgba(30,58,138,.3)}
-    .tech-card .t-icon{font-size:36px;margin-bottom:16px}
-    .tech-card h4{font-size:16px;font-weight:800;margin-bottom:10px;color:var(--sky)}
-    .tech-card p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.6}
-    .tech-card ul{list-style:none;margin-top:14px;text-align:left}
-    .tech-card li{font-size:12px;color:rgba(255,255,255,.5);padding:4px 0;border-bottom:1px solid rgba(212,197,185,.05)}
-    .tech-card li::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--sky);margin-right:8px;vertical-align:middle}
+    /* ─── MID CTA ─── */
+    .mid-cta{padding:60px 24px;text-align:center}
+    .mid-cta h2{font-size:clamp(24px,4vw,36px);font-weight:900;margin-bottom:10px}
+    .mid-cta p{font-size:15px;color:rgba(255,255,255,.5);margin-bottom:24px}
 
-    /* ACQUISITION */
-    .acq{padding:80px 24px;background:linear-gradient(180deg,rgba(193,68,14,.04) 0%,rgba(0,0,0,.2) 100%)}
-    .acq h2{text-align:center;font-size:clamp(24px,4vw,40px);font-weight:900;margin-bottom:16px}
-    .acq .tagline{text-align:center;font-size:16px;color:rgba(255,255,255,.5);margin-bottom:48px;max-width:700px;margin-left:auto;margin-right:auto}
-    .acq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:1100px;margin:0 auto}
-    .acq-card{background:rgba(15,23,42,.5);border:1px solid rgba(212,197,185,.08);border-radius:12px;padding:24px;transition:border-color .3s}
-    .acq-card:hover{border-color:rgba(193,68,14,.25)}
-    .acq-card .logo-name{font-size:14px;font-weight:800;margin-bottom:8px;color:rgba(255,255,255,.9)}
-    .acq-card .reason{font-size:12px;font-weight:600;color:var(--red);margin-bottom:8px}
-    .acq-card p{font-size:12px;color:rgba(255,255,255,.5);line-height:1.5}
-
-    /* CALM */
-    .calm{padding:100px 24px;text-align:center}
-    .calm h2{font-size:clamp(28px,5vw,48px);font-weight:900;margin-bottom:20px;line-height:1.1}
-    .calm .tagline{font-size:18px;color:rgba(255,255,255,.6);max-width:640px;margin:0 auto 40px;line-height:1.7}
-    .calm-stats{display:flex;justify-content:center;gap:48px;margin-bottom:48px;flex-wrap:wrap}
-    .calm-stat .num{font-size:48px;font-weight:900;color:var(--red)}
-    .calm-stat .lbl{font-size:13px;color:rgba(255,255,255,.5);margin-top:4px}
-    .calm-quote{font-size:20px;font-weight:500;font-style:italic;color:rgba(255,255,255,.7);max-width:600px;margin:0 auto;line-height:1.6}
-
-    /* DOWNLOAD */
+    /* ─── DOWNLOAD ─── */
     .download{padding:80px 24px}
-    .download h2{text-align:center;font-size:clamp(24px,4vw,36px);font-weight:900;margin-bottom:12px}
-    .download .tagline{text-align:center;font-size:15px;color:rgba(255,255,255,.5);margin-bottom:36px}
+    .download h2{text-align:center;font-size:clamp(24px,4vw,36px);font-weight:900;margin-bottom:8px}
+    .download .sub{text-align:center;font-size:15px;color:rgba(255,255,255,.45);margin-bottom:36px}
     .dl-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:800px;margin:0 auto}
     .dl-card{background:rgba(15,23,42,.5);border:1px solid rgba(212,197,185,.1);border-radius:14px;padding:24px}
     .dl-card h3{font-size:16px;font-weight:800;margin-bottom:6px}
-    .dl-card p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.5;margin-bottom:12px}
-    .dl-card .note{font-size:11px;color:rgba(255,255,255,.35);margin-top:10px;line-height:1.4}
+    .dl-card p{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:14px}
+    .dl-card .note{font-size:11px;color:rgba(255,255,255,.3);margin-top:10px;line-height:1.5}
+    .dl-card .note code{background:rgba(0,0,0,.3);padding:2px 5px;border-radius:3px;font-size:10px;color:#ff8866}
+    .browsers{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .b-tag{font-size:10px;font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid rgba(212,197,185,.12);color:rgba(255,255,255,.5)}
+    .b-tag.live{border-color:rgba(5,150,105,.3);color:var(--green)}
 
-    /* FOOTER */
-    footer{padding:60px 24px 32px;border-top:1px solid rgba(212,197,185,.06);text-align:center}
-    .f-links{display:flex;gap:28px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
-    .f-links a{color:rgba(255,255,255,.5);text-decoration:none;font-size:14px;transition:color .2s}
+    /* Steps */
+    .steps{max-width:800px;margin:32px auto 0;background:rgba(15,23,42,.4);border:1px solid rgba(212,197,185,.06);border-radius:12px;padding:24px 28px}
+    .steps h4{font-size:14px;font-weight:800;margin-bottom:14px;color:var(--stone)}
+    .step{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+    .step:last-child{margin-bottom:0}
+    .step-n{width:22px;height:22px;border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;flex-shrink:0;margin-top:1px}
+    .step p{font-size:13px;color:rgba(255,255,255,.6);line-height:1.5}
+
+    /* ─── FOOTER ─── */
+    footer{padding:48px 24px 28px;border-top:1px solid rgba(212,197,185,.06);text-align:center}
+    .f-links{display:flex;gap:24px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+    .f-links a{color:rgba(255,255,255,.4);text-decoration:none;font-size:13px;transition:color .2s}
     .f-links a:hover{color:var(--red)}
-    .heritage{color:rgba(212,197,185,.4);font-size:13px;line-height:1.8}
+    .heritage{color:rgba(212,197,185,.3);font-size:12px;line-height:1.8}
 
     /* RESPONSIVE */
-    @media(max-width:900px){.verb-grid{grid-template-columns:repeat(3,1fr)}.tech-grid{grid-template-columns:1fr}.fear-grid{grid-template-columns:1fr}}
-    @media(max-width:720px){.cards,.dl-grid{grid-template-columns:1fr}.ctas{flex-direction:column}.btn{width:100%}.verb-grid{grid-template-columns:1fr 1fr}.calm-stats{gap:24px}.n-links{display:none}}
-    @media(max-width:480px){.verb-grid{grid-template-columns:1fr}.fear-grid{grid-template-columns:1fr}}
+    @media(max-width:720px){
+      .how-grid{grid-template-columns:1fr}
+      .catch-grid,.dl-grid{grid-template-columns:1fr}
+      .ctas{flex-direction:column;align-items:center}
+      .btn{width:100%;max-width:320px;text-align:center}
+      .n-links{display:none}
+      .trust{flex-direction:column;align-items:center;gap:8px}
+    }
   </style>
 </head>
 <body>
@@ -168,353 +148,210 @@
         Kasbah
       </a>
       <div class="n-links">
-        <a href="#problem">Why</a>
-        <a href="#verbs">Product</a>
-        <a href="#demo">Demo</a>
-        <a href="#tech">Technology</a>
+        <a href="#how">How it works</a>
+        <a href="#download">Download</a>
         <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">GitHub</a>
       </div>
-      <a class="n-dl" href="#download">Download</a>
+      <a class="n-dl" href="#download">Get Kasbah</a>
     </div>
   </nav>
 
-  <!-- ████ HERO ████ -->
+  <!-- ═══ 1. HERO ═══ -->
   <section class="hero">
-    <div class="h-badge"><div class="pulse"></div> The Sovereign Intent Layer</div>
-
-    <h1>The seatbelt for<br>the <span class="grad">agentic era</span></h1>
-
-    <p class="lead">Kasbah sits between intent and execution. Five verbs. One checkpoint.<br>Every AI action is something you actually wanted.</p>
-
-    <p class="sub">Local-first. Fail-closed. No cloud. No trust assumptions.<br>The last wall between AI and irreversible damage.</p>
-
+    <h1>Checks every AI action<br><span class="grad">before it runs</span></h1>
+    <p class="lead">Kasbah sits between you and ChatGPT / Claude. It catches leaked secrets, flags risky sends, and blocks mistakes you can't undo. Runs on your device.</p>
     <div class="ctas">
       <a class="btn btn-p" href="#download">Download for macOS</a>
-      <a class="btn btn-s" href="#demo">Watch the demo</a>
+      <a class="btn btn-s" href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">View source</a>
     </div>
-
-    <div class="quote-bar">
-      <p>The only thing faster than AI is the moment you regret using it.</p>
-      <div class="attr">This is the problem Kasbah solves.</div>
+    <div class="trust">
+      <span>Local-first</span>
+      <span>No cloud</span>
+      <span>MIT licensed</span>
+      <span>Made in Morocco</span>
     </div>
   </section>
 
-  <!-- ████ THE PROBLEM ████ -->
-  <section class="problem" id="problem">
-    <div class="wrap">
-      <div class="sec-label">The Regret Wall</div>
-      <h2>Enterprises aren't scared of AI.<br>They're scared of <span class="grad">what AI does next.</span></h2>
-      <p class="desc">Fortune 500 companies self-censor AI usage. Developers paste secrets into chatbots daily. Agents hallucinate destructive commands. The problem isn't intelligence — it's that there's no checkpoint between intent and irreversible action.</p>
-
-      <div class="fear-grid">
-        <div class="fear">
-          <div class="icon">&#128274;</div>
-          <h4>Irreversible Consequence Anxiety</h4>
-          <p>Enterprises block AI not from ignorance, but from rationality. One hallucinated DELETE, one leaked API key, one wrong email — and there's no undo.</p>
-          <div class="stat">82%</div>
-          <p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:4px">of enterprises restrict AI tool usage</p>
+  <!-- ═══ 2. PRODUCT SHOT — what it actually looks like ═══ -->
+  <section class="shot">
+    <div class="shot-box">
+      <div class="shot-bar">
+        <div class="shot-dot" style="background:#ff5f57"></div>
+        <div class="shot-dot" style="background:#febc2e"></div>
+        <div class="shot-dot" style="background:#28c840"></div>
+        <div class="shot-label">chatgpt.com</div>
+      </div>
+      <div class="shot-body">
+        <div class="shot-scene">
+          <div class="shot-line"><span class="hl">You typed:</span> "Here's my database config:"</div>
+          <div class="shot-line">POSTGRES_URL=postgres://admin:<span class="hl">s3cret_p@ss</span>@db.prod.io:5432/main</div>
+          <div class="shot-line">API_KEY=<span class="hl">sk-proj-4f8a9b2c...</span></div>
+          <div class="shot-line" style="margin-top:12px"><span class="warn">&#9632; Kasbah intercepted the Send button</span></div>
+          <div class="shot-line"><span class="warn">&#9632; Scanning...</span> found <span class="hl">OpenAI Key</span>, <span class="hl">Password</span>, <span class="hl">Connection String</span></div>
+          <div class="shot-line"><span class="warn">&#9632; Risk: 95/100</span></div>
         </div>
-        <div class="fear">
-          <div class="icon">&#9888;&#65039;</div>
-          <h4>The Auth Gap</h4>
-          <p>Auth says WHO you are. But once an agent has valid credentials, nothing stops it from executing a destructive action. Auth doesn't check WHAT it's about to do.</p>
-          <div class="stat">$4.2M</div>
-          <p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:4px">avg. cost of an AI-related data breach</p>
-        </div>
-        <div class="fear">
-          <div class="icon">&#128165;</div>
-          <h4>The Speed Problem</h4>
-          <p>AI executes in milliseconds. Humans process in seconds. By the time you see what happened, your API key is in the training data and your DROP TABLE already ran.</p>
-          <div class="stat">200ms</div>
-          <p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:4px">avg. time for an agent to act on input</p>
+        <div class="mockup-modal">
+          <div class="mm-hdr">
+            <div class="mm-brand"><div class="mm-mark"><div class="mm-mark-i"></div></div> Kasbah Guard</div>
+            <div class="mm-badge">High risk</div>
+          </div>
+          <div class="mm-body">
+            <div class="mm-alert">
+              <div class="mm-alert-t">This looks sensitive</div>
+              <div class="mm-alert-d">Detected: OpenAI Key, Password, Connection String. Blocked before the model saw it.</div>
+            </div>
+            <div class="mm-pre">POSTGRES_URL=postgres://admin:s3cret_p@ss@db.prod...&#10;API_KEY=sk-proj-4f8a9b2c...</div>
+            <div class="mm-msg">Sending to CHATGPT. This action requires your approval.</div>
+            <div class="mm-btns">
+              <div class="mm-btn mm-btn-block">Block</div>
+              <div class="mm-btn mm-btn-allow">Send anyway</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ████ FIVE VERBS ████ -->
-  <section class="verbs" id="verbs">
-    <div class="wrap">
-      <h2>Five verbs. Five moments of no return.</h2>
-      <p class="tagline">Every catastrophic AI failure maps to one of five actions. Kasbah guards all of them.</p>
-
-      <div class="verb-grid">
-        <div class="verb">
-          <div class="v-icon">&#128203;</div>
-          <h4>Paste</h4>
-          <p>Scans clipboard for API keys, credentials, PII before they reach the model.</p>
-          <div class="stop">"That's an AWS key."</div>
-        </div>
-        <div class="verb">
-          <div class="v-icon">&#128228;</div>
-          <h4>Upload</h4>
-          <p>Flags private files, contracts, code repos before they leave your machine.</p>
-          <div class="stop">"This file has SSNs."</div>
-        </div>
-        <div class="verb">
-          <div class="v-icon">&#127760;</div>
-          <h4>Browse</h4>
-          <p>Shows where the agent wants to go before it fetches external resources.</p>
-          <div class="stop">"Agent wants: evil.com"</div>
-        </div>
-        <div class="verb">
-          <div class="v-icon">&#9999;&#65039;</div>
-          <h4>Edit</h4>
-          <p>Intercepts file writes, code changes, and database mutations before execution.</p>
-          <div class="stop">"This deletes prod."</div>
-        </div>
-        <div class="verb">
-          <div class="v-icon">&#128229;</div>
-          <h4>Download</h4>
-          <p>Checks files AI generates before they land on your disk. Blocks executables.</p>
-          <div class="stop">"This is a .exe file."</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ████ DEMO ████ -->
-  <section class="demo" id="demo">
+  <!-- ═══ 3. HOW IT WORKS (3 steps) ═══ -->
+  <section class="how" id="how">
     <div class="wrap">
       <div class="sec-hdr">
-        <h2>Watch it work. Try to break it.</h2>
-        <p>Interactive simulation. No signup. No BS.</p>
+        <h2>How it works</h2>
+        <p>Three things happen every time you hit Send.</p>
       </div>
-      <div class="cards">
-        <div class="card">
-          <div class="card-hdr"><div class="cd cd-g"></div><h3>The fortress opens</h3></div>
-          <p class="explain">Agent requests entry. We calculate integrity, sign a single-use ticket. HMAC-SHA256 bound to the specific tool.</p>
-          <div class="code"><pre><span class="cm">// Agent requests entry</span>
-<span class="kw">const</span> { ticket } = <span class="kw">await</span> <span class="fn">kasbah.decide</span>({
-  <span class="st">tool</span>: <span class="st">'db.query'</span>,
-  <span class="st">agent</span>: <span class="st">'claude'</span>
-});</pre></div>
-          <button class="dbtn" onclick="runSafe()" id="b1">Run safe flow</button>
-          <div class="term" id="o1">Click above to see it work...</div>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-num">1</div>
+          <h3>Intercept</h3>
+          <p>The browser extension catches the Send button click on ChatGPT or Claude before the message leaves your browser.</p>
         </div>
-        <div class="card">
-          <div class="card-hdr"><div class="cd cd-r"></div><h3>Attack: Replay the ticket</h3></div>
-          <p class="explain">Intercepted a ticket? Try using it twice. Kasbah tracks every consumed ticket. Second attempt = instant denial.</p>
-          <div class="code"><pre><span class="cm">// Use ticket once — works</span>
-<span class="kw">await</span> <span class="fn">execute</span>(ticket);
-<span class="cm">// Try again — BLOCKED</span>
-<span class="kw">await</span> <span class="fn">execute</span>(ticket);</pre></div>
-          <button class="dbtn" onclick="runReplay()" id="b2">Try replay attack</button>
-          <div class="term" id="o2">Run safe flow first...</div>
+        <div class="how-card">
+          <div class="how-num">2</div>
+          <h3>Scan</h3>
+          <p>Your message is scanned locally for API keys, passwords, tokens, connection strings, and 20+ secret patterns. Risk score: 0-100.</p>
         </div>
-        <div class="card">
-          <div class="card-hdr"><div class="cd cd-r"></div><h3>Attack: Tool swap</h3></div>
-          <p class="explain">Got a ticket for <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px">db.query</code>? Try using it for <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px">shell.exec</code>. Tickets are cryptographically bound.</p>
-          <div class="code"><pre><span class="cm">// Ticket for database</span>
-<span class="kw">const</span> t = <span class="kw">await</span> <span class="fn">kasbah.decide</span>({ <span class="st">tool</span>: <span class="st">'db.query'</span> });
-<span class="cm">// Privilege escalation attempt</span>
-<span class="kw">await</span> <span class="fn">kasbah.consume</span>(t, { <span class="st">tool</span>: <span class="st">'shell.exec'</span> });</pre></div>
-          <button class="dbtn" onclick="runSwap()" id="b3">Try tool swap</button>
-          <div class="term" id="o3">The sneaky one...</div>
-        </div>
-        <div class="card">
-          <div class="card-hdr"><div class="cd cd-g"></div><h3>Complete protocol</h3></div>
-          <p class="explain">Watch the full fortress protocol: decide, consume, verify. Every action logged with SHA256 hash chaining.</p>
-          <button class="dbtn" onclick="runFull()" id="b4">Run complete flow</button>
-          <div class="term" id="o4">Watch the full fortress protocol...</div>
+        <div class="how-card">
+          <div class="how-num">3</div>
+          <h3>Decide</h3>
+          <p>You see exactly what was found and choose: Block or Allow. Nothing leaves your machine without your explicit approval.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ████ TECHNOLOGY ████ -->
-  <section class="tech" id="tech">
+  <!-- ═══ 4. WHAT IT CATCHES ═══ -->
+  <section class="catches">
     <div class="wrap">
-      <h2>Sovereign &amp; Silent</h2>
-      <p class="tagline">Three layers. Zero cloud dependency. Your machine, your rules.</p>
-
-      <div class="tech-grid">
-        <div class="tech-card">
-          <div class="t-icon">&#127968;</div>
-          <h4>Guard</h4>
-          <p>Local HTTP service on your machine. Single-use tickets, HMAC-SHA256 signatures, replay protection.</p>
-          <ul>
-            <li>127.0.0.1 only — never leaves your device</li>
-            <li>Default-deny if unreachable</li>
-            <li>Risk scoring engine (0-100)</li>
-            <li>20+ secret pattern detection</li>
-          </ul>
+      <div class="sec-hdr">
+        <h2>What it catches</h2>
+        <p>Real patterns. Detected instantly. Before the model sees them.</p>
+      </div>
+      <div class="catch-grid">
+        <div class="catch">
+          <div class="catch-icon">&#128273;</div>
+          <div>
+            <h4>API Keys</h4>
+            <p>OpenAI, AWS, GitHub, Slack tokens detected by pattern matching.</p>
+            <div class="example">sk-proj-4f8a9b2c7d...</div>
+          </div>
         </div>
-        <div class="tech-card">
-          <div class="t-icon">&#128737;&#65039;</div>
-          <h4>Sentry</h4>
-          <p>Browser extension for ChatGPT and Claude. Intercepts actions at the DOM level before the model sees your data.</p>
-          <ul>
-            <li>ChatGPT + Claude support</li>
-            <li>Send button interception</li>
-            <li>File upload scanning</li>
-            <li>Real-time risk assessment modal</li>
-          </ul>
+        <div class="catch">
+          <div class="catch-icon">&#128274;</div>
+          <div>
+            <h4>Passwords &amp; Secrets</h4>
+            <p>Database passwords, environment variables, auth tokens.</p>
+            <div class="example">password=s3cret_p@ss</div>
+          </div>
         </div>
-        <div class="tech-card">
-          <div class="t-icon">&#129504;</div>
-          <h4>Intelligence</h4>
-          <p>Policy engine that learns your patterns. Risk scoring, secret detection, and behavioral analysis.</p>
-          <ul>
-            <li>API key / credential detection</li>
-            <li>PII and financial data scanning</li>
-            <li>SHA256 audit chain</li>
-            <li>Immutable event logging</li>
-          </ul>
+        <div class="catch">
+          <div class="catch-icon">&#128450;</div>
+          <div>
+            <h4>Connection Strings</h4>
+            <p>MongoDB, PostgreSQL, MySQL, Redis URIs with credentials.</p>
+            <div class="example">postgres://admin:pass@prod:5432</div>
+          </div>
+        </div>
+        <div class="catch">
+          <div class="catch-icon">&#128272;</div>
+          <div>
+            <h4>Private Keys</h4>
+            <p>RSA, EC, DSA, and OpenSSH private key blocks.</p>
+            <div class="example">-----BEGIN RSA PRIVATE KEY-----</div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ████ WHY FRONTIER LABS NEED THIS ████ -->
-  <section class="acq" id="acquisition">
-    <div class="wrap">
-      <h2>Why frontier labs need Kasbah</h2>
-      <p class="tagline">Every AI company faces the same three existential problems. Kasbah solves all three in one layer.</p>
-
-      <div class="acq-grid">
-        <div class="acq-card">
-          <div class="logo-name">Liability Shield</div>
-          <div class="reason">The legal problem</div>
-          <p>When an agent deletes production data, who's liable? Kasbah creates cryptographic proof that the user approved every action. Audit trail that holds up in court.</p>
-        </div>
-        <div class="acq-card">
-          <div class="logo-name">Agentic Guardrail</div>
-          <div class="reason">The technical problem</div>
-          <p>Agents act at machine speed with human credentials. Kasbah adds the missing enforcement layer — after auth, before execution. Runtime verification, not prompt-based hope.</p>
-        </div>
-        <div class="acq-card">
-          <div class="logo-name">Regulatory Bridge</div>
-          <div class="reason">The compliance problem</div>
-          <p>EU AI Act, SOC2, HIPAA — all require human oversight of AI actions. Kasbah provides auditable proof of human-in-the-loop at the action level.</p>
-        </div>
-        <div class="acq-card">
-          <div class="logo-name">Enterprise Unlock</div>
-          <div class="reason">The revenue problem</div>
-          <p>Fortune 500 CISOs won't approve AI tools without action-level controls. Kasbah is the trust layer that turns "no" into "yes, with guardrails."</p>
-        </div>
-        <div class="acq-card">
-          <div class="logo-name">OpenAI / Anthropic / Google</div>
-          <div class="reason">The acquisition thesis</div>
-          <p>Every frontier lab needs this layer but can't build it credibly — it must be independent. Kasbah is the Switzerland of AI safety.</p>
-        </div>
-      </div>
-    </div>
+  <!-- ═══ MID-PAGE CTA ═══ -->
+  <section class="mid-cta">
+    <h2>Stop pasting secrets into AI.</h2>
+    <p>It takes 10 seconds to install. Catches mistakes forever.</p>
+    <a class="btn btn-p" href="#download">Download for macOS</a>
   </section>
 
-  <!-- ████ CALM ████ -->
-  <section class="calm">
-    <div class="wrap">
-      <h2>Users don't install Kasbah<br>for <span class="grad">security.</span></h2>
-      <h2 style="margin-top:-8px;margin-bottom:20px">They install it for <span class="grad">calm.</span></h2>
-      <p class="tagline">Security is the mechanism. Calm is the product. The feeling that AI can't do something catastrophic without you knowing first.</p>
-
-      <div class="calm-stats">
-        <div class="calm-stat"><div class="num">0</div><div class="lbl">secrets leaked</div></div>
-        <div class="calm-stat"><div class="num">0</div><div class="lbl">cloud dependencies</div></div>
-        <div class="calm-stat"><div class="num">0</div><div class="lbl">trust assumptions</div></div>
-        <div class="calm-stat"><div class="num">&lt;1ms</div><div class="lbl">decision latency</div></div>
-      </div>
-
-      <p class="calm-quote">"I don't even think about it anymore. I just use AI and Kasbah handles the rest."</p>
-    </div>
-  </section>
-
-  <!-- ████ DOWNLOAD ████ -->
+  <!-- ═══ 5. DOWNLOAD ═══ -->
   <section class="download" id="download">
     <div class="wrap">
       <h2>Get Kasbah</h2>
-      <p class="tagline">Install once. Forget it's there. Until you need it.</p>
+      <p class="sub">One app. One extension. Done.</p>
       <div class="dl-grid">
         <div class="dl-card">
-          <h3>macOS App</h3>
-          <p>Runs the local guard service + control center. Drag to Applications, open, done.</p>
+          <h3>1. Desktop App</h3>
+          <p>The guard service that runs locally. Drag to Applications, open once.</p>
           <a class="btn btn-p" href="/downloads/KasbahGuard-macOS.dmg" style="width:100%;text-align:center;display:block">Download DMG</a>
-          <div class="note">macOS Gatekeeper: Right-click &rarr; Open. Or run: <code style="background:rgba(0,0,0,.3);padding:2px 4px;border-radius:3px;font-size:10px;color:#ff8866">xattr -cr /Applications/KasbahGuard.app</code></div>
+          <div class="note">
+            macOS Gatekeeper: Right-click &rarr; Open first time.<br>
+            Or: <code>xattr -cr /Applications/KasbahGuard.app</code>
+          </div>
         </div>
         <div class="dl-card">
-          <h3>Browser Extension</h3>
-          <p>Protects ChatGPT and Claude. The desktop app installs it for you — click "Install Extension" inside.</p>
-          <a class="btn btn-s" href="/downloads/kasbah-extension-dev.zip" style="width:100%;text-align:center;display:block">Manual download (dev)</a>
-          <div class="note">Chrome Web Store submission in progress.</div>
+          <h3>2. Browser Extension</h3>
+          <p>Protects ChatGPT and Claude. The app installs it for you, or grab it manually.</p>
+          <a class="btn btn-s" href="/downloads/kasbah-extension-dev.zip" style="width:100%;text-align:center;display:block">Download extension</a>
+          <div class="browsers">
+            <span class="b-tag live">Chrome</span>
+            <span class="b-tag live">Opera</span>
+            <span class="b-tag live">Brave</span>
+            <span class="b-tag live">Edge</span>
+            <span class="b-tag">Safari (soon)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="steps">
+        <h4>Setup in 3 steps</h4>
+        <div class="step">
+          <div class="step-n">1</div>
+          <p>Open the DMG, drag Kasbah Guard to Applications, launch it. The guard starts automatically on port 8788.</p>
+        </div>
+        <div class="step">
+          <div class="step-n">2</div>
+          <p>In Opera: go to <strong>opera://extensions</strong>, enable Developer mode, click "Load unpacked" and select the extension folder. (Same flow for Chrome/Brave/Edge.)</p>
+        </div>
+        <div class="step">
+          <div class="step-n">3</div>
+          <p>Open ChatGPT or Claude. Type something with a fake secret. Hit Send. Kasbah will intercept it and show you the checkpoint. That's it.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ████ FOOTER ████ -->
+  <!-- ═══ FOOTER ═══ -->
   <footer>
     <div class="wrap">
       <div class="f-links">
         <a href="https://github.com/Al-Adnane/Kasbah-site">GitHub</a>
-        <a href="https://github.com/Al-Adnane/Kasbah-site">Documentation</a>
+        <a href="https://github.com/Al-Adnane/Kasbah-site">Docs</a>
         <a href="mailto:beta@bekasbah.com">Contact</a>
       </div>
       <div class="heritage">
-        <p style="font-size:20px;margin-bottom:4px;color:var(--sky)">&#1602;&#1589;&#1576;&#1577;</p>
-        <p>Heritage Architecture &middot; Future Intelligence</p>
-        <p style="margin-top:8px;opacity:.7">Built in Morocco. MIT Licensed.</p>
-        <p style="margin-top:4px;opacity:.4">&copy; <span id="y"></span> Kasbah</p>
+        <p style="font-size:18px;margin-bottom:2px;color:rgba(30,58,138,.6)">&#1602;&#1589;&#1576;&#1577;</p>
+        <p>Built in Morocco &middot; MIT Licensed &middot; &copy; <span id="y"></span> Kasbah</p>
       </div>
     </div>
   </footer>
 
-  <script>
-    document.getElementById('y').textContent=new Date().getFullYear();
-
-    /* Smooth scroll for nav links */
-    document.querySelectorAll('a[href^="#"]').forEach(function(a){
-      a.addEventListener('click',function(e){
-        var t=document.querySelector(this.getAttribute('href'));
-        if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}
-      });
-    });
-
-    /* Demo logic */
-    var tk=null,used=false;
-    function out(id,t,c){var e=document.getElementById(id);e.textContent=t;e.className='term '+(c||'')}
-    function sl(ms){return new Promise(function(r){setTimeout(r,ms)})}
-
-    async function runSafe(){
-      document.getElementById('b1').disabled=true;
-      out('o1','Requesting entry to the fortress...');
-      await sl(600);
-      tk='eyJhbGciOiJIUzI1NiJ9.eyJ0b29sIjoiZGIucXVlcnkifQ.kF8vY2m';used=false;
-      out('o1','Gates open\n\nIntegrity: 0.953\nTicket: '+tk.slice(0,40)+'...\n\nConsuming ticket...');
-      await sl(500);
-      used=true;
-      out('o1','Gates open\n\nIntegrity: 0.953\nTicket: '+tk.slice(0,40)+'...\n\nEntry granted\nStatus: OK\nTool: db.query\n\nTicket consumed — single-use only.\nTry the attacks to see it hold.','ok');
-      document.getElementById('b1').disabled=false;
-    }
-    async function runReplay(){
-      if(!tk){out('o2','Run the safe flow first.','err');return}
-      document.getElementById('b2').disabled=true;
-      out('o2','Breach attempt...\nReplaying consumed ticket...');
-      await sl(700);
-      out('o2','Attack: Replay consumed ticket\n\nFortress: HOLDS\nStatus: 403 Forbidden\n\nReplay blocked.\nReason: ticket_already_consumed\n\nEvery consumed ticket tracked.\nSecond use = instant denial.\nTOCTOU attack: prevented.','ok');
-      document.getElementById('b2').disabled=false;
-    }
-    async function runSwap(){
-      if(!tk){out('o3','Run the safe flow first.','err');return}
-      document.getElementById('b3').disabled=true;
-      out('o3','Privilege escalation attempt...\nSwapping db.query -> shell.exec...');
-      await sl(700);
-      out('o3','Attack: Tool privilege escalation\n\nTicket was for: db.query\nAttempted tool: shell.exec\n\nFortress: HOLDS\nStatus: 403 Forbidden\n\nTool swap blocked.\nReason: tool_mismatch\n\nTool name is part of HMAC payload.\nChanging tool = signature breaks.\nCryptographic enforcement, not prompts.','ok');
-      document.getElementById('b3').disabled=false;
-    }
-    async function runFull(){
-      document.getElementById('b4').disabled=true;
-      out('o4','Initiating fortress protocol...\n');
-      await sl(400);
-      out('o4','Step 1: Decide\nCalculating integrity from signals...');
-      await sl(600);
-      out('o4','Step 1: Decide\n\nDecision: ALLOW\nIntegrity: 0.947\nSignals: consistency=0.92, accuracy=0.95\n\nStep 2: Consume\nVerifying HMAC-SHA256 signature...');
-      await sl(600);
-      out('o4','Step 1: Decide  [done]\nStep 2: Consume [done]\n\nSignature: Valid (HMAC-SHA256)\nTool binding: Matched (api.call)\nReplay check: First use\nTimestamp: Valid (TTL: 60s)\n\nStep 3: Audit\nVerifying hash chain integrity...');
-      await sl(600);
-      out('o4','Complete fortress protocol\n\nStep 1: Decision  — ALLOW (integrity: 0.947)\nStep 2: Consumption — OK (verified)\nStep 3: Audit — SHA256 chain verified\n\nLogged:\n  Decision event  (hash: f3a9c2b1...)\n  Consumption     (hash: 8e7d6c5a...)\n  Chain verified  (prev: f3a9c2b1...)\n\nEach event hash = SHA256(prev + data)\nTamper with any event = chain breaks.\nImmutable audit trail.\n\nSovereign. Silent. Yours.','ok');
-      document.getElementById('b4').disabled=false;
-    }
-  </script>
+  <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 </body>
 </html>
