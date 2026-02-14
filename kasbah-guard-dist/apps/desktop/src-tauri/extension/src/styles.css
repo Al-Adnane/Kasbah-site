@@ -1,0 +1,7 @@
+/* Kasbah Guard - Content Script Styles */
+#kasbah-guard-modal { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+#kasbah-guard-modal * { box-sizing: border-box; }
+#kasbah-guard-modal button:hover { opacity: 0.9; }
+#kasbah-guard-modal button:active { transform: scale(0.98); }
+@keyframes kasbah-slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes kasbah-slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }

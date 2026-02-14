@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#fffcf8;color:#1e1e1e;width:320px;min-height:200px}
+    .header{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid #e7ded6}
+    .logo{width:40px;height:40px;background:#1e1e1e;border-radius:12px;display:flex;align-items:center;justify-content:center}
+    .logo svg{width:24px;height:24px}
+    .brand{flex:1}
+    .brand-name{font-weight:800;font-size:16px}
+    .brand-tag{font-size:11px;color:#6b625a}
+    .status{padding:16px}
+    .status-row{display:flex;align-items:center;justify-content:space-between;padding:12px;background:#fcf9f6;border-radius:12px;margin-bottom:12px}
+    .status-indicator{display:flex;align-items:center;gap:8px}
+    .dot{width:10px;height:10px;border-radius:50%;background:#dc2626}
+    .dot.on{background:#059669}
+    .status-text{font-size:13px;font-weight:600}
+    .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 16px}
+    .stat{background:#fcf9f6;border:1px solid #e7ded6;border-radius:12px;padding:10px;text-align:center}
+    .stat-val{font-size:18px;font-weight:800}
+    .stat-lbl{font-size:10px;color:#6b625a;margin-top:2px}
+    .actions{padding:0 16px 16px}
+    .btn{display:block;width:100%;padding:11px;border-radius:999px;border:none;font-weight:700;font-size:13px;cursor:pointer;text-align:center;text-decoration:none;margin-top:8px;transition:all .15s}
+    .btn-primary{background:#1e1e1e;color:#fffcf8}
+    .btn-primary:hover{background:#333}
+    .btn-outline{background:transparent;border:2px solid #e7ded6;color:#1e1e1e}
+    .btn-outline:hover{background:#1e1e1e;color:#fffcf8}
+    .footer{padding:12px 16px;border-top:1px solid #e7ded6;text-align:center;font-size:11px;color:#6b625a}
+    .footer a{color:#1e1e1e;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 4L19 10V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V10L12 4Z" fill="#fffcf8"/><path d="M12 8V16" stroke="#1e1e1e" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <div class="brand">
+      <div class="brand-name">Kasbah Guard</div>
+      <div class="brand-tag">Permission before AI actions</div>
+    </div>
+  </div>
+  <div class="status">
+    <div class="status-row">
+      <div class="status-indicator">
+        <div class="dot" id="dot"></div>
+        <span class="status-text" id="txt">Checking...</span>
+      </div>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="sTotal">0</div><div class="stat-lbl">Total</div></div>
+    <div class="stat"><div class="stat-val" id="sAllow" style="color:#059669">0</div><div class="stat-lbl">Allowed</div></div>
+    <div class="stat"><div class="stat-val" id="sDeny" style="color:#dc2626">0</div><div class="stat-lbl">Blocked</div></div>
+  </div>
+  <div class="actions">
+    <a href="http://127.0.0.1:8788/status" target="_blank" class="btn btn-primary">Open Dashboard</a>
+    <a href="https://kasbah-site.pages.dev" target="_blank" class="btn btn-outline">Help &amp; Setup</a>
+  </div>
+  <div class="footer">
+    <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">GitHub</a> · v0.1.0
+  </div>
+  <script>
+    var GUARD='http://127.0.0.1:8788';
+    function poll(){
+      fetch(GUARD+'/status',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+        var ok=d.ok===true;
+        document.getElementById('dot').className='dot'+(ok?' on':'');
+        document.getElementById('txt').textContent=ok?'Guard Active':'Guard Offline';
+        if(d.stats){
+          document.getElementById('sTotal').textContent=d.stats.total||0;
+          document.getElementById('sAllow').textContent=d.stats.allowed||0;
+          document.getElementById('sDeny').textContent=d.stats.denied||0;
+        }
+      }).catch(function(){
+        document.getElementById('dot').className='dot';
+        document.getElementById('txt').textContent='Guard Offline';
+      });
+    }
+    poll();setInterval(poll,3000);
+  </script>
+</body>
+</html>
