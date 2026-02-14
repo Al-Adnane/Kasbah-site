@@ -298,11 +298,13 @@
       <div class="dl-grid">
         <div class="dl-card">
           <h3>1. Desktop App</h3>
-          <p>The guard service that runs locally. Drag to Applications, open once.</p>
+          <p>The guard service that runs locally. Download, install, done.</p>
           <a class="btn btn-p" href="/downloads/KasbahGuard-macOS.dmg" style="width:100%;text-align:center;display:block">Download DMG</a>
-          <div class="note">
-            macOS Gatekeeper: Right-click &rarr; Open first time.<br>
-            Or: <code>xattr -cr /Applications/KasbahGuard.app</code>
+          <div class="note" style="margin-top:14px;background:rgba(193,68,14,.06);border:1px solid rgba(193,68,14,.12);border-radius:8px;padding:12px;color:rgba(255,255,255,.55)">
+            <strong style="color:rgba(255,255,255,.8)">macOS will say "damaged"</strong> — it's not. Apple blocks unsigned apps.<br>
+            After dragging to Applications, open Terminal and run:<br>
+            <code style="display:block;margin-top:6px;padding:8px 10px;background:rgba(0,0,0,.4);border-radius:6px;font-size:12px;color:#ff8866;user-select:all">xattr -cr /Applications/KasbahGuard.app</code>
+            <span style="font-size:10px;display:block;margin-top:6px;opacity:.6">Then right-click the app &rarr; Open. It will work from then on.</span>
           </div>
         </div>
         <div class="dl-card">
@@ -320,17 +322,21 @@
       </div>
 
       <div class="steps">
-        <h4>Setup in 3 steps</h4>
+        <h4>Setup in 4 steps</h4>
         <div class="step">
           <div class="step-n">1</div>
-          <p>Open the DMG, drag Kasbah Guard to Applications, launch it. The guard starts automatically on port 8788.</p>
+          <p>Open the DMG, drag Kasbah Guard to Applications.</p>
         </div>
         <div class="step">
           <div class="step-n">2</div>
-          <p>In Opera: go to <strong>opera://extensions</strong>, enable Developer mode, click "Load unpacked" and select the extension folder. (Same flow for Chrome/Brave/Edge.)</p>
+          <p>Open Terminal, paste: <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;font-size:11px;color:#ff8866">xattr -cr /Applications/KasbahGuard.app</code> — then right-click the app &rarr; Open.</p>
         </div>
         <div class="step">
           <div class="step-n">3</div>
+          <p>In Opera: go to <strong>opera://extensions</strong>, enable Developer mode, click "Load unpacked" and select the extension folder. (Same flow for Chrome/Brave/Edge.)</p>
+        </div>
+        <div class="step">
+          <div class="step-n">4</div>
           <p>Open ChatGPT or Claude. Type something with a fake secret. Hit Send. Kasbah will intercept it and show you the checkpoint. That's it.</p>
         </div>
       </div>
