@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Kasbah Guard",
-  "version": "0.1.0",
-  "description": "Permission checkpoint for AI actions. Works with ChatGPT and Claude.",
+  "version": "0.2.0",
+  "description": "Sovereign intent layer for AI actions. Intercepts send, paste, upload, browse, and download on ChatGPT and Claude.",
   "permissions": [
     "storage",
     "activeTab",

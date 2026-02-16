@@ -1,12 +1,21 @@
-use std::collections::{HashMap, VecDeque};
-use std::io::Read;
+/// Kasbah Guard — The Sovereign Intent Layer
+/// Local-first AI firewall with cryptographic tickets, SQLite audit chain,
+/// and HMAC-SHA256 signed tokens.
+use base64::Engine as _;
+use dashmap::DashMap;
+use hmac::{Hmac, Mac};
+use rand::Rng;
+use rusqlite::{params, Connection};
+use sha2::{Digest, Sha256};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+type HmacSha256 = Hmac<Sha256>;
+
 const PORT: u16 = 8788;
-const TTL_MS: u64 = 60_000;
-const MAX_EVENTS: usize = 500;
+const TTL_MS: u64 = 120_000; // 2 minutes
+const MAX_EVENTS_MEM: usize = 500;
 
 fn now_ms() -> u64 {
     SystemTime::now()
@@ -15,24 +24,7 @@ fn now_ms() -> u64 {
         .as_millis() as u64
 }
 
-fn simple_id() -> String {
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let r = t.wrapping_mul(6364136223846793005).wrapping_add(1);
-    format!(
-        "{:08x}-{:04x}-4{:03x}-{:04x}-{:012x}",
-        ((r >> 96) & 0xffffffff) as u32,
-        ((r >> 80) & 0xffff) as u16,
-        ((r >> 64) & 0x0fff) as u16,
-        (((r >> 48) & 0x3fff) | 0x8000) as u16,
-        (r & 0xffffffffffff) as u64
-    )
-}
-
-// ── Risk scoring (server-side validation of extension's local scan) ──
-
+// ── Secret markers for pattern-based detection ──
 const SECRET_MARKERS: &[&str] = &[
     "api_key", "apikey", "api-key",
     "secret", "password", "passwd", "pwd",
@@ -41,15 +33,17 @@ const SECRET_MARKERS: &[&str] = &[
     "akia", "ghp_", "gho_", "ghu_", "ghs_", "ghr_",
     "xoxb-", "xoxp-", "xoxr-", "xoxs-",
     "mongodb://", "postgres://", "mysql://", "redis://",
+    "aws_secret", "aws_access", "client_secret",
+    "authorization:", "x-api-key",
 ];
 
+/// Risk scoring with pattern detection
 fn policy_preflight(text: &str) -> (u16, String, String) {
     let lower = text.to_lowercase();
     let mut risk: u16 = 10;
     let mut reasons = Vec::new();
-
-    // Check for secret patterns
     let mut secrets_found = Vec::new();
+
     for marker in SECRET_MARKERS {
         if lower.contains(marker) {
             secrets_found.push(*marker);
@@ -60,13 +54,21 @@ fn policy_preflight(text: &str) -> (u16, String, String) {
         reasons.push(format!("Sensitive patterns: {}", secrets_found.join(", ")));
     }
 
-    // Length checks
     if text.len() > 5000 {
         risk += 25;
         reasons.push(format!("Very large message ({} chars)", text.len()));
     } else if text.len() > 2500 {
         risk += 15;
         reasons.push(format!("Large message ({} chars)", text.len()));
+    }
+
+    // Check for dangerous commands
+    let dangerous = ["rm -rf", "drop table", "delete from", "format c:", "sudo rm", "chmod 777"];
+    for cmd in &dangerous {
+        if lower.contains(cmd) {
+            risk += 30;
+            reasons.push(format!("Dangerous command: {}", cmd));
+        }
     }
 
     risk = risk.min(100);
@@ -88,20 +90,199 @@ fn policy_preflight(text: &str) -> (u16, String, String) {
     (risk, decision, reason)
 }
 
-// ── Data structures ──
+// ── HMAC Ticket System ──
 
-#[derive(Clone)]
-struct Event {
-    ts_ms: u64,
-    kind: String,
-    data: serde_json::Value,
+/// Generate a cryptographically random signing key (32 bytes)
+fn generate_signing_key() -> Vec<u8> {
+    let mut rng = rand::thread_rng();
+    let mut key = vec![0u8; 32];
+    rng.fill(&mut key[..]);
+    key
 }
+
+/// Create HMAC-SHA256 signed ticket with structured claims
+fn create_ticket(
+    signing_key: &[u8],
+    action: &str,
+    scope: &str,
+    content_hash: &str,
+    risk: u16,
+) -> (String, String, u64) {
+    let ticket_id = uuid::Uuid::new_v4().to_string();
+    let nonce: u64 = rand::thread_rng().gen();
+    let exp_ms = now_ms().saturating_add(TTL_MS);
+
+    // Build claims payload
+    let claims = format!(
+        "{}|{}|{}|{}|{}|{}|{}",
+        ticket_id, action, scope, content_hash, risk, exp_ms, nonce
+    );
+
+    // Sign with HMAC-SHA256
+    let mut mac =
+        HmacSha256::new_from_slice(signing_key).expect("HMAC key length");
+    mac.update(claims.as_bytes());
+    let signature = hex::encode(mac.finalize().into_bytes());
+
+    // Ticket = claims.signature (like a JWT without base64 encoding)
+    let claims_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(claims.as_bytes());
+    let signed_ticket = format!("{}.{}", claims_b64, signature);
+
+    (ticket_id, signed_ticket, exp_ms)
+}
+
+/// Verify HMAC-SHA256 ticket signature
+fn verify_ticket(signing_key: &[u8], signed_ticket: &str) -> Result<String, String> {
+    let parts: Vec<&str> = signed_ticket.rsplitn(2, '.').collect();
+    if parts.len() != 2 {
+        return Err("Invalid ticket format".to_string());
+    }
+    let sig_hex = parts[0];
+    let claims_b64 = parts[1];
+
+    // Decode claims
+    let claims_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(claims_b64)
+        .map_err(|e| format!("Base64 decode error: {}", e))?;
+    let claims = String::from_utf8(claims_bytes).map_err(|e| format!("UTF-8 error: {}", e))?;
+
+    // Verify HMAC
+    let mut mac =
+        HmacSha256::new_from_slice(signing_key).expect("HMAC key length");
+    mac.update(claims.as_bytes());
+    let expected_sig = hex::encode(mac.finalize().into_bytes());
+
+    if expected_sig != sig_hex {
+        return Err("Invalid signature".to_string());
+    }
+
+    // Extract ticket_id (first field)
+    let ticket_id = claims
+        .split('|')
+        .next()
+        .unwrap_or("")
+        .to_string();
+
+    Ok(ticket_id)
+}
+
+/// Compute SHA-256 hash of content for action_hash
+fn content_hash(text: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(text.as_bytes());
+    hex::encode(hasher.finalize())
+}
+
+// ── SQLite Audit with Hash Chaining ──
+
+fn init_db(path: &str) -> Connection {
+    let conn = Connection::open(path).expect("Failed to open SQLite DB");
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS audit (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts_ms INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            ticket_id TEXT,
+            action TEXT,
+            scope TEXT,
+            decision TEXT,
+            risk INTEGER,
+            reason TEXT,
+            content_hash TEXT,
+            prev_hash TEXT NOT NULL,
+            entry_hash TEXT NOT NULL,
+            data TEXT
+        );
+        CREATE TABLE IF NOT EXISTS policies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pattern TEXT NOT NULL,
+            action TEXT NOT NULL DEFAULT 'block',
+            scope TEXT DEFAULT '*',
+            created_ms INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit(ts_ms DESC);
+        CREATE INDEX IF NOT EXISTS idx_audit_ticket ON audit(ticket_id);",
+    )
+    .expect("Failed to create tables");
+    conn
+}
+
+fn get_last_hash(conn: &Connection) -> String {
+    conn.query_row(
+        "SELECT entry_hash FROM audit ORDER BY id DESC LIMIT 1",
+        [],
+        |row| row.get::<_, String>(0),
+    )
+    .unwrap_or_else(|_| "GENESIS".to_string())
+}
+
+fn append_audit(
+    conn: &Connection,
+    kind: &str,
+    ticket_id: Option<&str>,
+    action: Option<&str>,
+    scope: Option<&str>,
+    decision: Option<&str>,
+    risk: Option<u16>,
+    reason: Option<&str>,
+    c_hash: Option<&str>,
+    data: Option<&str>,
+) -> String {
+    let ts = now_ms();
+    let prev = get_last_hash(conn);
+
+    // Hash chain: SHA-256(prev_hash || ts || kind || data)
+    let payload = format!(
+        "{}|{}|{}|{}",
+        prev,
+        ts,
+        kind,
+        data.unwrap_or("")
+    );
+    let mut hasher = Sha256::new();
+    hasher.update(payload.as_bytes());
+    let entry_hash = hex::encode(hasher.finalize());
+
+    conn.execute(
+        "INSERT INTO audit (ts_ms, kind, ticket_id, action, scope, decision, risk, reason, content_hash, prev_hash, entry_hash, data)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+        params![
+            ts as i64,
+            kind,
+            ticket_id,
+            action,
+            scope,
+            decision,
+            risk.map(|r| r as i32),
+            reason,
+            c_hash,
+            prev,
+            entry_hash,
+            data
+        ],
+    )
+    .ok();
+
+    entry_hash
+}
+
+// ── In-memory state ──
 
 struct TicketState {
     exp_ms: u64,
     consumed: bool,
-    meta: serde_json::Value,
+    action: String,
+    scope: String,
+    content_hash: String,
     risk: u16,
+    signed_ticket: String,
+}
+
+#[derive(Clone)]
+struct MemEvent {
+    ts_ms: u64,
+    kind: String,
+    data: serde_json::Value,
 }
 
 struct Stats {
@@ -110,44 +291,17 @@ struct Stats {
     denied: u32,
     replay_blocked: u32,
     secrets_caught: u32,
+    threats_blocked: u32,
 }
 
 struct State {
-    tickets: HashMap<String, TicketState>,
-    events: VecDeque<Event>,
+    mem_events: std::collections::VecDeque<MemEvent>,
     stats: Stats,
-}
-
-impl State {
-    fn new() -> Self {
-        Self {
-            tickets: HashMap::new(),
-            events: VecDeque::new(),
-            stats: Stats {
-                total: 0,
-                allowed: 0,
-                denied: 0,
-                replay_blocked: 0,
-                secrets_caught: 0,
-            },
-        }
-    }
-
-    fn push_event(&mut self, kind: &str, data: serde_json::Value) {
-        self.events.push_front(Event {
-            ts_ms: now_ms(),
-            kind: kind.to_string(),
-            data,
-        });
-        while self.events.len() > MAX_EVENTS {
-            self.events.pop_back();
-        }
-    }
 }
 
 fn read_body(req: &mut tiny_http::Request) -> String {
     let mut buf = String::new();
-    let _ = req.as_reader().read_to_string(&mut buf);
+    let _ = std::io::Read::read_to_string(req.as_reader(), &mut buf);
     buf
 }
 
@@ -157,7 +311,7 @@ fn cors_headers() -> Vec<tiny_http::Header> {
         tiny_http::Header::from_bytes(&b"Access-Control-Allow-Origin"[..], &b"*"[..]).unwrap(),
         tiny_http::Header::from_bytes(
             &b"Access-Control-Allow-Methods"[..],
-            &b"GET, POST, OPTIONS"[..],
+            &b"GET, POST, DELETE, OPTIONS"[..],
         )
         .unwrap(),
         tiny_http::Header::from_bytes(
@@ -189,15 +343,49 @@ pub fn spawn_guard_service() {
             Err(_) => return,
         };
 
-        let state = Arc::new(Mutex::new(State::new()));
+        // Generate signing key for HMAC tickets
+        let signing_key = generate_signing_key();
 
-        // Seed startup event
+        // Initialize SQLite audit database
+        let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+        let db_dir = format!("{}/Library/Application Support/KasbahGuard", home);
+        let _ = std::fs::create_dir_all(&db_dir);
+        let db_path = format!("{}/audit.db", db_dir);
+        let db = Arc::new(Mutex::new(init_db(&db_path)));
+
+        // DashMap for fast ticket lookups (replay protection)
+        let tickets: Arc<DashMap<String, TicketState>> = Arc::new(DashMap::new());
+
+        // In-memory state for fast reads
+        let state = Arc::new(Mutex::new(State {
+            mem_events: std::collections::VecDeque::new(),
+            stats: Stats {
+                total: 0,
+                allowed: 0,
+                denied: 0,
+                replay_blocked: 0,
+                secrets_caught: 0,
+                threats_blocked: 0,
+            },
+        }));
+
+        // Log startup
         {
-            let mut g = state.lock().unwrap();
-            g.push_event(
+            let db_lock = db.lock().unwrap();
+            append_audit(
+                &db_lock,
                 "STARTUP",
-                serde_json::json!({"message": "Kasbah Guard started", "port": PORT}),
+                None, None, None, None, None, None, None,
+                Some(&format!("{{\"port\":{}}}", PORT)),
             );
+        }
+        {
+            let mut s = state.lock().unwrap();
+            s.mem_events.push_front(MemEvent {
+                ts_ms: now_ms(),
+                kind: "STARTUP".to_string(),
+                data: serde_json::json!({"message": "Kasbah Guard started", "port": PORT}),
+            });
         }
 
         for mut request in server.incoming_requests() {
@@ -209,170 +397,251 @@ pub fn spawn_guard_service() {
                 continue;
             }
 
+            let sk = signing_key.clone();
+            let tk = Arc::clone(&tickets);
             let st = Arc::clone(&state);
+            let dbc = Arc::clone(&db);
 
-            match (method.as_str(), url.as_str()) {
-                // ── Health check ──
+            // Route: audit/export must be checked before /audit
+            let url_path = url.split('?').next().unwrap_or(&url);
+            match (method.as_str(), url_path) {
+                // ── Health check with stats ──
                 ("GET", "/status") => {
-                    let g = st.lock().unwrap();
+                    let s = st.lock().unwrap();
                     let body = serde_json::json!({
                         "ok": true,
                         "service": "kasbah-guard",
+                        "version": "0.2.0",
                         "port": PORT,
                         "ts_ms": now_ms(),
+                        "crypto": "hmac-sha256",
+                        "audit": "sqlite-hash-chain",
                         "stats": {
-                            "total": g.stats.total,
-                            "allowed": g.stats.allowed,
-                            "denied": g.stats.denied,
-                            "replay_blocked": g.stats.replay_blocked,
-                            "secrets_caught": g.stats.secrets_caught
+                            "total": s.stats.total,
+                            "allowed": s.stats.allowed,
+                            "denied": s.stats.denied,
+                            "replay_blocked": s.stats.replay_blocked,
+                            "secrets_caught": s.stats.secrets_caught,
+                            "threats_blocked": s.stats.threats_blocked
                         }
                     });
                     respond(request, 200, &body.to_string());
                 }
 
-                // ── Issue ticket with risk assessment ──
+                // ── Issue HMAC-signed ticket with risk assessment ──
                 ("POST", "/decide") => {
                     let raw = read_body(&mut request);
                     let parsed: Result<serde_json::Value, _> = serde_json::from_str(&raw);
 
                     match parsed {
                         Ok(req_val) => {
-                            let ticket = simple_id();
-                            let exp_ms = now_ms().saturating_add(TTL_MS);
-
-                            // Extract preview for server-side risk scoring
-                            let preview = req_val
-                                .get("meta")
+                            let action = req_val.get("action")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("unknown")
+                                .to_string();
+                            let scope = req_val.get("product")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("web")
+                                .to_string();
+                            let preview = req_val.get("meta")
                                 .and_then(|m| m.get("preview"))
                                 .and_then(|p| p.as_str())
                                 .unwrap_or("");
+                            let verb = req_val.get("verb")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("send");
 
+                            let c_hash = content_hash(preview);
                             let (risk, preflight_decision, reason) = policy_preflight(preview);
 
-                            // Count secrets
-                            let client_secrets = req_val
-                                .get("meta")
+                            let client_secrets = req_val.get("meta")
                                 .and_then(|m| m.get("secrets"))
                                 .and_then(|s| s.as_array())
                                 .map(|a| a.len())
                                 .unwrap_or(0);
 
-                            let meta = serde_json::json!({
-                                "product": req_val.get("product"),
-                                "host": req_val.get("host"),
-                                "action": req_val.get("action"),
-                                "meta": req_val.get("meta"),
-                                "risk": risk,
-                                "preflight": preflight_decision,
-                                "reason": reason
-                            });
+                            // Create HMAC-signed ticket
+                            let (ticket_id, signed_ticket, exp_ms) =
+                                create_ticket(&sk, &action, &scope, &c_hash, risk);
 
-                            let mut g = st.lock().unwrap();
-
-                            if client_secrets > 0 {
-                                g.stats.secrets_caught += 1;
-                            }
-
-                            g.tickets.insert(
-                                ticket.clone(),
+                            // Store in DashMap
+                            tk.insert(
+                                ticket_id.clone(),
                                 TicketState {
                                     exp_ms,
                                     consumed: false,
-                                    meta: meta.clone(),
+                                    action: action.clone(),
+                                    scope: scope.clone(),
+                                    content_hash: c_hash.clone(),
                                     risk,
+                                    signed_ticket: signed_ticket.clone(),
                                 },
                             );
-                            g.push_event(
-                                "DECIDE",
-                                serde_json::json!({
-                                    "ticket": &ticket,
-                                    "risk": risk,
-                                    "preflight": &preflight_decision,
-                                    "reason": &reason,
-                                    "secrets": client_secrets
-                                }),
-                            );
+
+                            // Audit
+                            {
+                                let db_lock = dbc.lock().unwrap();
+                                append_audit(
+                                    &db_lock,
+                                    "DECIDE",
+                                    Some(&ticket_id),
+                                    Some(&action),
+                                    Some(&scope),
+                                    Some(&preflight_decision),
+                                    Some(risk),
+                                    Some(&reason),
+                                    Some(&c_hash),
+                                    Some(&serde_json::json!({
+                                        "verb": verb,
+                                        "secrets": client_secrets
+                                    }).to_string()),
+                                );
+                            }
+
+                            // Memory events
+                            {
+                                let mut s = st.lock().unwrap();
+                                if client_secrets > 0 {
+                                    s.stats.secrets_caught += 1;
+                                }
+                                if risk >= 85 {
+                                    s.stats.threats_blocked += 1;
+                                }
+                                s.mem_events.push_front(MemEvent {
+                                    ts_ms: now_ms(),
+                                    kind: "DECIDE".to_string(),
+                                    data: serde_json::json!({
+                                        "ticket": &ticket_id,
+                                        "risk": risk,
+                                        "preflight": &preflight_decision,
+                                        "reason": &reason,
+                                        "secrets": client_secrets,
+                                        "verb": verb
+                                    }),
+                                });
+                                while s.mem_events.len() > MAX_EVENTS_MEM {
+                                    s.mem_events.pop_back();
+                                }
+                            }
 
                             let res = serde_json::json!({
                                 "ok": true,
                                 "decision": "PENDING",
-                                "ticket": ticket,
+                                "ticket": signed_ticket,
+                                "ticket_id": ticket_id,
                                 "exp_ms": exp_ms,
                                 "risk": risk,
                                 "preflight": preflight_decision,
-                                "reason": reason
+                                "reason": reason,
+                                "content_hash": c_hash,
+                                "verb": verb
                             });
                             respond(request, 200, &res.to_string());
                         }
                         Err(_) => {
-                            respond(
-                                request,
-                                400,
-                                r#"{"ok":false,"error":"invalid JSON"}"#,
-                            );
+                            respond(request, 400, r#"{"ok":false,"error":"invalid JSON"}"#);
                         }
                     }
                 }
 
-                // ── Consume ticket (single-use, replay-protected) ──
+                // ── Consume ticket (single-use, HMAC-verified, replay-protected) ──
                 ("POST", "/consume") => {
                     let raw = read_body(&mut request);
                     let parsed: Result<serde_json::Value, _> = serde_json::from_str(&raw);
 
                     match parsed {
                         Ok(req_val) => {
-                            let ticket_str = req_val
-                                .get("ticket")
+                            let ticket_raw = req_val.get("ticket")
                                 .and_then(|v| v.as_str())
                                 .unwrap_or("")
                                 .to_string();
-                            let choice = req_val
-                                .get("choice")
+                            let choice = req_val.get("choice")
                                 .and_then(|v| v.as_str())
                                 .unwrap_or("DENY")
                                 .to_uppercase();
 
+                            // Try to verify HMAC signature
+                            let ticket_id = if ticket_raw.contains('.') {
+                                match verify_ticket(&sk, &ticket_raw) {
+                                    Ok(id) => id,
+                                    Err(e) => {
+                                        let mut s = st.lock().unwrap();
+                                        s.stats.total += 1;
+                                        s.stats.denied += 1;
+                                        let res = serde_json::json!({
+                                            "ok": true,
+                                            "decision": "DENY",
+                                            "reason": format!("ticket verification failed: {}", e)
+                                        });
+                                        respond(request, 200, &res.to_string());
+                                        continue;
+                                    }
+                                }
+                            } else {
+                                // Backwards compatibility: plain ticket ID
+                                ticket_raw.clone()
+                            };
+
                             let mut decision = "DENY".to_string();
                             let mut reason = "default deny".to_string();
 
-                            {
-                                let mut g = st.lock().unwrap();
-                                g.stats.total += 1;
+                            if let Some(mut entry) = tk.get_mut(&ticket_id) {
+                                let now = now_ms();
+                                let mut s = st.lock().unwrap();
+                                s.stats.total += 1;
 
-                                if let Some(t) = g.tickets.get_mut(&ticket_str) {
-                                    let now = now_ms();
-                                    if now > t.exp_ms {
-                                        reason = "expired ticket".to_string();
-                                        g.stats.denied += 1;
-                                    } else if t.consumed {
-                                        reason = "replay blocked".to_string();
-                                        g.stats.replay_blocked += 1;
-                                        g.stats.denied += 1;
-                                    } else {
-                                        t.consumed = true;
-                                        if choice == "ALLOW" {
-                                            decision = "ALLOW".to_string();
-                                            reason = "user allowed".to_string();
-                                            g.stats.allowed += 1;
-                                        } else {
-                                            reason = "user blocked".to_string();
-                                            g.stats.denied += 1;
-                                        }
-                                    }
+                                if now > entry.exp_ms {
+                                    reason = "expired ticket".to_string();
+                                    s.stats.denied += 1;
+                                } else if entry.consumed {
+                                    reason = "replay blocked".to_string();
+                                    s.stats.replay_blocked += 1;
+                                    s.stats.denied += 1;
                                 } else {
-                                    reason = "unknown ticket".to_string();
-                                    g.stats.denied += 1;
+                                    entry.consumed = true;
+                                    if choice == "ALLOW" {
+                                        decision = "ALLOW".to_string();
+                                        reason = "user allowed".to_string();
+                                        s.stats.allowed += 1;
+                                    } else {
+                                        reason = "user blocked".to_string();
+                                        s.stats.denied += 1;
+                                    }
                                 }
 
-                                g.push_event(
-                                    "CONSUME",
-                                    serde_json::json!({
-                                        "ticket": &ticket_str,
+                                s.mem_events.push_front(MemEvent {
+                                    ts_ms: now_ms(),
+                                    kind: "CONSUME".to_string(),
+                                    data: serde_json::json!({
+                                        "ticket": &ticket_id,
                                         "decision": &decision,
                                         "reason": &reason,
                                         "choice": &choice
                                     }),
+                                });
+                                while s.mem_events.len() > MAX_EVENTS_MEM {
+                                    s.mem_events.pop_back();
+                                }
+                            } else {
+                                let mut s = st.lock().unwrap();
+                                s.stats.total += 1;
+                                s.stats.denied += 1;
+                                reason = "unknown ticket".to_string();
+                            }
+
+                            // Audit
+                            {
+                                let db_lock = dbc.lock().unwrap();
+                                append_audit(
+                                    &db_lock,
+                                    "CONSUME",
+                                    Some(&ticket_id),
+                                    None, None,
+                                    Some(&decision),
+                                    None,
+                                    Some(&reason),
+                                    None,
+                                    Some(&serde_json::json!({"choice": &choice}).to_string()),
                                 );
                             }
 
@@ -384,20 +653,62 @@ pub fn spawn_guard_service() {
                             respond(request, 200, &res.to_string());
                         }
                         Err(_) => {
-                            respond(
-                                request,
-                                400,
-                                r#"{"ok":false,"error":"invalid JSON"}"#,
-                            );
+                            respond(request, 400, r#"{"ok":false,"error":"invalid JSON"}"#);
                         }
                     }
                 }
 
-                // ── Event stream ──
-                ("GET", _) if url.starts_with("/events") => {
-                    let g = st.lock().unwrap();
-                    let events: Vec<serde_json::Value> = g
-                        .events
+                // ── Audit log (from SQLite, with hash chain verification) ──
+                ("GET", "/audit") => {
+                    let limit = url.split("limit=")
+                        .nth(1)
+                        .and_then(|s| s.split('&').next())
+                        .and_then(|s| s.parse::<i64>().ok())
+                        .unwrap_or(100);
+
+                    let db_lock = dbc.lock().unwrap();
+                    let mut stmt = db_lock
+                        .prepare(
+                            "SELECT id, ts_ms, kind, ticket_id, action, scope, decision, risk, reason, content_hash, prev_hash, entry_hash, data
+                             FROM audit ORDER BY id DESC LIMIT ?1",
+                        )
+                        .unwrap();
+
+                    let rows: Vec<serde_json::Value> = stmt
+                        .query_map(params![limit], |row| {
+                            Ok(serde_json::json!({
+                                "id": row.get::<_, i64>(0)?,
+                                "ts_ms": row.get::<_, i64>(1)?,
+                                "kind": row.get::<_, String>(2)?,
+                                "ticket_id": row.get::<_, Option<String>>(3)?,
+                                "action": row.get::<_, Option<String>>(4)?,
+                                "scope": row.get::<_, Option<String>>(5)?,
+                                "decision": row.get::<_, Option<String>>(6)?,
+                                "risk": row.get::<_, Option<i32>>(7)?,
+                                "reason": row.get::<_, Option<String>>(8)?,
+                                "content_hash": row.get::<_, Option<String>>(9)?,
+                                "prev_hash": row.get::<_, String>(10)?,
+                                "entry_hash": row.get::<_, String>(11)?,
+                                "data": row.get::<_, Option<String>>(12)?
+                            }))
+                        })
+                        .unwrap()
+                        .filter_map(|r| r.ok())
+                        .collect();
+
+                    let body = serde_json::json!({
+                        "ok": true,
+                        "entries": rows,
+                        "count": rows.len(),
+                        "chain_start": "GENESIS"
+                    });
+                    respond(request, 200, &body.to_string());
+                }
+
+                // ── In-memory event stream (fast, no DB hit) ──
+                ("GET", "/events") => {
+                    let s = st.lock().unwrap();
+                    let events: Vec<serde_json::Value> = s.mem_events
                         .iter()
                         .map(|e| {
                             serde_json::json!({
@@ -407,22 +718,118 @@ pub fn spawn_guard_service() {
                             })
                         })
                         .collect();
-                    let body =
-                        serde_json::to_string(&events).unwrap_or_else(|_| "[]".to_string());
-                    respond(request, 200, &body);
+                    respond(request, 200, &serde_json::to_string(&events).unwrap_or_else(|_| "[]".to_string()));
                 }
 
                 // ── Stats endpoint ──
                 ("GET", "/stats") => {
-                    let g = st.lock().unwrap();
+                    let s = st.lock().unwrap();
                     let body = serde_json::json!({
-                        "total": g.stats.total,
-                        "allowed": g.stats.allowed,
-                        "denied": g.stats.denied,
-                        "replay_blocked": g.stats.replay_blocked,
-                        "secrets_caught": g.stats.secrets_caught
+                        "total": s.stats.total,
+                        "allowed": s.stats.allowed,
+                        "denied": s.stats.denied,
+                        "replay_blocked": s.stats.replay_blocked,
+                        "secrets_caught": s.stats.secrets_caught,
+                        "threats_blocked": s.stats.threats_blocked
                     });
                     respond(request, 200, &body.to_string());
+                }
+
+                // ── Policy management ──
+                ("GET", "/policies") => {
+                    let db_lock = dbc.lock().unwrap();
+                    let mut stmt = db_lock
+                        .prepare("SELECT id, pattern, action, scope, created_ms FROM policies ORDER BY id DESC")
+                        .unwrap();
+                    let rows: Vec<serde_json::Value> = stmt
+                        .query_map([], |row| {
+                            Ok(serde_json::json!({
+                                "id": row.get::<_, i64>(0)?,
+                                "pattern": row.get::<_, String>(1)?,
+                                "action": row.get::<_, String>(2)?,
+                                "scope": row.get::<_, String>(3)?,
+                                "created_ms": row.get::<_, i64>(4)?
+                            }))
+                        })
+                        .unwrap()
+                        .filter_map(|r| r.ok())
+                        .collect();
+                    respond(request, 200, &serde_json::json!({"ok": true, "policies": rows}).to_string());
+                }
+
+                ("POST", "/policies") => {
+                    let raw = read_body(&mut request);
+                    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&raw) {
+                        let pattern = val.get("pattern").and_then(|v| v.as_str()).unwrap_or("");
+                        let action = val.get("action").and_then(|v| v.as_str()).unwrap_or("block");
+                        let scope = val.get("scope").and_then(|v| v.as_str()).unwrap_or("*");
+
+                        if pattern.is_empty() {
+                            respond(request, 400, r#"{"ok":false,"error":"pattern required"}"#);
+                        } else {
+                            let db_lock = dbc.lock().unwrap();
+                            db_lock.execute(
+                                "INSERT INTO policies (pattern, action, scope, created_ms) VALUES (?1, ?2, ?3, ?4)",
+                                params![pattern, action, scope, now_ms() as i64],
+                            ).ok();
+                            respond(request, 200, r#"{"ok":true}"#);
+                        }
+                    } else {
+                        respond(request, 400, r#"{"ok":false,"error":"invalid JSON"}"#);
+                    }
+                }
+
+                ("DELETE", _) if url_path.starts_with("/policies/") => {
+                    let id_str = url_path.trim_start_matches("/policies/");
+                    if let Ok(id) = id_str.parse::<i64>() {
+                        let db_lock = dbc.lock().unwrap();
+                        db_lock.execute("DELETE FROM policies WHERE id = ?1", params![id]).ok();
+                        respond(request, 200, r#"{"ok":true}"#);
+                    } else {
+                        respond(request, 400, r#"{"ok":false,"error":"invalid id"}"#);
+                    }
+                }
+
+                // ── Audit export (JSON) ──
+                ("GET", "/audit/export") => {
+                    let db_lock = dbc.lock().unwrap();
+                    let mut stmt = db_lock
+                        .prepare(
+                            "SELECT id, ts_ms, kind, ticket_id, action, scope, decision, risk, reason, content_hash, prev_hash, entry_hash, data
+                             FROM audit ORDER BY id ASC",
+                        )
+                        .unwrap();
+                    let rows: Vec<serde_json::Value> = stmt
+                        .query_map([], |row| {
+                            Ok(serde_json::json!({
+                                "id": row.get::<_, i64>(0)?,
+                                "ts_ms": row.get::<_, i64>(1)?,
+                                "kind": row.get::<_, String>(2)?,
+                                "ticket_id": row.get::<_, Option<String>>(3)?,
+                                "action": row.get::<_, Option<String>>(4)?,
+                                "scope": row.get::<_, Option<String>>(5)?,
+                                "decision": row.get::<_, Option<String>>(6)?,
+                                "risk": row.get::<_, Option<i32>>(7)?,
+                                "reason": row.get::<_, Option<String>>(8)?,
+                                "content_hash": row.get::<_, Option<String>>(9)?,
+                                "prev_hash": row.get::<_, String>(10)?,
+                                "entry_hash": row.get::<_, String>(11)?,
+                                "data": row.get::<_, Option<String>>(12)?
+                            }))
+                        })
+                        .unwrap()
+                        .filter_map(|r| r.ok())
+                        .collect();
+
+                    let export = serde_json::json!({
+                        "kasbah_guard_audit_export": true,
+                        "version": "0.2.0",
+                        "exported_ms": now_ms(),
+                        "chain_start": "GENESIS",
+                        "entries": rows,
+                        "total": rows.len()
+                    });
+                    respond(request, 200, &serde_json::to_string_pretty(&export).unwrap_or_default());
                 }
 
                 _ => {

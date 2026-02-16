@@ -17,10 +17,13 @@
     .dot{width:10px;height:10px;border-radius:50%;background:#dc2626}
     .dot.on{background:#059669}
     .status-text{font-size:13px;font-weight:600}
-    .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 16px}
+    .crypto-tag{font-size:9px;color:#6b625a;background:#fcf9f6;padding:2px 6px;border-radius:4px;border:1px solid #e7ded6}
+    .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 12px}
     .stat{background:#fcf9f6;border:1px solid #e7ded6;border-radius:12px;padding:10px;text-align:center}
     .stat-val{font-size:18px;font-weight:800}
     .stat-lbl{font-size:10px;color:#6b625a;margin-top:2px}
+    .verbs{padding:0 16px 12px;display:flex;gap:4px;flex-wrap:wrap}
+    .verb-tag{font-size:9px;font-weight:700;padding:3px 8px;border-radius:999px;background:#ecfdf5;color:#1f7a4a;border:1px solid #bbf7d0}
     .actions{padding:0 16px 16px}
     .btn{display:block;width:100%;padding:11px;border-radius:999px;border:none;font-weight:700;font-size:13px;cursor:pointer;text-align:center;text-decoration:none;margin-top:8px;transition:all .15s}
     .btn-primary{background:#1e1e1e;color:#fffcf8}
@@ -38,7 +41,7 @@
     </div>
     <div class="brand">
       <div class="brand-name">Kasbah Guard</div>
-      <div class="brand-tag">Permission before AI actions</div>
+      <div class="brand-tag">Sovereign intent layer</div>
     </div>
   </div>
   <div class="status">
@@ -47,19 +50,32 @@
         <div class="dot" id="dot"></div>
         <span class="status-text" id="txt">Checking...</span>
       </div>
+      <span class="crypto-tag" id="cryptoTag">—</span>
     </div>
+  </div>
+  <div class="verbs">
+    <span class="verb-tag">send</span>
+    <span class="verb-tag">paste</span>
+    <span class="verb-tag">upload</span>
+    <span class="verb-tag">browse</span>
+    <span class="verb-tag">download</span>
   </div>
   <div class="stats">
     <div class="stat"><div class="stat-val" id="sTotal">0</div><div class="stat-lbl">Total</div></div>
     <div class="stat"><div class="stat-val" id="sAllow" style="color:#059669">0</div><div class="stat-lbl">Allowed</div></div>
     <div class="stat"><div class="stat-val" id="sDeny" style="color:#dc2626">0</div><div class="stat-lbl">Blocked</div></div>
   </div>
+  <div class="stats" style="padding-top:0">
+    <div class="stat"><div class="stat-val" id="sReplay" style="color:#b45309">0</div><div class="stat-lbl">Replay</div></div>
+    <div class="stat"><div class="stat-val" id="sSecrets" style="color:#dc2626">0</div><div class="stat-lbl">Secrets</div></div>
+    <div class="stat"><div class="stat-val" id="sThreats" style="color:#dc2626">0</div><div class="stat-lbl">Threats</div></div>
+  </div>
   <div class="actions">
     <a href="http://127.0.0.1:8788/status" target="_blank" class="btn btn-primary">Open Dashboard</a>
     <a href="https://kasbah-site.pages.dev" target="_blank" class="btn btn-outline">Help &amp; Setup</a>
   </div>
   <div class="footer">
-    <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">GitHub</a> · v0.1.0
+    <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">GitHub</a> · v0.2.0
   </div>
   <script>
     var GUARD='http://127.0.0.1:8788';
@@ -68,10 +84,14 @@
         var ok=d.ok===true;
         document.getElementById('dot').className='dot'+(ok?' on':'');
         document.getElementById('txt').textContent=ok?'Guard Active':'Guard Offline';
+        if(d.crypto) document.getElementById('cryptoTag').textContent=d.crypto.toUpperCase();
         if(d.stats){
           document.getElementById('sTotal').textContent=d.stats.total||0;
           document.getElementById('sAllow').textContent=d.stats.allowed||0;
           document.getElementById('sDeny').textContent=d.stats.denied||0;
+          document.getElementById('sReplay').textContent=d.stats.replay_blocked||0;
+          document.getElementById('sSecrets').textContent=d.stats.secrets_caught||0;
+          document.getElementById('sThreats').textContent=d.stats.threats_blocked||0;
         }
       }).catch(function(){
         document.getElementById('dot').className='dot';
