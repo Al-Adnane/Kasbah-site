@@ -92,11 +92,38 @@ fn policy_preflight(text: &str) -> (u16, String, String) {
 
 // ── HMAC Ticket System ──
 
-/// Generate a cryptographically random signing key (32 bytes)
-fn generate_signing_key() -> Vec<u8> {
+/// Load or generate a persistent signing key (32 bytes)
+/// Key is stored at ~/Library/Application Support/KasbahGuard/signing.key
+/// This ensures tickets survive app restarts.
+fn load_or_create_signing_key(dir: &str) -> Vec<u8> {
+    let key_path = format!("{}/signing.key", dir);
+
+    // Try to load existing key
+    if let Ok(existing) = std::fs::read(&key_path) {
+        if existing.len() == 32 {
+            eprintln!("[Kasbah Guard] Loaded existing signing key");
+            return existing;
+        }
+    }
+
+    // Generate new key
     let mut rng = rand::thread_rng();
     let mut key = vec![0u8; 32];
     rng.fill(&mut key[..]);
+
+    // Persist to disk
+    if let Err(e) = std::fs::write(&key_path, &key) {
+        eprintln!("[Kasbah Guard] Warning: could not persist signing key: {}", e);
+    } else {
+        // Set restrictive permissions (owner read/write only)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(&key_path, std::fs::Permissions::from_mode(0o600));
+        }
+        eprintln!("[Kasbah Guard] Generated and persisted new signing key");
+    }
+
     key
 }
 
@@ -408,13 +435,15 @@ pub fn spawn_guard_service() {
             Err(_) => return,
         };
 
-        // Generate signing key for HMAC tickets
-        let signing_key = generate_signing_key();
-
-        // Initialize SQLite audit database
+        // Initialize data directory
         let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
         let db_dir = format!("{}/Library/Application Support/KasbahGuard", home);
         let _ = std::fs::create_dir_all(&db_dir);
+
+        // Load or generate persistent signing key (survives restarts)
+        let signing_key = load_or_create_signing_key(&db_dir);
+
+        // Initialize SQLite audit database
         let db_path = format!("{}/audit.db", db_dir);
         let db = Arc::new(Mutex::new(init_db(&db_path)));
 
@@ -476,9 +505,39 @@ pub fn spawn_guard_service() {
             });
         }
 
+        let mut request_count: u64 = 0;
+
         for mut request in server.incoming_requests() {
             let url = request.url().to_string();
             let method = request.method().as_str().to_uppercase();
+
+            // Periodic DashMap cleanup: prune expired tickets every 100 requests
+            request_count += 1;
+            if request_count % 100 == 0 {
+                let now = now_ms();
+                let expired_keys: Vec<String> = tickets
+                    .iter()
+                    .filter(|entry| {
+                        let v = entry.value();
+                        let expired = v.exp_ms > 0 && now > v.exp_ms + TTL_MS;
+                        // Remove consumed+expired AND unconsumed+expired tickets
+                        expired
+                    })
+                    .map(|entry| entry.key().clone())
+                    .collect();
+                for key in &expired_keys {
+                    tickets.remove(key);
+                }
+                if !expired_keys.is_empty() {
+                    eprintln!("[Kasbah Guard] Pruned {} expired tickets from memory", expired_keys.len());
+                }
+
+                // Also prune SQLite consumed_tickets periodically
+                if request_count % 500 == 0 {
+                    let db_lock = db.lock().unwrap();
+                    prune_consumed_tickets(&db_lock);
+                }
+            }
 
             if method == "OPTIONS" {
                 respond(request, 200, "{}");
@@ -617,10 +676,11 @@ pub fn spawn_guard_service() {
                                 );
                             }
 
-                            // Memory events
+                            // Memory events — use SERVER-detected markers for stats (not client-supplied)
+                            let server_secrets_found = !policy_preflight(preview).2.contains("No issues");
                             {
                                 let mut s = st.lock().unwrap();
-                                if client_secrets > 0 {
+                                if server_secrets_found && reason.to_lowercase().contains("sensitive") {
                                     s.stats.secrets_caught += 1;
                                 }
                                 if risk >= 85 {
@@ -679,26 +739,21 @@ pub fn spawn_guard_service() {
                                 .unwrap_or("DENY")
                                 .to_uppercase();
 
-                            // Try to verify HMAC signature
-                            let ticket_id = if ticket_raw.contains('.') {
-                                match verify_ticket(&sk, &ticket_raw) {
-                                    Ok(id) => id,
-                                    Err(e) => {
-                                        let mut s = st.lock().unwrap();
-                                        s.stats.total += 1;
-                                        s.stats.denied += 1;
-                                        let res = serde_json::json!({
-                                            "ok": true,
-                                            "decision": "DENY",
-                                            "reason": format!("ticket verification failed: {}", e)
-                                        });
-                                        respond(request, 200, &res.to_string());
-                                        continue;
-                                    }
+                            // Verify HMAC signature — ALL tickets must be signed
+                            let ticket_id = match verify_ticket(&sk, &ticket_raw) {
+                                Ok(id) => id,
+                                Err(e) => {
+                                    let mut s = st.lock().unwrap();
+                                    s.stats.total += 1;
+                                    s.stats.denied += 1;
+                                    let res = serde_json::json!({
+                                        "ok": true,
+                                        "decision": "DENY",
+                                        "reason": format!("ticket verification failed: {}", e)
+                                    });
+                                    respond(request, 200, &res.to_string());
+                                    continue;
                                 }
-                            } else {
-                                // Backwards compatibility: plain ticket ID
-                                ticket_raw.clone()
                             };
 
                             let mut decision = "DENY".to_string();
@@ -829,6 +884,26 @@ pub fn spawn_guard_service() {
                         "chain_start": "GENESIS"
                     });
                     respond(request, 200, &body.to_string());
+                }
+
+                // ── POST /events — log extension events ──
+                ("POST", "/events") => {
+                    let raw = read_body(&mut request);
+                    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&raw) {
+                        let kind = val.get("kind")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("EXT_EVENT");
+                        let mut s = st.lock().unwrap();
+                        s.mem_events.push_front(MemEvent {
+                            ts_ms: now_ms(),
+                            kind: kind.to_string(),
+                            data: val.clone(),
+                        });
+                        while s.mem_events.len() > MAX_EVENTS_MEM {
+                            s.mem_events.pop_back();
+                        }
+                    }
+                    respond(request, 200, r#"{"ok":true}"#);
                 }
 
                 // ── In-memory event stream (fast, no DB hit) ──
@@ -1026,22 +1101,108 @@ pub fn spawn_guard_service() {
                                 }
                             }
 
-                            // PII detection patterns
-                            let pii_patterns = [
-                                ("email", r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
-                                ("phone", r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"),
-                                ("ssn", r"\b\d{3}-\d{2}-\d{4}\b"),
-                                ("credit_card", r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b"),
-                                ("ip_address", r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b"),
-                            ];
+                            // PII detection — character-level scanning (no regex crate needed)
                             let mut pii_found = Vec::new();
-                            for (label, _pattern_str) in &pii_patterns {
-                                // Simple substring checks for common patterns
-                                let lower = text.to_lowercase();
-                                match *label {
-                                    "email" => { if lower.contains('@') && lower.contains('.') { pii_found.push(*label); } }
-                                    "ssn" => { if text.chars().filter(|c| c.is_ascii_digit() || *c == '-').count() > 8 && text.contains('-') { /* basic check */ } }
-                                    _ => {}
+                            let chars: Vec<char> = text.chars().collect();
+                            let tlen = chars.len();
+
+                            // Email: look for pattern like word@word.word
+                            if text.contains('@') {
+                                let at_pos = text.find('@').unwrap();
+                                let before = &text[..at_pos];
+                                let after = &text[at_pos + 1..];
+                                if before.len() >= 2
+                                    && before.chars().last().map(|c| c.is_alphanumeric() || c == '.' || c == '_' || c == '-').unwrap_or(false)
+                                    && after.contains('.')
+                                    && after.len() >= 4
+                                {
+                                    pii_found.push("email");
+                                }
+                            }
+
+                            // Phone: 10+ consecutive digits (with optional separators)
+                            {
+                                let digits_and_seps: String = text.chars()
+                                    .filter(|c| c.is_ascii_digit() || *c == '-' || *c == '.' || *c == ' ' || *c == '(' || *c == ')')
+                                    .collect();
+                                let digit_count = digits_and_seps.chars().filter(|c| c.is_ascii_digit()).count();
+                                if digit_count >= 10 && digit_count <= 15 && (text.contains('-') || text.contains('(') || text.contains(' ')) {
+                                    pii_found.push("phone");
+                                }
+                            }
+
+                            // SSN: pattern NNN-NN-NNNN
+                            {
+                                let mut i = 0;
+                                while i + 10 < tlen {
+                                    if chars[i].is_ascii_digit() && chars[i + 1].is_ascii_digit() && chars[i + 2].is_ascii_digit()
+                                        && chars[i + 3] == '-'
+                                        && chars[i + 4].is_ascii_digit() && chars[i + 5].is_ascii_digit()
+                                        && chars[i + 6] == '-'
+                                        && chars[i + 7].is_ascii_digit() && chars[i + 8].is_ascii_digit()
+                                        && chars[i + 9].is_ascii_digit() && chars[i + 10].is_ascii_digit()
+                                    {
+                                        pii_found.push("ssn");
+                                        break;
+                                    }
+                                    i += 1;
+                                }
+                            }
+
+                            // Credit card: 4 groups of 4 digits separated by spaces or dashes
+                            {
+                                let mut i = 0;
+                                while i + 18 < tlen {
+                                    let is_cc =
+                                        (0..4).all(|j| chars[i + j].is_ascii_digit())
+                                        && (chars[i + 4] == ' ' || chars[i + 4] == '-')
+                                        && (0..4).all(|j| chars[i + 5 + j].is_ascii_digit())
+                                        && (chars[i + 9] == ' ' || chars[i + 9] == '-')
+                                        && (0..4).all(|j| chars[i + 10 + j].is_ascii_digit())
+                                        && (chars[i + 14] == ' ' || chars[i + 14] == '-')
+                                        && (0..4).all(|j| chars[i + 15 + j].is_ascii_digit());
+                                    if is_cc {
+                                        pii_found.push("credit_card");
+                                        break;
+                                    }
+                                    i += 1;
+                                }
+                                // Also check 16 consecutive digits
+                                if !pii_found.contains(&"credit_card") {
+                                    let just_digits: String = text.chars().filter(|c| c.is_ascii_digit()).collect();
+                                    if just_digits.len() >= 16 {
+                                        // Check if there's a run of 16 digits
+                                        let mut run = 0;
+                                        for c in text.chars() {
+                                            if c.is_ascii_digit() {
+                                                run += 1;
+                                                if run >= 16 { pii_found.push("credit_card"); break; }
+                                            } else {
+                                                run = 0;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // IP address: N.N.N.N where each N is 1-3 digits
+                            {
+                                let parts: Vec<&str> = text.split(|c: char| !c.is_ascii_digit() && c != '.').collect();
+                                for part in parts {
+                                    let octets: Vec<&str> = part.split('.').collect();
+                                    if octets.len() == 4 {
+                                        let valid = octets.iter().all(|o| {
+                                            o.len() >= 1 && o.len() <= 3 && o.parse::<u16>().map(|n| n <= 255).unwrap_or(false)
+                                        });
+                                        if valid {
+                                            // Exclude common non-IP patterns like version numbers
+                                            let first: u16 = octets[0].parse().unwrap_or(0);
+                                            if first > 0 && first != 127 || octets.iter().any(|o| o.parse::<u16>().unwrap_or(0) > 0) {
+                                                pii_found.push("ip_address");
+                                                break;
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
@@ -1117,7 +1278,7 @@ pub fn spawn_guard_service() {
 
                     let export = serde_json::json!({
                         "kasbah_guard_audit_export": true,
-                        "version": "0.2.0",
+                        "version": "0.3.0",
                         "exported_ms": now_ms(),
                         "chain_start": "GENESIS",
                         "entries": rows,

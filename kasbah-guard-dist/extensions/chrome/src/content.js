@@ -1,5 +1,5 @@
 /**
- * Kasbah Guard — Sovereign Intent Layer (Extension v0.2.0)
+ * Kasbah Guard — Sovereign Intent Layer (Extension v0.3.0)
  * Intercepts 5 irreversible verbs before AI sees them:
  *   1. SEND — Send button click interception
  *   2. PASTE — Clipboard paste interception
@@ -60,6 +60,16 @@
   var URL_RX = /https?:\/\/[^\s<>"')\]}{]{8,}/gi;
   function extractUrls(text) {
     return (text.match(URL_RX) || []);
+  }
+
+  // ── Toast notification helper ──
+  function showToast(message, isError) {
+    var toast = document.createElement("div");
+    toast.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:2147483646;padding:12px 18px;border-radius:12px;font:13px/1.4 system-ui;box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:360px;" +
+      (isError ? "background:#dc2626;color:#fff" : "background:#18181b;color:#fff");
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(function () { if (toast.parentNode) toast.remove(); }, 4000);
   }
 
   // ── Helpers ──
@@ -288,9 +298,18 @@
         if (risk === "low" && secrets.length === 0 && verb !== "send" && verb !== "upload") {
           postJson(GUARD + "/consume", { ticket: ticket, choice: "ALLOW" })
             .then(function (cr) {
-              if (cr && cr.decision === "ALLOW" && onAllowCb) onAllowCb();
+              if (cr && cr.decision === "ALLOW") {
+                if (onAllowCb) onAllowCb();
+              } else {
+                // Consume returned DENY (replay/expired) — notify user
+                showToast("Action blocked: " + (cr && cr.reason ? cr.reason : "denied by guard"), true);
+                if (onBlockCb) onBlockCb();
+              }
             })
-            .catch(function () {});
+            .catch(function () {
+              // Guard unreachable during consume — deny by default
+              if (onBlockCb) onBlockCb();
+            });
           return;
         }
 
@@ -319,10 +338,14 @@
         createModal({
           risk: "high",
           secrets: ["Guard offline"],
-          preview: "Kasbah Guard is not running. Default: DENY.\n\nOpen the Kasbah Guard app to start protection.",
+          preview: "Kasbah Guard is not running. Default: DENY.\n\nStart the Kasbah Guard app to enable this action.",
           verb: verb,
-          onAllow: function () {},
-          onBlock: function () {},
+          onAllow: function () {
+            showToast("Cannot proceed: Kasbah Guard is offline. Start the app first.", true);
+          },
+          onBlock: function () {
+            showToast("Action blocked (guard offline)", false);
+          },
         });
       });
   }
@@ -385,13 +408,18 @@
                   if (cr && cr.decision === "ALLOW") {
                     btn[FLAG_KEY] = true;
                     btn.click();
+                  } else {
+                    showToast("Send blocked: " + (cr && cr.reason ? cr.reason : "denied by guard"), true);
                   }
                 })
-                .catch(function () {});
+                .catch(function () {
+                  showToast("Send failed: guard unreachable during consume", true);
+                });
             },
             onBlock: function () {
               if (!ticket) return;
               postJson(GUARD + "/consume", { ticket: ticket, choice: "DENY" }).catch(function () {});
+              showToast("Message blocked by your choice", false);
             },
           });
         })
@@ -399,10 +427,14 @@
           createModal({
             risk: "high",
             secrets: ["Guard offline"],
-            preview: "Kasbah Guard is not running. Default: DENY.\n\nOpen the Kasbah Guard app to start protection.",
+            preview: "Kasbah Guard is not running. Default: DENY.\n\nStart the Kasbah Guard app to enable sending.",
             verb: "send",
-            onAllow: function () {},
-            onBlock: function () {},
+            onAllow: function () {
+              showToast("Cannot send: Kasbah Guard is offline. Start the app first.", true);
+            },
+            onBlock: function () {
+              showToast("Message blocked (guard offline)", false);
+            },
           });
         });
     },
@@ -514,13 +546,20 @@
   );
 
   // Drag-and-drop file upload
+  // Grace window: after user approves a drop, allow the next drop within 10 seconds
+  var dropApprovedUntil = 0;
+
   document.addEventListener(
     "drop",
     function (ev) {
-      if (ev.__kasbah_allowed) return;
-
       var dt = ev.dataTransfer;
       if (!dt || !dt.files || dt.files.length === 0) return;
+
+      // If within grace window from a previous approval, allow through
+      if (Date.now() < dropApprovedUntil) {
+        dropApprovedUntil = 0; // Single use
+        return; // Let the drop proceed naturally
+      }
 
       var files = dt.files;
       var fileList = [];
@@ -539,13 +578,13 @@
       var previewText = "Dropped files: " + fileList.join(", ");
       guardFlow("upload", previewText, { file_count: files.length, total_size: totalSize, file_names: fileList, source: "drop" },
         function () {
-          // Allow: cannot re-dispatch drop events with files due to browser security
-          // Show a helper message
+          // Allow: set grace window so next drop goes through without re-prompting
+          dropApprovedUntil = Date.now() + 10000; // 10 second window
           var note = document.createElement("div");
           note.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:2147483646;background:#18181b;color:#fff;padding:12px 18px;border-radius:12px;font:13px/1.4 system-ui;box-shadow:0 4px 12px rgba(0,0,0,.2)";
-          note.textContent = "Approved. Please drop the file again.";
+          note.textContent = "\u2705 Approved — drop the file again now (10s window)";
           document.body.appendChild(note);
-          setTimeout(function () { note.remove(); }, 3000);
+          setTimeout(function () { note.remove(); }, 5000);
         },
         function () { /* Block: drop prevented */ }
       );
@@ -614,5 +653,5 @@
   );
 
   // ── Startup notification ──
-  console.log("[Kasbah Guard] Extension v0.2.0 loaded — intercepting: send, paste, upload, browse, download");
+  console.log("[Kasbah Guard] Extension v0.3.0 loaded — intercepting: send, paste, upload, browse, download");
 })();
