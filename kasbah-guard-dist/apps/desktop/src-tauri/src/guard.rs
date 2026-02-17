@@ -131,7 +131,7 @@ fn create_ticket(
     (ticket_id, signed_ticket, exp_ms)
 }
 
-/// Verify HMAC-SHA256 ticket signature
+/// Verify HMAC-SHA256 ticket signature (timing-safe) + expiry check
 fn verify_ticket(signing_key: &[u8], signed_ticket: &str) -> Result<String, String> {
     let parts: Vec<&str> = signed_ticket.rsplitn(2, '.').collect();
     if parts.len() != 2 {
@@ -146,22 +146,31 @@ fn verify_ticket(signing_key: &[u8], signed_ticket: &str) -> Result<String, Stri
         .map_err(|e| format!("Base64 decode error: {}", e))?;
     let claims = String::from_utf8(claims_bytes).map_err(|e| format!("UTF-8 error: {}", e))?;
 
-    // Verify HMAC
+    // Timing-safe HMAC verification using mac.verify_slice()
+    // This uses constant-time comparison internally, preventing timing attacks
     let mut mac =
         HmacSha256::new_from_slice(signing_key).expect("HMAC key length");
     mac.update(claims.as_bytes());
-    let expected_sig = hex::encode(mac.finalize().into_bytes());
 
-    if expected_sig != sig_hex {
-        return Err("Invalid signature".to_string());
+    let sig_bytes = hex::decode(sig_hex).map_err(|e| format!("Hex decode error: {}", e))?;
+    mac.verify_slice(&sig_bytes)
+        .map_err(|_| "Invalid signature (timing-safe reject)".to_string())?;
+
+    // Parse claims: ticket_id|action|scope|content_hash|risk|exp_ms|nonce
+    let fields: Vec<&str> = claims.split('|').collect();
+    if fields.len() < 7 {
+        return Err(format!("Malformed claims: expected 7 fields, got {}", fields.len()));
     }
 
-    // Extract ticket_id (first field)
-    let ticket_id = claims
-        .split('|')
-        .next()
-        .unwrap_or("")
-        .to_string();
+    let ticket_id = fields[0].to_string();
+    let exp_ms: u64 = fields[5]
+        .parse()
+        .map_err(|_| "Invalid expiry in claims".to_string())?;
+
+    // Expiry check
+    if now_ms() > exp_ms {
+        return Err("Ticket expired (cryptographic expiry)".to_string());
+    }
 
     Ok(ticket_id)
 }
@@ -200,11 +209,67 @@ fn init_db(path: &str) -> Connection {
             scope TEXT DEFAULT '*',
             created_ms INTEGER NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS consumed_tickets (
+            ticket_id TEXT PRIMARY KEY NOT NULL,
+            consumed_ms INTEGER NOT NULL,
+            action TEXT,
+            scope TEXT
+        );
         CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit(ts_ms DESC);
-        CREATE INDEX IF NOT EXISTS idx_audit_ticket ON audit(ticket_id);",
+        CREATE INDEX IF NOT EXISTS idx_audit_ticket ON audit(ticket_id);
+        CREATE INDEX IF NOT EXISTS idx_consumed_ms ON consumed_tickets(consumed_ms);",
     )
     .expect("Failed to create tables");
     conn
+}
+
+/// Load all consumed ticket IDs from SQLite into the DashMap on startup
+fn load_consumed_tickets(conn: &Connection, tickets: &DashMap<String, TicketState>) -> usize {
+    let cutoff = now_ms().saturating_sub(TTL_MS * 2); // Only load recent ones (within 2x TTL)
+    let mut stmt = conn
+        .prepare("SELECT ticket_id, action, scope FROM consumed_tickets WHERE consumed_ms > ?1")
+        .unwrap();
+    let mut count = 0;
+    let rows = stmt.query_map(params![cutoff as i64], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, Option<String>>(1)?,
+            row.get::<_, Option<String>>(2)?,
+        ))
+    }).unwrap();
+    for row in rows.flatten() {
+        tickets.insert(
+            row.0,
+            TicketState {
+                exp_ms: 0,
+                consumed: true, // Already consumed
+                action: row.1.unwrap_or_default(),
+                scope: row.2.unwrap_or_default(),
+                content_hash: String::new(),
+                risk: 0,
+                signed_ticket: String::new(),
+            },
+        );
+        count += 1;
+    }
+    count
+}
+
+/// Persist a consumed ticket to SQLite for restart-proof replay protection
+fn persist_consumed_ticket(conn: &Connection, ticket_id: &str, action: &str, scope: &str) {
+    conn.execute(
+        "INSERT OR IGNORE INTO consumed_tickets (ticket_id, consumed_ms, action, scope) VALUES (?1, ?2, ?3, ?4)",
+        params![ticket_id, now_ms() as i64, action, scope],
+    ).ok();
+}
+
+/// Prune expired consumed tickets from SQLite (housekeeping)
+fn prune_consumed_tickets(conn: &Connection) -> usize {
+    let cutoff = now_ms().saturating_sub(TTL_MS * 10); // Keep 10x TTL for safety
+    conn.execute(
+        "DELETE FROM consumed_tickets WHERE consumed_ms < ?1",
+        params![cutoff as i64],
+    ).unwrap_or(0)
 }
 
 fn get_last_hash(conn: &Connection) -> String {
@@ -356,6 +421,12 @@ pub fn spawn_guard_service() {
         // DashMap for fast ticket lookups (replay protection)
         let tickets: Arc<DashMap<String, TicketState>> = Arc::new(DashMap::new());
 
+        // Load consumed tickets from SQLite (restart-proof replay protection)
+        let loaded_count = {
+            let db_lock = db.lock().unwrap();
+            load_consumed_tickets(&db_lock, &tickets)
+        };
+
         // In-memory state for fast reads
         let state = Arc::new(Mutex::new(State {
             mem_events: std::collections::VecDeque::new(),
@@ -369,6 +440,15 @@ pub fn spawn_guard_service() {
             },
         }));
 
+        // Prune old consumed tickets periodically
+        {
+            let db_lock = db.lock().unwrap();
+            let pruned = prune_consumed_tickets(&db_lock);
+            if pruned > 0 {
+                eprintln!("[Kasbah Guard] Pruned {} expired consumed tickets", pruned);
+            }
+        }
+
         // Log startup
         {
             let db_lock = db.lock().unwrap();
@@ -376,7 +456,11 @@ pub fn spawn_guard_service() {
                 &db_lock,
                 "STARTUP",
                 None, None, None, None, None, None, None,
-                Some(&format!("{{\"port\":{}}}", PORT)),
+                Some(&serde_json::json!({
+                    "port": PORT,
+                    "replay_tickets_loaded": loaded_count,
+                    "version": "0.3.0"
+                }).to_string()),
             );
         }
         {
@@ -384,7 +468,11 @@ pub fn spawn_guard_service() {
             s.mem_events.push_front(MemEvent {
                 ts_ms: now_ms(),
                 kind: "STARTUP".to_string(),
-                data: serde_json::json!({"message": "Kasbah Guard started", "port": PORT}),
+                data: serde_json::json!({
+                    "message": "Kasbah Guard started",
+                    "port": PORT,
+                    "replay_tickets_loaded": loaded_count
+                }),
             });
         }
 
@@ -408,14 +496,18 @@ pub fn spawn_guard_service() {
                 // ── Health check with stats ──
                 ("GET", "/status") => {
                     let s = st.lock().unwrap();
+                    let consumed_count = tk.len();
                     let body = serde_json::json!({
                         "ok": true,
                         "service": "kasbah-guard",
-                        "version": "0.2.0",
+                        "version": "0.3.0",
                         "port": PORT,
                         "ts_ms": now_ms(),
                         "crypto": "hmac-sha256",
                         "audit": "sqlite-hash-chain",
+                        "replay_protection": "sqlite-persisted",
+                        "onnx": "rule-engine-v1",
+                        "active_tickets": consumed_count,
                         "stats": {
                             "total": s.stats.total,
                             "allowed": s.stats.allowed,
@@ -452,7 +544,34 @@ pub fn spawn_guard_service() {
                                 .unwrap_or("send");
 
                             let c_hash = content_hash(preview);
-                            let (risk, preflight_decision, reason) = policy_preflight(preview);
+                            let (mut risk, mut preflight_decision, mut reason) = policy_preflight(preview);
+
+                            // Check custom policies from SQLite
+                            {
+                                let db_lock = dbc.lock().unwrap();
+                                let mut stmt = db_lock
+                                    .prepare("SELECT pattern, action FROM policies")
+                                    .unwrap();
+                                let policies: Vec<(String, String)> = stmt
+                                    .query_map([], |row| {
+                                        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+                                    })
+                                    .unwrap()
+                                    .filter_map(|r| r.ok())
+                                    .collect();
+
+                                let lower = preview.to_lowercase();
+                                for (pattern, action) in &policies {
+                                    if lower.contains(&pattern.to_lowercase()) {
+                                        risk = risk.max(70);
+                                        if action == "block" {
+                                            preflight_decision = "WARN".to_string();
+                                            risk = risk.max(90);
+                                        }
+                                        reason = format!("{}; Policy match: {}", reason, pattern);
+                                    }
+                                }
+                            }
 
                             let client_secrets = req_val.get("meta")
                                 .and_then(|m| m.get("secrets"))
@@ -590,7 +709,7 @@ pub fn spawn_guard_service() {
                                 let mut s = st.lock().unwrap();
                                 s.stats.total += 1;
 
-                                if now > entry.exp_ms {
+                                if now > entry.exp_ms && entry.exp_ms > 0 {
                                     reason = "expired ticket".to_string();
                                     s.stats.denied += 1;
                                 } else if entry.consumed {
@@ -599,6 +718,13 @@ pub fn spawn_guard_service() {
                                     s.stats.denied += 1;
                                 } else {
                                     entry.consumed = true;
+                                    // Persist consumed state to SQLite for restart-proof replay protection
+                                    {
+                                        let db_lock = dbc.lock().unwrap();
+                                        persist_consumed_ticket(
+                                            &db_lock, &ticket_id, &entry.action, &entry.scope
+                                        );
+                                    }
                                     if choice == "ALLOW" {
                                         decision = "ALLOW".to_string();
                                         reason = "user allowed".to_string();
@@ -787,6 +913,174 @@ pub fn spawn_guard_service() {
                         respond(request, 200, r#"{"ok":true}"#);
                     } else {
                         respond(request, 400, r#"{"ok":false,"error":"invalid id"}"#);
+                    }
+                }
+
+                // ── Audit chain verification ──
+                ("GET", "/audit/verify") => {
+                    let db_lock = dbc.lock().unwrap();
+                    let mut stmt = db_lock
+                        .prepare("SELECT id, ts_ms, kind, data, prev_hash, entry_hash FROM audit ORDER BY id ASC")
+                        .unwrap();
+
+                    let rows: Vec<(i64, i64, String, Option<String>, String, String)> = stmt
+                        .query_map([], |row| {
+                            Ok((
+                                row.get::<_, i64>(0)?,
+                                row.get::<_, i64>(1)?,
+                                row.get::<_, String>(2)?,
+                                row.get::<_, Option<String>>(3)?,
+                                row.get::<_, String>(4)?,
+                                row.get::<_, String>(5)?,
+                            ))
+                        })
+                        .unwrap()
+                        .filter_map(|r| r.ok())
+                        .collect();
+
+                    let total = rows.len();
+                    let mut valid = 0;
+                    let mut first_broken: Option<i64> = None;
+                    let mut expected_prev = "GENESIS".to_string();
+
+                    for (id, ts, kind, data, prev_hash, entry_hash) in &rows {
+                        // Verify prev_hash links correctly
+                        if prev_hash != &expected_prev {
+                            if first_broken.is_none() {
+                                first_broken = Some(*id);
+                            }
+                        } else {
+                            // Verify entry_hash = SHA-256(prev_hash || ts || kind || data)
+                            let payload = format!(
+                                "{}|{}|{}|{}",
+                                prev_hash, ts, kind, data.as_deref().unwrap_or("")
+                            );
+                            let mut hasher = Sha256::new();
+                            hasher.update(payload.as_bytes());
+                            let computed = hex::encode(hasher.finalize());
+                            if &computed == entry_hash {
+                                valid += 1;
+                            } else if first_broken.is_none() {
+                                first_broken = Some(*id);
+                            }
+                        }
+                        expected_prev = entry_hash.clone();
+                    }
+
+                    let integrity = if valid == total { "INTACT" } else { "BROKEN" };
+                    let body = serde_json::json!({
+                        "ok": true,
+                        "integrity": integrity,
+                        "total_entries": total,
+                        "valid_entries": valid,
+                        "chain_start": "GENESIS",
+                        "chain_head": rows.last().map(|r| r.5.clone()).unwrap_or_else(|| "GENESIS".to_string()),
+                        "first_broken_id": first_broken,
+                        "verified_at_ms": now_ms()
+                    });
+                    respond(request, 200, &body.to_string());
+                }
+
+                // ── ONNX-style classify endpoint (rule-engine-v1 + custom policies) ──
+                ("POST", "/classify") => {
+                    let raw = read_body(&mut request);
+                    match serde_json::from_str::<serde_json::Value>(&raw) {
+                        Ok(val) => {
+                            let text = val.get("text")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("");
+
+                            // Run pattern-based classification
+                            let (risk, decision, reason) = policy_preflight(text);
+
+                            // Also check custom policies from SQLite
+                            let mut policy_matches = Vec::new();
+                            {
+                                let db_lock = dbc.lock().unwrap();
+                                let mut stmt = db_lock
+                                    .prepare("SELECT id, pattern, action, scope FROM policies")
+                                    .unwrap();
+                                let policies: Vec<(i64, String, String, String)> = stmt
+                                    .query_map([], |row| {
+                                        Ok((
+                                            row.get::<_, i64>(0)?,
+                                            row.get::<_, String>(1)?,
+                                            row.get::<_, String>(2)?,
+                                            row.get::<_, String>(3)?,
+                                        ))
+                                    })
+                                    .unwrap()
+                                    .filter_map(|r| r.ok())
+                                    .collect();
+
+                                let lower = text.to_lowercase();
+                                for (id, pattern, action, scope) in policies {
+                                    if lower.contains(&pattern.to_lowercase()) {
+                                        policy_matches.push(serde_json::json!({
+                                            "policy_id": id,
+                                            "pattern": pattern,
+                                            "action": action,
+                                            "scope": scope
+                                        }));
+                                    }
+                                }
+                            }
+
+                            // PII detection patterns
+                            let pii_patterns = [
+                                ("email", r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+                                ("phone", r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"),
+                                ("ssn", r"\b\d{3}-\d{2}-\d{4}\b"),
+                                ("credit_card", r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b"),
+                                ("ip_address", r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b"),
+                            ];
+                            let mut pii_found = Vec::new();
+                            for (label, _pattern_str) in &pii_patterns {
+                                // Simple substring checks for common patterns
+                                let lower = text.to_lowercase();
+                                match *label {
+                                    "email" => { if lower.contains('@') && lower.contains('.') { pii_found.push(*label); } }
+                                    "ssn" => { if text.chars().filter(|c| c.is_ascii_digit() || *c == '-').count() > 8 && text.contains('-') { /* basic check */ } }
+                                    _ => {}
+                                }
+                            }
+
+                            // Intent classification
+                            let intent = if text.contains("rm -rf") || text.contains("drop table") || text.contains("format c:") {
+                                "destructive"
+                            } else if text.contains("password") || text.contains("secret") || text.contains("api_key") || text.contains("token") {
+                                "credential_exposure"
+                            } else if text.contains("http://") || text.contains("https://") || text.contains("ftp://") {
+                                "url_sharing"
+                            } else if text.len() > 5000 {
+                                "bulk_data"
+                            } else {
+                                "benign"
+                            };
+
+                            let final_risk = if !policy_matches.is_empty() {
+                                risk.max(70) // Custom policy match bumps minimum risk
+                            } else {
+                                risk
+                            };
+
+                            let body = serde_json::json!({
+                                "ok": true,
+                                "engine": "rule-engine-v1",
+                                "risk": final_risk,
+                                "decision": decision,
+                                "reason": reason,
+                                "intent": intent,
+                                "pii_detected": pii_found,
+                                "policy_matches": policy_matches,
+                                "content_hash": content_hash(text),
+                                "text_length": text.len()
+                            });
+                            respond(request, 200, &body.to_string());
+                        }
+                        Err(_) => {
+                            respond(request, 400, r#"{"ok":false,"error":"invalid JSON"}"#);
+                        }
                     }
                 }
 

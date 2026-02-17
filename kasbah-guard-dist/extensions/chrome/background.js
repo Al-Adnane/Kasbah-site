@@ -1,4 +1,4 @@
-// Kasbah Guard - Background Service Worker v0.2.0
+// Kasbah Guard - Background Service Worker v0.3.0
 const GUARD_URL = 'http://127.0.0.1:8788';
 
 async function checkGuardStatus() {
@@ -17,9 +17,9 @@ async function updateBadge() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[Kasbah Guard] Extension v0.2.0 installed — 5-verb interception active');
+  console.log('[Kasbah Guard] Extension v0.3.0 installed — 5-verb interception active');
   updateBadge();
-  chrome.storage.local.set({ guardEnabled: true, notifications: true, version: '0.2.0' });
+  chrome.storage.local.set({ guardEnabled: true, notifications: true, version: '0.3.0' });
 });
 
 chrome.runtime.onStartup.addListener(() => { updateBadge(); });
