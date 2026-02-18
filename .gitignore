@@ -46,3 +46,14 @@ downloads/
 # Tauri generated
 kasbah-guard-dist/apps/desktop/src-tauri/gen/
 kasbah-guard-dist/apps/desktop/src-tauri/icons/
+
+# Secrets & credentials (defensive)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+signing.key
+**/signing.key
