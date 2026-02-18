@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Kasbah Guard",
-  "version": "0.3.0",
-  "description": "Sovereign intent layer for AI actions. Intercepts send, paste, upload, browse, and download on ChatGPT and Claude.",
+  "version": "1.0.0",
+  "description": "The authority layer for AI. Binds AI systems to explicit delegation, enforces rights at runtime, and enables instant sovereignty reclamation.",
   "permissions": [
     "storage",
     "activeTab",

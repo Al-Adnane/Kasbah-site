@@ -1,13 +1,14 @@
 {
   "name": "kasbah-guard-desktop",
   "private": true,
-  "version": "0.1.0",
-  "type": "module",
+  "version": "0.3.0",
   "scripts": {
-    "dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "dev": "vite --port 5173 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 5173 --strictPort",
+    "tauri": "tauri"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0"
+    "vite": "^5.0.0"
   }
 }

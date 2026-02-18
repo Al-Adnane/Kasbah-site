@@ -1,8 +1,48 @@
+# OS
 .DS_Store
 **/.DS_Store
+Thumbs.db
+
+# Build artifacts
 node_modules/
 **/node_modules/
 src-tauri/target/
 **/src-tauri/target/
-kasbah-guard-dist/apps/desktop/node_modules/
-kasbah-guard-dist/apps/desktop/src-tauri/target/
+**/gen/
+
+# Compiled binaries (except public downloads)
+*.app/
+**/*.app/
+*.dmg
+**/*.dmg
+!public/downloads/*.dmg
+!public/downloads/*.zip
+
+# Package locks (regenerated)
+package-lock.json
+**/package-lock.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Dist (built from source)
+kasbah-guard-dist/apps/desktop/dist/
+
+# Extension zips (built from source)
+kasbah-guard-dist/kasbah-*.zip
+
+# Screenshots (dev only)
+kasbah-guard-dist/chrome-store-screenshots/
+
+# Logo source
+kasbah-guard-dist/logo-source-*.png
+
+# Old downloads directory at root
+downloads/
+
+# Tauri generated
+kasbah-guard-dist/apps/desktop/src-tauri/gen/
+kasbah-guard-dist/apps/desktop/src-tauri/icons/
