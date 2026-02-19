@@ -263,10 +263,10 @@
       <p>This is a simulation of what happens when Kasbah intercepts an unauthorized action. Click a scenario below to see it in action.</p>
 
       <div class="sim-controls">
-        <button class="sim-btn active" onclick="runSim('credentials')">Credential Leak</button>
-        <button class="sim-btn" onclick="runSim('apikey')">API Key Paste</button>
-        <button class="sim-btn" onclick="runSim('pii')">PII Exposure</button>
-        <button class="sim-btn" onclick="runSim('clean')">Clean Message</button>
+        <button class="sim-btn active" onclick="runSim(event,\'credentials\')">Credential Leak</button>
+        <button class="sim-btn" onclick="runSim(event,\'apikey\')">API Key Paste</button>
+        <button class="sim-btn" onclick="runSim(event,\'pii\')">PII Exposure</button>
+        <button class="sim-btn" onclick="runSim(event,\'clean\')">Clean Message</button>
       </div>
 
       <div class="terminal">
@@ -490,11 +490,12 @@
     };
 
     var simRunning = false;
-    function runSim(type) {
+    function runSim(ev, type) {
       if (simRunning) return;
       simRunning = true;
       document.querySelectorAll('.sim-btn').forEach(function(b) { b.classList.remove('active'); });
-      event.target.classList.add('active');
+      var btn = (ev && ev.target) ? ev.target : document.querySelector('.sim-btn.active');
+      if (btn) btn.classList.add('active');
       var body = document.getElementById('simBody');
       var share = document.getElementById('simShare');
       share.style.display = 'none';
@@ -523,7 +524,7 @@
         }, line.delay);
       });
     }
-    setTimeout(function() { runSim('credentials'); }, 800);
+    setTimeout(function() { runSim(null,'credentials'); }, 800);
 
     // Sign-up form
     var emailIn = document.getElementById('suEmail');
