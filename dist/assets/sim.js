@@ -1,26 +1,17 @@
-(() => {
-  // SAFE: never break rendering
+(function () {
   try {
-    const qs  = (s, el=document) => el.querySelector(s);
-    const qsa = (s, el=document) => Array.from(el.querySelectorAll(s));
-
-    // Try to wire to your brand UX simulator if present
-    const buttons = qsa(".sim-btn");
-    const lines   = qsa(".tl");
-    if (buttons.length && lines.length) {
-      function showAll() {
-        lines.forEach((l,i)=>setTimeout(()=>l.classList.add("visible"), 60*i));
-      }
-      function reset() { lines.forEach(l=>l.classList.remove("visible")); }
-
-      buttons.forEach(btn => btn.addEventListener("click", () => { reset(); showAll(); }));
-      // auto-run once
-      reset(); showAll();
-      return;
+    // do nothing destructive; only enhance if elements exist
+    const btn = document.getElementById("simRun");
+    const out = document.getElementById("simOut");
+    const beacon = document.getElementById("simBeacon");
+    if (beacon) beacon.textContent = "SIM_OK";
+    if (btn && out) {
+      btn.addEventListener("click", () => {
+        out.classList.remove("hidden");
+        out.textContent = "Guard decided: REVIEW (simulated).";
+      });
     }
-
-    // If not present, do nothing (don’t crash)
-  } catch(e) {
-    console && console.warn && console.warn("sim.js safe-disable:", e);
+  } catch (e) {
+    console && console.warn && console.warn("sim disabled:", e);
   }
 })();
