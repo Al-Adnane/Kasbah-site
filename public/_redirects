@@ -1,3 +1,6 @@
-/verify /verify/ 301
-/charter /charter/ 301
-/access /access/ 301
+/verify /verify.html 302
+/verify/ /verify.html 302
+/charter /charter.html 302
+/charter/ /charter.html 302
+/access /access.html 302
+/access/ /access.html 302
