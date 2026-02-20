@@ -166,6 +166,7 @@
     .footer-links{display:flex;gap:20px}
     .footer-links a{font-size:12px;color:var(--subtle);text-decoration:none;font-weight:600;transition:color .15s}
     .footer-links a:hover{color:var(--kasbah-red)}
+    /* Mobile polish */
     @media(max-width:700px){
       .pillars{grid-template-columns:1fr}
       .dl-row{grid-template-columns:1fr}
@@ -173,11 +174,20 @@
       .heritage-inner{grid-template-columns:1fr}
       .heritage-visual{display:none}
       .hero{padding:60px 0 50px}
+      .hero h1{font-size:clamp(32px,8vw,40px);} /* smaller on mobile */
+      .hero .tagline{font-size:16px}
+      .hero .sub{font-size:15px}
+      .pillar{padding:20px}
+      .section{padding:60px 0}
       .su-form{flex-direction:column}
       .hero-actions{flex-direction:column;align-items:center}
       .n-links a:not(.n-cta){display:none}
       .footer-in{flex-direction:column;text-align:center}
       .enterprise-features{flex-direction:column;align-items:center}
+      .step{padding:16px 0;gap:12px}
+      .step-n{width:32px;height:32px;font-size:13px}
+      .step-body strong{font-size:15px}
+      .step-body span{font-size:13px}
     }
     .section { scroll-margin-top: 90px; }
     a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid rgba(220,38,38,.35); outline-offset: 2px; }
@@ -214,6 +224,7 @@
         <a href="#waitlist">Get access</a>
         <a href="/verify">Verify</a>
         <a href="/charter">Charter</a>
+        <a href="/access">Access</a>
         <a class="n-cta" href="#waitlist">Join waitlist</a>
       </div>
     </div>
@@ -429,12 +440,13 @@
   <footer>
     <div class="footer-in">
       <div class="footer-left">
-        &copy; 2026 <a href="/">Kasbah</a> — Kasbah Guard
+        &copy; 2026 <a href="/">Kasbah</a> — Kasbah Guard · <span style="color:var(--kasbah-red);">Constitutional</span>
         <div class="f-ar">قصبة — Born in Morocco, trusted globally</div>
       </div>
       <div class="footer-links">
         <a href="/verify">Verify</a>
         <a href="/charter">Charter</a>
+        <a href="/access">Access</a>
         <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">GitHub</a>
         <a href="#waitlist">Waitlist</a>
         <a href="#enterprise">Enterprise</a>
@@ -590,19 +602,34 @@
       })
       .catch(() => {});
 
-    // Simulated saves counter
+    // Live saves counter – replace with your real telemetry if available
+    // For now, it simulates but you can replace with actual fetch
     let counter = 0;
     const counterEl = document.getElementById('savesCounter');
     const heroBadge = document.getElementById('heroBadge');
     const suCount = document.getElementById('suCount');
-    setInterval(() => {
-      counter += Math.floor(Math.random() * 3);
-      if (counterEl) {
-        counterEl.textContent = counter.toLocaleString();
-        heroBadge.textContent = counter + ' interceptions';
-        suCount.style.display = 'block';
-      }
-    }, 15000);
+    // Example: if you have an endpoint that returns total saves
+    fetch('/api/saves') // change to your real endpoint or remove this line
+      .then(res => res.json())
+      .then(data => {
+        counter = data.total || 0;
+        if (counterEl) {
+          counterEl.textContent = counter.toLocaleString();
+          heroBadge.textContent = counter + ' interceptions';
+          suCount.style.display = 'block';
+        }
+      })
+      .catch(() => {
+        // fallback simulation
+        setInterval(() => {
+          counter += Math.floor(Math.random() * 3);
+          if (counterEl) {
+            counterEl.textContent = counter.toLocaleString();
+            heroBadge.textContent = counter + ' interceptions';
+            suCount.style.display = 'block';
+          }
+        }, 15000);
+      });
 
     // Smooth scroll
     document.querySelectorAll('a[href^="#"]').forEach(a => {
