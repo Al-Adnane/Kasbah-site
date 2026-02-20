@@ -1,13 +1,3 @@
-
-var GUARD = (function(){
-  try {
-    if (window.KASBAH_GUARD_URL) return window.KASBAH_GUARD_URL;
-  } catch(e){}
-  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-    return "http://127.0.0.1:8788";
-  }
-  return null; // production demo mode
-})();
 (() => {
   // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(a => {
@@ -142,22 +132,3 @@ var GUARD = (function(){
     navigator.serviceWorker.register('/sw.js').catch(()=>{});
   }
 })();
-
-
-function demoGuard(path, payload){
-  if (path === "/status") {
-    return Promise.resolve({ ok:true, mode:"demo", crypto:"simulated" });
-  }
-  if (path === "/decide") {
-    return Promise.resolve({ ok:true, ticket:"DEMO_TICKET_"+Math.random().toString(36).slice(2) });
-  }
-  if (path === "/consume") {
-    return Promise.resolve({ ok:true, decision:"BLOCK", reason:"demo" });
-  }
-  return Promise.resolve({ ok:false });
-}
-
-function guardFetch(path, opts){
-  if (!GUARD) return Promise.resolve({ json:()=>demoGuard(path) });
-  return fetch(GUARD + path, opts).catch(()=>({ json:()=>demoGuard(path) }));
-}

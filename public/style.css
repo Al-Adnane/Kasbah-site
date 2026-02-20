@@ -188,3 +188,11 @@ h3{margin:0 0 8px;font-size:22px;letter-spacing:-.02em}
   h2{font-size:30px}
   .actions{justify-content:flex-start}
 }
+
+/* hotfix: ensure demo buttons clickable */
+.sim-btn, .simulator .sim-btn, #demo button, #demo a {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 9999 !important;
+}
+
