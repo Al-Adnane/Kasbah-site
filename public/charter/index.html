@@ -1,1 +1,63 @@
-[PASTE THE CHARTER PAGE FROM PREVIOUS MESSAGE HERE]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kasbah — Charter</title>
+  <link rel="icon" href="/logo-200.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --kasbah-red:#C1440E;--kasbah-red-light:rgba(193,68,14,.12);
+      --bg:#FEFCFA;--card:#FFFFFF;--ink:#0F172A;--muted:#64748B;--border:#E2DDD7;
+      --radius:12px;
+    }
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;padding:40px 24px}
+    .wrap{max-width:800px;margin:0 auto}
+    h1{font-size:36px;font-weight:900;margin-bottom:8px;color:var(--kasbah-red)}
+    .sub{color:var(--muted);font-size:18px;margin-bottom:32px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin-bottom:24px}
+    h2{font-size:20px;font-weight:800;margin-bottom:16px}
+    ul{list-style:none;padding:0}
+    li{margin-bottom:12px;padding-left:24px;position:relative}
+    li::before{content:"•";color:var(--kasbah-red);font-weight:800;position:absolute;left:8px}
+    p{color:var(--muted);font-size:16px;margin-bottom:12px}
+    .back{display:inline-block;margin-top:20px;color:var(--kasbah-red);font-weight:600;text-decoration:none}
+    .back:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>The Kasbah Charter</h1>
+    <div class="sub">A constitution for AI agency</div>
+
+    <div class="card">
+      <h2>⚖️ Principles</h2>
+      <ul>
+        <li><strong>Authority precedes autonomy</strong> – No AI action without explicit human delegation.</li>
+        <li><strong>Revocation is absolute</strong> – Any delegated authority can be reclaimed instantly.</li>
+        <li><strong>Auditability by design</strong> – Every decision is cryptographically signed and immutable.</li>
+        <li><strong>Local‑first</strong> – No data leaves your device unless you explicitly approve the action.</li>
+        <li><strong>Open source</strong> – The core enforcement engine is fully auditable on GitHub.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>📜 Human authority boundary</h2>
+      <p>Kasbah never rewrites, sanitizes, or judges the content of AI interactions. It only enforces the boundaries you set – before any data reaches the AI.</p>
+    </div>
+
+    <div class="card">
+      <h2>🛡️ Non‑negotiable</h2>
+      <p>We will never:<br>
+      – Introduce cloud‑only features<br>
+      – Remove the kill switch<br>
+      – Log sensitive content<br>
+      – Allow the system to be weaponized for surveillance.</p>
+    </div>
+
+    <a class="back" href="/">← Back to home</a>
+  </div>
+</body>
+</html>
