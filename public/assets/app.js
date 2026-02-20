@@ -1,1 +1,24 @@
-(()=>{const $=id=>document.getElementById(id);function pick(){const s=[{tool:"Paste",payload:"Contact list + emails",decision:"BLOCK",reason:"PII detected (emails)",ms:780},{tool:"Upload",payload:"budget.xlsx",decision:"ASK",reason:"Financial + personal fields",ms:910},{tool:"Browse",payload:"internal wiki",decision:"ALLOW",reason:"No sensitive patterns",ms:640},{tool:"Edit",payload:"proposal.docx",decision:"ASK",reason:"Client identifiers",ms:860}];return s[Math.floor(Math.random()*s.length)]}function badge(d){const b=$("demoBadge");if(!b)return;b.textContent=d}function log(t){const el=$("demoLog");if(!el)return;const p=document.createElement("div");p.textContent=t;el.appendChild(p)}function clear(){const el=$("demoLog");if(el)el.innerHTML=""}function run(){const sc=pick();clear();badge("RUNNING");if($("demoTitle"))$("demoTitle").textContent="Kasbah is deciding…";log(`tool=${sc.tool}`);log(`payload=${sc.payload}`);setTimeout(()=>{badge(sc.decision);if($("demoTitle"))$("demoTitle").textContent=`Decision: ${sc.decision}`;if($("demoSubtitle"))$("demoSubtitle").textContent=sc.reason;log(`decision=${sc.decision}`);log(`reason=${sc.reason}`);log(`latency=${sc.ms}ms`)},950)}document.addEventListener("DOMContentLoaded",()=>{const btn=$("runDemo");if(btn)btn.addEventListener("click",run)})})();
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("demoBtn");
+  const badge = document.getElementById("demoBadge");
+  const title = document.getElementById("demoTitle");
+  const subtitle = document.getElementById("demoSubtitle");
+  const log = document.getElementById("demoLog");
+  const card = document.getElementById("demoCard");
+
+  const scenarios = [
+    { title:"Paste with secret", subtitle:"sk_live_********", decision:"BLOCK",  reason:"High-confidence secret detected" },
+    { title:"Upload with PII",  subtitle:"customers.xlsx",   decision:"REVIEW", reason:"Likely PII columns detected" },
+    { title:"Harmless request", subtitle:"Public article",   decision:"ALLOW",  reason:"No sensitive data detected" }
+  ];
+
+  let i = 0;
+  if (btn) btn.addEventListener("click", () => {
+    const s = scenarios[i++ % scenarios.length];
+    if (card) card.className = "card " + s.decision.toLowerCase();
+    if (badge) badge.textContent = s.decision;
+    if (title) title.textContent = s.title;
+    if (subtitle) subtitle.textContent = s.subtitle;
+    if (log) log.innerHTML = `OBSERVE → ${s.subtitle}<br>DECIDE → ${s.decision}<br>WHY → ${s.reason}<br>ENFORCE → Applied locally`;
+  });
+});
