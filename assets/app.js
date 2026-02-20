@@ -1,24 +1,31 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("demoBtn");
-  const badge = document.getElementById("demoBadge");
-  const title = document.getElementById("demoTitle");
-  const subtitle = document.getElementById("demoSubtitle");
-  const log = document.getElementById("demoLog");
-  const card = document.getElementById("demoCard");
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const demoBtn = $('#demoBtn');
+  const card = $('#demoCard');
+  const badge = $('#demoBadge');
+  const title = $('#demoTitle');
+  const subtitle = $('#demoSubtitle');
+  const log = $('#demoLog');
+  if (!demoBtn) return;
 
   const scenarios = [
-    { title:"Paste with secret", subtitle:"sk_live_********", decision:"BLOCK",  reason:"High-confidence secret detected" },
-    { title:"Upload with PII",  subtitle:"customers.xlsx",   decision:"REVIEW", reason:"Likely PII columns detected" },
-    { title:"Harmless request", subtitle:"Public article",   decision:"ALLOW",  reason:"No sensitive data detected" }
+    { t:"Paste: secret detected", i:"sk_live_********", d:"BLOCK", w:"Secret pattern match", e:"Require redact or override" },
+    { t:"Upload: PII detected", i:"customers.xlsx", d:"REVIEW", w:"PII-shaped columns", e:"Require purpose + scope" },
+    { t:"Harmless request", i:"Public article summary", d:"ALLOW", w:"No sensitive signals", e:"Proceed and log" }
   ];
 
-  let i = 0;
-  if (btn) btn.addEventListener("click", () => {
-    const s = scenarios[i++ % scenarios.length];
-    if (card) card.className = "card " + s.decision.toLowerCase();
-    if (badge) badge.textContent = s.decision;
-    if (title) title.textContent = s.title;
-    if (subtitle) subtitle.textContent = s.subtitle;
-    if (log) log.innerHTML = `OBSERVE → ${s.subtitle}<br>DECIDE → ${s.decision}<br>WHY → ${s.reason}<br>ENFORCE → Applied locally`;
-  });
-});
+  let n = 0;
+  demoBtn.onclick = () => {
+    const s = scenarios[n++ % scenarios.length];
+    card.className = "card";
+    card.classList.add("is-" + s.d.toLowerCase());
+    badge.textContent = s.d;
+    title.textContent = s.t;
+    subtitle.textContent = s.i;
+    log.innerHTML =
+      `<div>OBSERVE → ${s.i}</div>
+       <div>DECIDE → ${s.d}</div>
+       <div>WHY → ${s.w}</div>
+       <div>ENFORCE → ${s.e}</div>`;
+  };
+})();
