@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Verify Downloads — Kasbah</title>
+  <link rel="icon" href="/logo-200.png"/>
+  <style>
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#0b0b0c;color:#f5f5f7}
+    .wrap{max-width:860px;margin:0 auto;padding:28px}
+    a{color:#ff5858;text-decoration:none}
+    code,pre{background:#111114;border:1px solid #2a2a2f;border-radius:12px;padding:12px;display:block;overflow:auto;color:#eaeaf0}
+    h1{margin:0 0 8px 0}
+    .card{background:#0f0f12;border:1px solid #2a2a2f;border-radius:18px;padding:18px;margin:14px 0}
+    .muted{color:#bdbdc7}
+    .btn{display:inline-block;background:#ff5858;color:#0b0b0c;font-weight:800;padding:10px 14px;border-radius:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Verify your download</h1>
+    <p class="muted">This page exists for one reason: to make downloads feel safe and verifiable.</p>
+
+    <div class="card">
+      <h2>macOS DMG (recommended)</h2>
+      <p>1) Download the DMG and checksum file:</p>
+      <p>
+        <a class="btn" href="/downloads/KasbahGuard-macOS.dmg">Download DMG</a>
+        &nbsp;
+        <a class="btn" href="/downloads/KasbahGuard-macOS.dmg.sha256">Download SHA256</a>
+      </p>
+      <p>2) Verify checksum:</p>
+      <pre>cd ~/Downloads
+shasum -a 256 KasbahGuard-macOS.dmg
+cat KasbahGuard-macOS.dmg.sha256</pre>
+      <p>3) Verify macOS Gatekeeper status (after download):</p>
+      <pre>spctl -a -vv -t install KasbahGuard-macOS.dmg || true</pre>
+    </div>
+
+    <div class="card">
+      <h2>Chrome extension ZIP (developer preview)</h2>
+      <p>
+        <a class="btn" href="/downloads/kasbah-guard-extension-v0.3.0.zip">Download ZIP</a>
+        &nbsp;
+        <a class="btn" href="/downloads/kasbah-guard-extension-v0.3.0.zip.sha256">Download SHA256</a>
+      </p>
+      <pre>cd ~/Downloads
+shasum -a 256 kasbah-guard-extension-v0.3.0.zip
+cat kasbah-guard-extension-v0.3.0.zip.sha256</pre>
+      <p class="muted">Then load unpacked in Chrome: chrome://extensions → Developer mode → Load unpacked.</p>
+    </div>
+
+    <div class="card">
+      <h2>What Kasbah does (plain language)</h2>
+      <p>Kasbah stops accidental leaks before they leave your laptop: copied secrets, pasted keys, uploaded files, and risky prompts.</p>
+      <p class="muted">It runs locally. You can test it with the demo, and verify the binaries with checksums above.</p>
+      <p><a href="/">← Back to home</a></p>
+    </div>
+  </div>
+</body>
+</html>
