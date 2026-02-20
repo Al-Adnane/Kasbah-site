@@ -1,5 +1,90 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kasbah — Charter</title></head>
-<body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:860px;margin:40px auto;padding:0 18px;line-height:1.6">
-<p><a href="/" style="text-decoration:none">← Back</a></p><h1>Trust Charter</h1>
-<ul><li>Local-first by default</li><li>Explainable decisions (allow / ask / block)</li><li>No fake downloads — access is explicit</li><li>Signed artifacts + simple verification</li></ul>
-</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Citizenship Charter v0.1 — Kasbah</title>
+  <meta name="description" content="The Digital Citizenship Charter. Procedural sovereignty for autonomous systems.">
+  <link rel="icon" href="/logo-200.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#fafafa;color:#111;line-height:1.8;-webkit-font-smoothing:antialiased}
+    .page{max-width:620px;margin:0 auto;padding:60px 24px 80px}
+    .back{display:inline-block;color:#666;font-size:12px;text-decoration:none;margin-bottom:40px;font-weight:500}
+    .back:hover{color:#111}
+    h1{font-size:24px;font-weight:900;letter-spacing:-.02em;margin-bottom:4px}
+    .version{font-size:12px;color:#999;margin-bottom:40px}
+    h2{font-size:16px;font-weight:800;margin-top:36px;margin-bottom:10px;letter-spacing:-.01em}
+    p{margin-bottom:14px;font-size:14px;color:#444;line-height:1.8}
+    ol,ul{margin-bottom:14px;padding-left:20px}
+    li{margin-bottom:6px;font-size:13px;color:#444;line-height:1.7}
+    li strong{color:#111;font-weight:700}
+    .divider{border:none;border-top:1px solid #ddd;margin:36px 0}
+    .footer{text-align:center;color:#999;font-size:11px;margin-top:48px}
+    .footer a{color:#999;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="back" href="/">&larr; Kasbah</a>
+
+    <h1>Digital Citizenship Charter</h1>
+    <div class="version">Version 0.1</div>
+
+    <h2>Preamble</h2>
+    <p>As autonomous systems become participants in human workflows, they must be governed by the same principles we demand of any entity that exercises power: explicit authority, bounded capability, and instant accountability.</p>
+    <p>This Charter defines the minimum procedural requirements for any system that acts with or on behalf of human authority in digital environments.</p>
+
+    <h2>Article 1 — Sovereignty</h2>
+    <p>The human operator retains ultimate authority over all autonomous systems within their domain. No system may acquire, escalate, or retain capability without explicit delegation.</p>
+    <ol>
+      <li><strong>Authority must be bound.</strong> Every autonomous session begins in an UNBOUND state. Capability is granted only through an explicit Authority Ceremony.</li>
+      <li><strong>Delegation must be scoped.</strong> Rights are enumerated, not implied. Each capability requires explicit grant.</li>
+      <li><strong>Reclamation must be instant.</strong> The human operator may revoke all delegated rights at any time, without restart, without delay, without negotiation.</li>
+    </ol>
+
+    <h2>Article 2 — Enforcement</h2>
+    <p>Delegation without enforcement is theater. Every delegated right must be checked at runtime, before execution.</p>
+    <ol>
+      <li><strong>Default deny.</strong> Any action not explicitly permitted by delegation is denied.</li>
+      <li><strong>Cryptographic accountability.</strong> Every decision is signed, timestamped, and hash-chained. Forgery is computationally infeasible.</li>
+      <li><strong>Single-use authorization.</strong> Each approval is consumed exactly once. Replay is blocked. Escalation requires a new ceremony.</li>
+    </ol>
+
+    <h2>Article 3 — Transparency</h2>
+    <p>Authority exercised in darkness is indistinguishable from abuse.</p>
+    <ol>
+      <li><strong>Every action is logged.</strong> The Authority Ledger records all decisions, all delegations, all reclamations.</li>
+      <li><strong>The ledger is immutable.</strong> Hash-chain integrity is verifiable. Tampering is detectable.</li>
+      <li><strong>The ledger is exportable.</strong> The human operator may extract the complete audit trail at any time, in standard formats.</li>
+    </ol>
+
+    <h2>Article 4 — Locality</h2>
+    <p>Authority that depends on remote infrastructure is authority that can be revoked by someone else.</p>
+    <ol>
+      <li><strong>Local-first.</strong> All enforcement, all storage, all decision-making happens on the operator's device.</li>
+      <li><strong>No cloud dependency.</strong> The system must function with zero network connectivity.</li>
+      <li><strong>No telemetry.</strong> No data leaves the device unless the operator explicitly delegates that right.</li>
+    </ol>
+
+    <hr class="divider">
+
+    <h2>Implementation</h2>
+    <p>Kasbah v1.0 is the reference implementation of this Charter.</p>
+    <ul>
+      <li><strong>Authority Ceremony</strong> — Explicit binding of human authority with scoped delegation of rights.</li>
+      <li><strong>Authority Engine</strong> — HMAC-SHA256 signed single-use tickets with replay protection. Default deny.</li>
+      <li><strong>Authority Ledger</strong> — SHA-256 hash-chained audit trail. Tamper-evident. Exportable.</li>
+      <li><strong>Sovereignty Reclamation</strong> — Instant revocation of all delegated rights.</li>
+      <li><strong>Browser Extension</strong> — Five-verb interception at the point of AI interaction.</li>
+    </ul>
+
+    <hr class="divider">
+
+    <div class="footer">
+      <p><a href="/">Kasbah</a> — Authority Layer for Autonomous Intelligence</p>
+    </div>
+  </div>
+</body>
+</html>
