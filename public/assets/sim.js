@@ -1,26 +1,34 @@
-(() => {
-  // SAFE: never break rendering
-  try {
-    const qs  = (s, el=document) => el.querySelector(s);
-    const qsa = (s, el=document) => Array.from(el.querySelectorAll(s));
+(function () {
+  // Make sure we never hide the page if something fails
+  function $(id){ return document.getElementById(id); }
 
-    // Try to wire to your brand UX simulator if present
-    const buttons = qsa(".sim-btn");
-    const lines   = qsa(".tl");
-    if (buttons.length && lines.length) {
-      function showAll() {
-        lines.forEach((l,i)=>setTimeout(()=>l.classList.add("visible"), 60*i));
-      }
-      function reset() { lines.forEach(l=>l.classList.remove("visible")); }
+  // If your page uses different IDs, we don't crash.
+  function safeSet(el, prop, val){ if(el) el[prop]=val; }
 
-      buttons.forEach(btn => btn.addEventListener("click", () => { reset(); showAll(); }));
-      // auto-run once
-      reset(); showAll();
-      return;
-    }
+  function runSim() {
+    var out = $('simOut');
+    var pill = $('simPill');
+    if (!out) return;
 
-    // If not present, do nothing (don’t crash)
-  } catch(e) {
-    console && console.warn && console.warn("sim.js safe-disable:", e);
+    out.classList.remove('hidden','ok','blocked');
+    out.textContent = "Guard decided: REVIEW (simulated) — sensitive token detected.";
+    out.classList.add('ok');
+
+    safeSet(pill, 'textContent', 'Guard: active');
+  }
+
+  function boot(){
+    var btn = $('simRun');
+    if (btn) btn.addEventListener('click', runSim);
+
+    // Beacon to prove sim.js executed
+    var b = $('simBeacon');
+    if (b) b.textContent = "SIM_JS_OK";
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
 })();
