@@ -76,14 +76,14 @@
     <div class="stat"><div class="stat-val" id="sDeny" style="color:#dc2626">0</div><div class="stat-lbl">Denied</div></div>
   </div>
   <div class="actions">
-    <a href="http://127.0.0.1:8788/status" target="_blank" class="btn btn-ledger">View Ledger</a>
+    <a href="http://127.0.0.1:8789/v2/health" target="_blank" class="btn btn-ledger">View Ledger</a>
     <button class="btn btn-reclaim" id="reclaimBtn" onclick="reclaim()">Reclaim Authority</button>
   </div>
   <div class="footer">
     <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">GitHub</a> &middot; v1.0
   </div>
   <script>
-    var GUARD='http://127.0.0.1:8788';
+    var GUARD='http://127.0.0.1:8789';
     function poll(){
       fetch(GUARD+'/status',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
         var ok=d.ok===true;

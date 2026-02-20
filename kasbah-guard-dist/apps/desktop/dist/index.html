@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kasbah Guard</title>
+<style>
+:root{--red:#C1440E;--red-glow:rgba(193,68,14,.15);--green:#059669;--amber:#d97706;--bg:#0F172A;--bg2:#1E293B;--bg3:#334155;--card:#1E293B;--border:#334155;--text:#F8FAFC;--text2:#94A3B8;--text3:#64748B;--font:system-ui,-apple-system,'Segoe UI',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+/* ── Auth Screen ── */
+.auth-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg)}
+.auth-box{width:380px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px 32px;text-align:center}
+.auth-logo{font-size:32px;font-weight:900;letter-spacing:-.02em;margin-bottom:4px}
+.auth-logo span{color:var(--red)}
+.auth-sub{font-size:13px;color:var(--text2);margin-bottom:32px}
+.auth-tabs{display:flex;gap:0;margin-bottom:24px;background:var(--bg);border-radius:10px;padding:3px}
+.auth-tab{flex:1;padding:10px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;font-family:var(--font);transition:.15s}
+.auth-tab.active{background:var(--bg2);color:var(--text)}
+.auth-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;text-align:left}
+.auth-field label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
+.auth-field input{padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:var(--font);outline:none;transition:.15s}
+.auth-field input:focus{border-color:var(--red);box-shadow:0 0 0 3px var(--red-glow)}
+.auth-btn{width:100%;padding:14px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;margin-top:8px}
+.auth-btn:hover{opacity:.9}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-error{color:#ef4444;font-size:12px;margin-top:8px;min-height:18px}
+.auth-hide{display:none}
+
+/* ── Shell Layout ── */
+.shell{display:flex;height:100vh;overflow:hidden}
+.shell.hide{display:none}
+
+/* ── Sidebar ── */
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sb-brand{padding:20px 18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-name{font-size:16px;font-weight:900;letter-spacing:-.01em}
+.sb-name span{color:var(--red)}
+.sb-version{font-size:10px;color:var(--text3);background:var(--bg);padding:2px 8px;border-radius:6px;margin-left:auto}
+.sb-nav{flex:1;padding:8px;overflow-y:auto}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:600;transition:.12s;border:none;background:none;width:100%;text-align:left;font-family:var(--font)}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:var(--red-glow);color:var(--red)}
+.sb-item .icon{font-size:16px;width:20px;text-align:center}
+.sb-guard{padding:12px 16px;border-top:1px solid var(--border)}
+.guard-pill{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--bg);font-size:12px;font-weight:600}
+.guard-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.guard-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.guard-dot.off{background:#ef4444;box-shadow:0 0 6px #ef4444}
+.guard-dot.connecting{background:var(--amber);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sb-user{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-avatar{width:32px;height:32px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
+.sb-user-info{flex:1;overflow:hidden}
+.sb-user-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user-role{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.sb-logout{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px}
+.sb-logout:hover{color:var(--red)}
+
+/* ── Main Content ── */
+.main{flex:1;overflow-y:auto;padding:24px 28px}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:22px;font-weight:800;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text2);margin-bottom:24px}
+
+/* ── Stat Cards ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.stat-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:6px}
+.stat-val{font-size:28px;font-weight:800}
+.stat-val.green{color:var(--green)}
+.stat-val.red{color:#ef4444}
+.stat-val.amber{color:var(--amber)}
+
+/* ── Feed / Activity ── */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:15px;font-weight:700}
+.section-btn{background:var(--bg3);border:none;color:var(--text2);padding:6px 14px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.section-btn:hover{background:var(--border);color:var(--text)}
+.feed{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.feed-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);transition:.1s}
+.feed-item:last-child{border-bottom:none}
+.feed-item:hover{background:var(--bg3)}
+.feed-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.feed-icon.decide{background:rgba(59,130,246,.15);color:#3b82f6}
+.feed-icon.allow{background:rgba(5,150,105,.15);color:var(--green)}
+.feed-icon.deny{background:rgba(239,68,68,.15);color:#ef4444}
+.feed-icon.startup{background:rgba(168,85,247,.15);color:#a855f7}
+.feed-icon.auth{background:rgba(193,68,14,.15);color:var(--red)}
+.feed-body{flex:1;overflow:hidden}
+.feed-title{font-size:13px;font-weight:600}
+.feed-detail{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feed-time{font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0}
+.feed-empty{padding:32px;text-align:center;color:var(--text3);font-size:13px}
+
+/* ── Authority Card ── */
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px}
+.auth-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.auth-card-title{font-size:14px;font-weight:700}
+.auth-badge{padding:4px 12px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.03em}
+.badge-bound{background:rgba(5,150,105,.15);color:var(--green);border:1px solid rgba(5,150,105,.3)}
+.badge-unbound{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.auth-card-row{display:flex;gap:32px;margin-top:12px}
+.auth-card-field{flex:1}
+.auth-card-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.auth-card-value{font-size:13px;font-weight:600;word-break:break-all}
+.auth-actions{display:flex;gap:10px;margin-top:16px}
+
+/* ── Buttons ── */
+.btn{padding:10px 20px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{opacity:.9}
+.btn-ghost{background:var(--bg3);color:var(--text2)}
+.btn-ghost:hover{background:var(--border);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.btn-danger:hover{background:rgba(239,68,68,.25)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── Policies ── */
+.policy-form{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.policy-form input,.policy-form select{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:var(--font);outline:none}
+.policy-form input:focus,.policy-form select:focus{border-color:var(--red)}
+.policy-form input{flex:1;min-width:180px}
+.policy-list{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.policy-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.policy-item:last-child{border-bottom:none}
+.policy-pattern{font-family:'SF Mono',Menlo,monospace;font-size:13px;font-weight:600;flex:1;word-break:break-all}
+.policy-tag{font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;text-transform:uppercase}
+.policy-tag.block{background:rgba(239,68,68,.15);color:#ef4444}
+.policy-tag.warn{background:rgba(217,119,6,.15);color:var(--amber)}
+.policy-tag.allow{background:rgba(5,150,105,.15);color:var(--green)}
+.policy-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px}
+.policy-del:hover{background:rgba(239,68,68,.15);color:#ef4444}
+
+/* ── Test Classifier ── */
+.classifier{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-top:20px}
+.classifier textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:var(--font);resize:vertical;min-height:80px;outline:none;margin-bottom:12px}
+.classifier textarea:focus{border-color:var(--red)}
+.classifier-result{margin-top:12px;padding:14px;background:var(--bg);border-radius:10px;font-size:12px}
+.classifier-result pre{white-space:pre-wrap;word-break:break-all;color:var(--text2)}
+
+/* ── Audit ── */
+.audit-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.chain-badge{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700}
+.chain-badge.intact{background:rgba(5,150,105,.15);color:var(--green);border:1px solid rgba(5,150,105,.3)}
+.chain-badge.broken{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.audit-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.audit-table th{background:var(--bg3);text-align:left;padding:10px 14px;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.audit-table td{padding:10px 14px;font-size:12px;border-top:1px solid var(--border);color:var(--text2)}
+.audit-table tr:hover td{background:var(--bg3)}
+
+/* ── Self-Test ── */
+.test-grid{display:grid;gap:10px}
+.test-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px}
+.test-status{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.test-status.pass{background:rgba(5,150,105,.15);color:var(--green)}
+.test-status.fail{background:rgba(239,68,68,.15);color:#ef4444}
+.test-status.pending{background:var(--bg3);color:var(--text3)}
+.test-name{font-size:13px;font-weight:600;flex:1}
+.test-detail{font-size:11px;color:var(--text3)}
+
+/* ── Settings ── */
+.setting-group{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.setting-group-title{font-size:14px;font-weight:700;margin-bottom:14px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:13px;font-weight:600}
+.setting-desc{font-size:11px;color:var(--text3)}
+
+/* ── Kill switch ── */
+.kill-switch{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:14px;padding:20px;margin-bottom:16px}
+.kill-switch-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.kill-switch-title{font-size:14px;font-weight:700;color:#ef4444}
+.kill-switch-desc{font-size:12px;color:var(--text3);margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">Kasbah<span>Guard</span></div>
+    <div class="auth-sub">Local AI enforcement. Sign in to claim authority.</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="showAuthTab('login')">Sign In</button>
+      <button class="auth-tab" id="tabRegister" onclick="showAuthTab('register')">Create Account</button>
+    </div>
+    <form id="loginForm" onsubmit="doLogin(event)">
+      <div class="auth-field"><label>Email</label><input type="email" id="loginEmail" required placeholder="you@example.com" autocomplete="email"/></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="loginPass" required placeholder="Your password" autocomplete="current-password"/></div>
+      <button class="auth-btn" type="submit" id="loginBtn">Sign In</button>
+      <div class="auth-error" id="loginError"></div>
+    </form>
+    <form id="registerForm" class="auth-hide" onsubmit="doRegister(event)">
+      <div class="auth-field"><label>Name</label><input type="text" id="regName" placeholder="Your name" autocomplete="name"/></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="regEmail" required placeholder="you@example.com" autocomplete="email"/></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="regPass" required placeholder="Min 6 characters" minlength="6" autocomplete="new-password"/></div>
+      <button class="auth-btn" type="submit" id="regBtn">Create Account</button>
+      <div class="auth-error" id="regError"></div>
+    </form>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="shell hide" id="appShell">
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-name">Kasbah<span>Guard</span></div>
+      <span class="sb-version" id="sbVersion">v0.3</span>
+    </div>
+    <div class="sb-nav">
+      <button class="sb-item active" data-page="dashboard" onclick="showPage('dashboard',this)"><span class="icon">&#9670;</span> Dashboard</button>
+      <button class="sb-item" data-page="authority" onclick="showPage('authority',this)"><span class="icon">&#128274;</span> Authority</button>
+      <button class="sb-item" data-page="policies" onclick="showPage('policies',this)"><span class="icon">&#128220;</span> Policies</button>
+      <button class="sb-item" data-page="audit" onclick="showPage('audit',this)"><span class="icon">&#128209;</span> Audit Log</button>
+      <button class="sb-item" data-page="selftest" onclick="showPage('selftest',this)"><span class="icon">&#9889;</span> Self-Test</button>
+      <button class="sb-item" data-page="settings" onclick="showPage('settings',this)"><span class="icon">&#9881;</span> Settings</button>
+    </div>
+    <div class="sb-guard">
+      <div class="guard-pill">
+        <div class="guard-dot connecting" id="guardDot"></div>
+        <span id="guardLabel">Connecting...</span>
+      </div>
+    </div>
+    <div class="sb-user" id="sbUser">
+      <div class="sb-avatar" id="sbAvatar">?</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name" id="sbUserName">Loading...</div>
+        <div class="sb-user-role" id="sbUserRole">owner</div>
+      </div>
+      <button class="sb-logout" onclick="doLogout()" title="Sign out">&#x2715;</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Dashboard -->
+    <div class="page active" id="pageDashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Real-time enforcement overview</div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Decisions</div><div class="stat-val" id="dTotal">0</div></div>
+        <div class="stat-card"><div class="stat-label">Allowed</div><div class="stat-val green" id="dAllowed">0</div></div>
+        <div class="stat-card"><div class="stat-label">Denied</div><div class="stat-val red" id="dDenied">0</div></div>
+        <div class="stat-card"><div class="stat-label">Secrets Caught</div><div class="stat-val amber" id="dSecrets">0</div></div>
+      </div>
+      <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card"><div class="stat-label">Replay Blocked</div><div class="stat-val" id="dReplay">0</div></div>
+        <div class="stat-card"><div class="stat-label">Threats Blocked</div><div class="stat-val red" id="dThreats">0</div></div>
+        <div class="stat-card"><div class="stat-label">Active Tickets</div><div class="stat-val" id="dTickets">0</div></div>
+      </div>
+      <div class="section-head">
+        <div class="section-title">Live Activity</div>
+        <button class="section-btn" onclick="refreshEvents()">Refresh</button>
+      </div>
+      <div class="feed" id="feedList"><div class="feed-empty">Waiting for guard activity...</div></div>
+    </div>
+
+    <!-- Authority -->
+    <div class="page" id="pageAuthority">
+      <div class="page-title">Authority Binding</div>
+      <div class="page-sub">Claim and manage your sovereign authority over AI actions</div>
+      <div class="auth-card" id="authorityCard">
+        <div class="auth-card-head">
+          <div class="auth-card-title">Current Authority</div>
+          <span class="auth-badge badge-unbound" id="authBadgeMain">UNBOUND</span>
+        </div>
+        <div class="auth-card-row">
+          <div class="auth-card-field"><div class="auth-card-label">Type</div><div class="auth-card-value" id="authType">Not set</div></div>
+          <div class="auth-card-field"><div class="auth-card-label">Status</div><div class="auth-card-value" id="authStatus">Unbound</div></div>
+          <div class="auth-card-field"><div class="auth-card-label">Cert Hash</div><div class="auth-card-value" id="authCert" style="font-family:monospace;font-size:11px">---</div></div>
+        </div>
+        <div class="auth-actions">
+          <button class="btn btn-red" id="btnBind" onclick="bindAuthority()">Claim Authority</button>
+          <button class="btn btn-danger" id="btnReclaim" onclick="reclaimAuthority()" style="display:none">Reclaim Authority</button>
+        </div>
+      </div>
+      <div class="section-head"><div class="section-title">Authority History</div></div>
+      <div class="feed" id="authorityHistory"><div class="feed-empty">No authority bindings yet</div></div>
+    </div>
+
+    <!-- Policies -->
+    <div class="page" id="pagePolicies">
+      <div class="page-title">Enforcement Policies</div>
+      <div class="page-sub">Custom pattern rules for blocking sensitive data</div>
+      <div class="policy-form">
+        <input type="text" id="policyPattern" placeholder="Pattern (e.g. AKIA, mongodb://, password=)"/>
+        <select id="policyAction"><option value="block">Block</option><option value="warn">Warn</option><option value="allow">Allow</option></select>
+        <select id="policyScope"><option value="*">All scopes</option><option value="chatgpt">ChatGPT</option><option value="claude">Claude</option></select>
+        <button class="btn btn-red" onclick="addPolicy()">Add Rule</button>
+      </div>
+      <div class="policy-list" id="policyList"><div class="feed-empty">No custom policies</div></div>
+      <div class="classifier" style="margin-top:24px">
+        <div class="section-title" style="margin-bottom:12px">Test Classifier</div>
+        <textarea id="classifyText" placeholder="Paste text here to test the risk engine..."></textarea>
+        <button class="btn btn-ghost" onclick="testClassify()">Analyze</button>
+        <div class="classifier-result" id="classifyResult" style="display:none"><pre></pre></div>
+      </div>
+    </div>
+
+    <!-- Audit -->
+    <div class="page" id="pageAudit">
+      <div class="page-title">Audit Log</div>
+      <div class="page-sub">Tamper-evident hash-chained ledger</div>
+      <div class="audit-header">
+        <div class="chain-badge intact" id="chainBadge">&#9679; Chain: CHECKING...</div>
+        <button class="section-btn" onclick="verifyChain()">Verify Chain</button>
+        <button class="section-btn" onclick="exportAudit()">Export JSON</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="audit-table" id="auditTable">
+          <thead><tr><th>#</th><th>Time</th><th>Kind</th><th>Decision</th><th>Risk</th><th>Reason</th><th>Hash</th></tr></thead>
+          <tbody id="auditBody"><tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Self-Test -->
+    <div class="page" id="pageSelftest">
+      <div class="page-title">Self-Test Suite</div>
+      <div class="page-sub">Verify guard integrity with live tests</div>
+      <div style="margin-bottom:16px"><button class="btn btn-red" id="btnRunTests" onclick="runSelfTests()">Run All Tests</button></div>
+      <div class="test-grid" id="testGrid"></div>
+    </div>
+
+    <!-- Settings -->
+    <div class="page" id="pageSettings">
+      <div class="page-title">Settings</div>
+      <div class="page-sub">Guard configuration and system controls</div>
+      <div class="kill-switch">
+        <div class="kill-switch-head"><span style="font-size:18px">&#128721;</span><div class="kill-switch-title">Kill Switch</div></div>
+        <div class="kill-switch-desc">When enabled, ALL AI actions are blocked immediately. Fail-closed enforcement.</div>
+        <button class="btn btn-danger" id="btnKillSwitch" onclick="toggleKillSwitch()">Enable Kill Switch</button>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-title">Extension</div>
+        <div class="setting-row">
+          <div><div class="setting-label">Install Chrome Extension</div><div class="setting-desc">Copy the extension to your browser</div></div>
+          <button class="btn btn-ghost" onclick="installExtension()">Install</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-title">Guard Service</div>
+        <div class="setting-row"><div><div class="setting-label">Guard Port</div><div class="setting-desc">Local enforcement service</div></div><span style="font-family:monospace;color:var(--text2);font-size:13px">127.0.0.1:8788</span></div>
+        <div class="setting-row"><div><div class="setting-label">Crypto Engine</div><div class="setting-desc">Ticket signing algorithm</div></div><span style="font-family:monospace;color:var(--text2);font-size:13px">HMAC-SHA256</span></div>
+        <div class="setting-row"><div><div class="setting-label">Audit Storage</div><div class="setting-desc">Hash-chained ledger</div></div><span style="font-family:monospace;color:var(--text2);font-size:13px">SQLite</span></div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-title">About</div>
+        <div class="setting-row"><div><div class="setting-label">Version</div></div><span style="color:var(--text2);font-size:13px" id="settingsVersion">0.3.0</span></div>
+        <div class="setting-row"><div><div class="setting-label">Data Directory</div><div class="setting-desc">~/Library/Application Support/KasbahGuard/</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var GUARD='http://127.0.0.1:8788';
+var authToken=null,currentUser=null,guardOnline=false,killSwitchOn=false;
+
+(function(){var t=localStorage.getItem('kasbah_token');if(t){authToken=t;checkSession()}})();
+
+function showAuthTab(tab){
+  document.getElementById('tabLogin').className='auth-tab'+(tab==='login'?' active':'');
+  document.getElementById('tabRegister').className='auth-tab'+(tab==='register'?' active':'');
+  document.getElementById('loginForm').className=tab==='login'?'':'auth-hide';
+  document.getElementById('registerForm').className=tab==='register'?'':'auth-hide';
+}
+
+function doRegister(e){e.preventDefault();var btn=document.getElementById('regBtn'),err=document.getElementById('regError');btn.disabled=true;err.textContent='';
+  fetch(GUARD+'/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('regName').value,email:document.getElementById('regEmail').value,password:document.getElementById('regPass').value})})
+    .then(function(r){return r.json()}).then(function(d){btn.disabled=false;if(d.ok){authToken=d.token;currentUser=d.user;localStorage.setItem('kasbah_token',d.token);enterApp()}else{err.textContent=d.error||'Registration failed'}}).catch(function(){btn.disabled=false;err.textContent='Cannot reach guard. Is the app running?'});
+}
+
+function doLogin(e){e.preventDefault();var btn=document.getElementById('loginBtn'),err=document.getElementById('loginError');btn.disabled=true;err.textContent='';
+  fetch(GUARD+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('loginEmail').value,password:document.getElementById('loginPass').value})})
+    .then(function(r){return r.json()}).then(function(d){btn.disabled=false;if(d.ok){authToken=d.token;currentUser=d.user;localStorage.setItem('kasbah_token',d.token);enterApp()}else{err.textContent=d.error||'Login failed'}}).catch(function(){btn.disabled=false;err.textContent='Cannot reach guard. Is the app running?'});
+}
+
+function checkSession(){
+  fetch(GUARD+'/auth/me',{headers:{'Authorization':'Bearer '+authToken}})
+    .then(function(r){return r.json()}).then(function(d){if(d.ok){currentUser=d.user;if(d.authority)updateAuthorityUI(d.authority);enterApp()}else{localStorage.removeItem('kasbah_token');authToken=null}}).catch(function(){});
+}
+
+function enterApp(){
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('appShell').className='shell';
+  if(currentUser){document.getElementById('sbUserName').textContent=currentUser.name||currentUser.email;document.getElementById('sbUserRole').textContent=currentUser.role||'owner';document.getElementById('sbAvatar').textContent=(currentUser.name||currentUser.email||'?').substring(0,2).toUpperCase()}
+  pollGuard();setInterval(pollGuard,3000);setInterval(refreshEvents,5000);refreshEvents();verifyChain();
+}
+
+function doLogout(){fetch(GUARD+'/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+authToken}}).catch(function(){});localStorage.removeItem('kasbah_token');authToken=null;currentUser=null;location.reload()}
+
+function showPage(page,el){
+  var pages=document.querySelectorAll('.page');for(var i=0;i<pages.length;i++)pages[i].className='page';
+  document.getElementById('page'+page.charAt(0).toUpperCase()+page.slice(1)).className='page active';
+  var items=document.querySelectorAll('.sb-item');for(var i=0;i<items.length;i++)items[i].className='sb-item';
+  if(el)el.className='sb-item active';
+  if(page==='policies')loadPolicies();if(page==='audit')loadAudit();if(page==='authority')loadAuthorityHistory();
+}
+
+function pollGuard(){
+  fetch(GUARD+'/status',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+    guardOnline=d.ok===true;document.getElementById('guardDot').className='guard-dot '+(guardOnline?'on':'off');document.getElementById('guardLabel').textContent=guardOnline?'Guard Active':'Guard Offline';
+    if(d.stats){document.getElementById('dTotal').textContent=d.stats.total||0;document.getElementById('dAllowed').textContent=d.stats.allowed||0;document.getElementById('dDenied').textContent=d.stats.denied||0;document.getElementById('dSecrets').textContent=d.stats.secrets_caught||0;document.getElementById('dReplay').textContent=d.stats.replay_blocked||0;document.getElementById('dThreats').textContent=d.stats.threats_blocked||0}
+    if(d.active_tickets!==undefined)document.getElementById('dTickets').textContent=d.active_tickets;
+    if(d.version){document.getElementById('sbVersion').textContent='v'+d.version;document.getElementById('settingsVersion').textContent=d.version}
+  }).catch(function(){guardOnline=false;document.getElementById('guardDot').className='guard-dot off';document.getElementById('guardLabel').textContent='Guard Offline'});
+}
+
+function timeAgo(ms){var d=Date.now()-ms;if(d<60000)return Math.floor(d/1000)+'s ago';if(d<3600000)return Math.floor(d/60000)+'m ago';if(d<86400000)return Math.floor(d/3600000)+'h ago';return new Date(ms).toLocaleDateString()}
+function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function refreshEvents(){
+  fetch(GUARD+'/events',{cache:'no-store'}).then(function(r){return r.json()}).then(function(events){
+    var el=document.getElementById('feedList');if(!events||events.length===0){el.innerHTML='<div class="feed-empty">No activity yet. Use ChatGPT or Claude with the extension installed.</div>';return}
+    var html='',n=Math.min(events.length,20);
+    for(var i=0;i<n;i++){var ev=events[i],kind=ev.kind||'EVENT',ic='startup',sym='&#9679;';
+      if(kind==='DECIDE'){ic='decide';sym='&#128269;'}else if(kind==='CONSUME'){var dec=ev.data&&ev.data.decision;if(dec==='ALLOW'){ic='allow';sym='&#10003;'}else{ic='deny';sym='&#10007;'}}else if(kind.indexOf('AUTH')===0||kind.indexOf('AUTHORITY')===0){ic='auth';sym='&#128274;'}else if(kind==='KILL_SWITCH'){ic='deny';sym='&#128721;'}
+      var det='';if(ev.data){if(ev.data.reason)det=ev.data.reason;else if(ev.data.risk!==undefined)det='Risk: '+ev.data.risk;else if(ev.data.message)det=ev.data.message;else if(ev.data.verb)det='Verb: '+ev.data.verb}
+      html+='<div class="feed-item"><div class="feed-icon '+ic+'">'+sym+'</div><div class="feed-body"><div class="feed-title">'+kind+'</div><div class="feed-detail">'+escHtml(det)+'</div></div><div class="feed-time">'+timeAgo(ev.ts_ms)+'</div></div>';
+    }el.innerHTML=html;
+  }).catch(function(){});
+}
+
+function updateAuthorityUI(b){
+  if(b){document.getElementById('authBadgeMain').className='auth-badge badge-bound';document.getElementById('authBadgeMain').textContent=b.status||'BOUND';document.getElementById('authType').textContent=b.authority_type||'personal';document.getElementById('authStatus').textContent=b.status||'BOUND';document.getElementById('authCert').textContent=(b.cert_hash||'---').substring(0,32)+'...';document.getElementById('btnBind').style.display='none';document.getElementById('btnReclaim').style.display=''}
+  else{document.getElementById('authBadgeMain').className='auth-badge badge-unbound';document.getElementById('authBadgeMain').textContent='UNBOUND';document.getElementById('authType').textContent='Not set';document.getElementById('authStatus').textContent='Unbound';document.getElementById('authCert').textContent='---';document.getElementById('btnBind').style.display='';document.getElementById('btnReclaim').style.display='none'}
+}
+
+function bindAuthority(){if(!authToken)return;
+  fetch(GUARD+'/authority/bind',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},body:JSON.stringify({authority_type:'personal',scope:{read:true,write:false,network:true,execute:false,clipboard:true}})})
+    .then(function(r){return r.json()}).then(function(d){if(d.ok){updateAuthorityUI({authority_type:'personal',status:'BOUND',cert_hash:d.cert_hash});loadAuthorityHistory()}}).catch(function(e){alert('Failed: '+e)});
+}
+
+function reclaimAuthority(){if(!confirm('Reclaim all delegated authority? This revokes all active bindings.'))return;
+  fetch(GUARD+'/authority/reclaim',{method:'POST',headers:{'Authorization':'Bearer '+authToken}}).then(function(r){return r.json()}).then(function(d){if(d.ok){updateAuthorityUI(null);loadAuthorityHistory()}}).catch(function(e){alert('Failed: '+e)});
+}
+
+function loadAuthorityHistory(){
+  fetch(GUARD+'/authority/history',{headers:{'Authorization':'Bearer '+authToken}}).then(function(r){return r.json()}).then(function(d){
+    var el=document.getElementById('authorityHistory');if(!d.ok||!d.bindings||d.bindings.length===0){el.innerHTML='<div class="feed-empty">No authority bindings yet. Claim authority to start.</div>';return}
+    var html='';for(var i=0;i<d.bindings.length;i++){var b=d.bindings[i],ic=b.status==='BOUND'?'allow':'deny',sym=b.status==='BOUND'?'&#128274;':'&#128275;';
+      html+='<div class="feed-item"><div class="feed-icon '+ic+'">'+sym+'</div><div class="feed-body"><div class="feed-title">'+b.authority_type+' &mdash; '+b.status+'</div><div class="feed-detail">Cert: '+(b.cert_hash||'').substring(0,24)+'...</div></div><div class="feed-time">'+timeAgo(b.bound_at_ms)+'</div></div>'}
+    el.innerHTML=html;
+  }).catch(function(){});
+}
+
+function loadPolicies(){
+  fetch(GUARD+'/policies').then(function(r){return r.json()}).then(function(d){
+    var el=document.getElementById('policyList');if(!d.ok||!d.policies||d.policies.length===0){el.innerHTML='<div class="feed-empty">No custom policies. Add rules to block specific patterns.</div>';return}
+    var html='';for(var i=0;i<d.policies.length;i++){var p=d.policies[i];html+='<div class="policy-item"><span class="policy-pattern">'+escHtml(p.pattern)+'</span><span class="policy-tag '+p.action+'">'+p.action+'</span><span style="font-size:11px;color:var(--text3)">'+(p.scope||'*')+'</span><button class="policy-del" onclick="deletePolicy('+p.id+')">&times;</button></div>'}
+    el.innerHTML=html;
+  }).catch(function(){});
+}
+
+function addPolicy(){var p=document.getElementById('policyPattern').value.trim();if(!p)return;
+  fetch(GUARD+'/policies',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pattern:p,action:document.getElementById('policyAction').value,scope:document.getElementById('policyScope').value})}).then(function(r){return r.json()}).then(function(d){if(d.ok){document.getElementById('policyPattern').value='';loadPolicies()}}).catch(function(e){alert('Failed: '+e)});
+}
+
+function deletePolicy(id){fetch(GUARD+'/policies/'+id,{method:'DELETE'}).then(function(){loadPolicies()}).catch(function(){})}
+
+function testClassify(){var t=document.getElementById('classifyText').value;if(!t)return;
+  fetch(GUARD+'/classify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})}).then(function(r){return r.json()}).then(function(d){var el=document.getElementById('classifyResult');el.style.display='block';el.querySelector('pre').textContent=JSON.stringify(d,null,2)}).catch(function(e){var el=document.getElementById('classifyResult');el.style.display='block';el.querySelector('pre').textContent='Error: '+e});
+}
+
+function loadAudit(){
+  fetch(GUARD+'/audit?limit=50').then(function(r){return r.json()}).then(function(d){
+    var body=document.getElementById('auditBody');if(!d.ok||!d.entries||d.entries.length===0){body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">No audit entries</td></tr>';return}
+    var html='';for(var i=0;i<d.entries.length;i++){var e=d.entries[i],dc='';if(e.decision==='ALLOW')dc='color:var(--green)';else if(e.decision==='DENY'||e.decision==='BLOCK'||e.decision==='WARN')dc='color:#ef4444';
+      html+='<tr><td>'+e.id+'</td><td>'+new Date(e.ts_ms).toLocaleTimeString()+'</td><td style="font-weight:600">'+e.kind+'</td><td style="'+dc+';font-weight:700">'+(e.decision||'-')+'</td><td>'+(e.risk!==null?e.risk:'-')+'</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(e.reason||'-')+'</td><td style="font-family:monospace;font-size:10px">'+(e.entry_hash||'').substring(0,12)+'</td></tr>'}
+    body.innerHTML=html;
+  }).catch(function(){});
+}
+
+function verifyChain(){
+  fetch(GUARD+'/audit/verify').then(function(r){return r.json()}).then(function(d){var el=document.getElementById('chainBadge');if(d.integrity==='INTACT'){el.className='chain-badge intact';el.innerHTML='&#10003; Chain INTACT &mdash; '+d.valid_entries+'/'+d.total_entries+' verified'}else{el.className='chain-badge broken';el.innerHTML='&#10007; Chain BROKEN at #'+d.first_broken_id}}).catch(function(){document.getElementById('chainBadge').innerHTML='&#9679; Cannot verify (guard offline)'});
+}
+
+function exportAudit(){fetch(GUARD+'/audit/export').then(function(r){return r.text()}).then(function(t){var b=new Blob([t],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='kasbah-audit-'+Date.now()+'.json';a.click()}).catch(function(e){alert('Export failed: '+e)})}
+
+var selfTests=[
+  {id:'guard',name:'Guard reachable',fn:function(cb){fetch(GUARD+'/status').then(function(r){return r.json()}).then(function(d){cb(d.ok===true,'Service running')}).catch(function(){cb(false,'Unreachable')})}},
+  {id:'crypto',name:'HMAC-SHA256 active',fn:function(cb){fetch(GUARD+'/status').then(function(r){return r.json()}).then(function(d){cb(d.crypto==='hmac-sha256','Crypto: '+d.crypto)}).catch(function(){cb(false,'Failed')})}},
+  {id:'decide',name:'Decide issues ticket',fn:function(cb){fetch(GUARD+'/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'test',product:'selftest',verb:'send',meta:{preview:'hello test'}})}).then(function(r){return r.json()}).then(function(d){cb(!!d.ticket,'Ticket: '+(d.ticket_id||'').substring(0,8))}).catch(function(){cb(false,'Failed')})}},
+  {id:'consume',name:'Consume allows ticket',fn:function(cb){fetch(GUARD+'/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'test',product:'selftest',verb:'send',meta:{preview:'consume test'}})}).then(function(r){return r.json()}).then(function(d){fetch(GUARD+'/consume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:d.ticket,choice:'ALLOW'})}).then(function(r){return r.json()}).then(function(c){cb(c.decision==='ALLOW','Decision: '+c.decision)}).catch(function(){cb(false,'Failed')})}).catch(function(){cb(false,'Failed')})}},
+  {id:'replay',name:'Replay protection',fn:function(cb){fetch(GUARD+'/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'test',product:'selftest',verb:'send',meta:{preview:'replay test'}})}).then(function(r){return r.json()}).then(function(d){fetch(GUARD+'/consume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:d.ticket,choice:'ALLOW'})}).then(function(){fetch(GUARD+'/consume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:d.ticket,choice:'ALLOW'})}).then(function(r){return r.json()}).then(function(c){cb(c.reason==='replay blocked','Reason: '+c.reason)}).catch(function(){cb(false,'Failed')})})}).catch(function(){cb(false,'Failed')})}},
+  {id:'secrets',name:'Secret detection',fn:function(cb){fetch(GUARD+'/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'test',product:'selftest',verb:'send',meta:{preview:'my api_key=sk-1234567890abcdef1234567890'}})}).then(function(r){return r.json()}).then(function(d){cb(d.risk>=30,'Risk: '+d.risk)}).catch(function(){cb(false,'Failed')})}},
+  {id:'chain',name:'Audit chain integrity',fn:function(cb){fetch(GUARD+'/audit/verify').then(function(r){return r.json()}).then(function(d){cb(d.integrity==='INTACT',d.valid_entries+'/'+d.total_entries+' valid')}).catch(function(){cb(false,'Failed')})}},
+  {id:'classify',name:'Classifier engine',fn:function(cb){fetch(GUARD+'/classify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'rm -rf / && drop table users'})}).then(function(r){return r.json()}).then(function(d){cb(d.risk>0&&d.intent==='destructive','Intent: '+d.intent+', Risk: '+d.risk)}).catch(function(){cb(false,'Failed')})}},
+  {id:'forged',name:'Forged ticket rejected',fn:function(cb){fetch(GUARD+'/consume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:'AAAA.deadbeef',choice:'ALLOW'})}).then(function(r){return r.json()}).then(function(d){cb(d.decision==='DENY','Reason: '+(d.reason||'').substring(0,40))}).catch(function(){cb(false,'Failed')})}},
+  {id:'policies',name:'Policy engine',fn:function(cb){fetch(GUARD+'/policies').then(function(r){return r.json()}).then(function(d){cb(d.ok===true,'Policies loaded')}).catch(function(){cb(false,'Failed')})}},
+  {id:'auth',name:'Auth system',fn:function(cb){if(!authToken){cb(false,'No token');return}fetch(GUARD+'/auth/me',{headers:{'Authorization':'Bearer '+authToken}}).then(function(r){return r.json()}).then(function(d){cb(d.ok===true,'User: '+(d.user?d.user.email:'?'))}).catch(function(){cb(false,'Failed')})}}
+];
+
+function runSelfTests(){var g=document.getElementById('testGrid'),html='';for(var i=0;i<selfTests.length;i++){html+='<div class="test-row" id="test-'+selfTests[i].id+'"><div class="test-status pending">&#8230;</div><div class="test-name">'+selfTests[i].name+'</div><div class="test-detail">Running...</div></div>'}g.innerHTML=html;document.getElementById('btnRunTests').disabled=true;runTestSeq(0)}
+function runTestSeq(idx){if(idx>=selfTests.length){document.getElementById('btnRunTests').disabled=false;return}var t=selfTests[idx];setTimeout(function(){t.fn(function(pass,detail){var row=document.getElementById('test-'+t.id);if(row){row.querySelector('.test-status').className='test-status '+(pass?'pass':'fail');row.querySelector('.test-status').innerHTML=pass?'&#10003;':'&#10007;';row.querySelector('.test-detail').textContent=detail||''}runTestSeq(idx+1)})},200)}
+
+function toggleKillSwitch(){var ns=!killSwitchOn;if(ns&&!confirm('ENABLE KILL SWITCH?\n\nAll AI actions will be blocked immediately.'))return;
+  fetch(GUARD+'/kill_switch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:ns})}).then(function(r){return r.json()}).then(function(d){if(d.ok){killSwitchOn=d.enabled;var b=document.getElementById('btnKillSwitch');if(killSwitchOn){b.textContent='Disable Kill Switch';b.className='btn btn-red'}else{b.textContent='Enable Kill Switch';b.className='btn btn-danger'}}}).catch(function(e){alert('Failed: '+e)})}
+
+function installExtension(){try{window.__TAURI__.invoke('install_extension').then(function(p){alert('Extension installed to:\n'+p+'\n\nPath copied to clipboard. Open chrome://extensions, enable Developer Mode, click Load Unpacked.')}).catch(function(e){alert('Install error: '+e)})}catch(e){alert('Extension install only available in the desktop app.')}}
+
+(function(){var g=document.getElementById('testGrid');if(g){var html='';for(var i=0;i<selfTests.length;i++){html+='<div class="test-row" id="test-'+selfTests[i].id+'"><div class="test-status pending">&#8230;</div><div class="test-name">'+selfTests[i].name+'</div><div class="test-detail">Not run</div></div>'}g.innerHTML=html}})();
+</script>
+</body>
+</html>
