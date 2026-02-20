@@ -224,7 +224,7 @@
         <a href="/verify">Verify</a>
         <a href="/charter">Charter</a>
         <a href="/access">Access</a>
-        <a class="n-cta" href="#waitlist">Join waitlist</a>
+        <a class="n-cta" href="#signup">Create Account</a>
       </div>
     </div>
   </nav>
@@ -394,18 +394,21 @@
       </div>
     </section>
 
-    <!-- WAITLIST (GATED ACCESS) -->
-    <section class="signup" id="waitlist">
+    <!-- SIGNUP (REAL REGISTRATION) -->
+    <section class="signup" id="signup">
       <div class="signup-inner">
         <h2>Enter the fortress.</h2>
-        <p class="su-sub">Kasbah is in private preview. Join the waitlist to get early access, and we'll notify you when builds are ready.</p>
-        <div class="su-form">
-          <input class="su-input" type="email" id="suEmail" placeholder="your@email.com" autocomplete="email">
-          <button class="su-btn" id="suBtn" disabled>Join waitlist</button>
+        <p class="su-sub">Create your Kasbah account. Download the app, sign in, and claim authority over your AI tools.</p>
+        <div class="su-urgency">&#9889; Pioneer access — full features, free forever</div>
+        <div class="su-form" style="flex-direction:column;gap:12px">
+          <input class="su-input" type="text" id="suName" placeholder="Your name" autocomplete="name">
+          <input class="su-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email">
+          <input class="su-input" type="password" id="suPass" placeholder="Password (min 6 chars)" autocomplete="new-password" minlength="6">
+          <button class="su-btn" id="suBtn" disabled style="width:100%">Create Account</button>
         </div>
-        <div class="su-note">No spam. No selling your data. Just fortress‑grade authority.</div>
-        <div class="su-result" id="suResult">You're in. Welcome to the fortress. We'll be in touch.</div>
-        <div class="su-count" id="suCount" style="display:none"><strong id="savesCounter">0</strong> interceptions by your local Kasbah Guard</div>
+        <div class="su-note">100% local enforcement. Your data never leaves your machine.</div>
+        <div class="su-result" id="suResult"></div>
+        <div class="su-count" id="suCount" style="display:none"><strong id="savesCounter">0</strong> users have claimed authority</div>
       </div>
     </section>
 
@@ -556,37 +559,72 @@
     // Auto-run credentials demo on page load
     setTimeout(() => runSim('credentials'), 800);
 
-    // Waitlist form
+    // Registration form
+    const API_URL = 'https://api.bekasbah.com';
+    const nameIn = document.getElementById('suName');
     const emailIn = document.getElementById('suEmail');
+    const passIn = document.getElementById('suPass');
     const suBtn = document.getElementById('suBtn');
     const suResult = document.getElementById('suResult');
-    emailIn.addEventListener('input', () => {
-      const v = emailIn.value.trim();
-      suBtn.disabled = !(v.length > 4 && v.includes('@') && v.includes('.') && v.indexOf('.') > v.indexOf('@'));
-    });
+
+    function validateForm() {
+      const email = emailIn.value.trim();
+      const pass = passIn.value;
+      const validEmail = email.length > 4 && email.includes('@') && email.includes('.') && email.indexOf('.') > email.indexOf('@');
+      suBtn.disabled = !(validEmail && pass.length >= 6);
+    }
+    nameIn.addEventListener('input', validateForm);
+    emailIn.addEventListener('input', validateForm);
+    passIn.addEventListener('input', validateForm);
+
     suBtn.addEventListener('click', () => {
       suBtn.disabled = true;
-      suBtn.textContent = 'Joining...';
+      suBtn.textContent = 'Creating account...';
+      suResult.style.display = 'none';
+      const name = nameIn.value.trim();
       const email = emailIn.value.trim();
-      fetch('https://formsubmit.co/ajax/enterprise@bekasbah.com', {
+      const password = passIn.value;
+
+      fetch(API_URL + '/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email, _subject: 'Kasbah Waitlist Signup', source: 'website' })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
       })
         .then(r => r.json())
-        .then(() => {
-          suResult.style.display = 'block';
-          suBtn.textContent = 'Joined';
-          emailIn.disabled = true;
+        .then(d => {
+          if (d.ok) {
+            suResult.textContent = 'Account created! Download the app and sign in with your credentials.';
+            suResult.style.display = 'block';
+            suResult.style.background = '#ecfdf5';
+            suResult.style.color = '#065f46';
+            suResult.style.borderColor = '#a7f3d0';
+            suBtn.textContent = 'Account created ✓';
+            nameIn.disabled = true;
+            emailIn.disabled = true;
+            passIn.disabled = true;
+            // Scroll to download section
+            setTimeout(() => {
+              const dl = document.querySelector('.download');
+              if (dl) dl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 1500);
+          } else {
+            suResult.textContent = d.error || 'Registration failed. Please try again.';
+            suResult.style.display = 'block';
+            suResult.style.background = '#fef2f2';
+            suResult.style.color = '#dc2626';
+            suResult.style.borderColor = '#fecaca';
+            suBtn.disabled = false;
+            suBtn.textContent = 'Create Account';
+          }
         })
         .catch(() => {
-          suResult.textContent = 'Something went wrong. Please try again.';
+          suResult.textContent = 'Connection error. Please try again.';
           suResult.style.display = 'block';
           suResult.style.background = '#fef2f2';
           suResult.style.color = '#dc2626';
           suResult.style.borderColor = '#fecaca';
           suBtn.disabled = false;
-          suBtn.textContent = 'Join waitlist';
+          suBtn.textContent = 'Create Account';
         });
     });
 
@@ -601,34 +639,18 @@
       })
       .catch(() => {});
 
-    // Live saves counter – replace with your real telemetry if available
-    // For now, it simulates but you can replace with actual fetch
-    let counter = 0;
-    const counterEl = document.getElementById('savesCounter');
-    const heroBadge = document.getElementById('heroBadge');
-    const suCount = document.getElementById('suCount');
-    // Example: if you have an endpoint that returns total saves
-    fetch('/api/saves') // change to your real endpoint or remove this line
-      .then(res => res.json())
-      .then(data => {
-        counter = data.total || 0;
-        if (counterEl) {
-          counterEl.textContent = counter.toLocaleString();
-          heroBadge.textContent = counter + ' interceptions';
-          suCount.style.display = 'block';
+    // Live user count from API
+    fetch(API_URL + '/auth/stats')
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok && d.users > 0) {
+          const counterEl = document.getElementById('savesCounter');
+          const suCount = document.getElementById('suCount');
+          if (counterEl) counterEl.textContent = d.users.toLocaleString();
+          if (suCount) suCount.style.display = 'block';
         }
       })
-      .catch(() => {
-        // fallback simulation
-        setInterval(() => {
-          counter += Math.floor(Math.random() * 3);
-          if (counterEl) {
-            counterEl.textContent = counter.toLocaleString();
-            heroBadge.textContent = counter + ' interceptions';
-            suCount.style.display = 'block';
-          }
-        }, 15000);
-      });
+      .catch(() => {});
 
     // Smooth scroll
     document.querySelectorAll('a[href^="#"]').forEach(a => {

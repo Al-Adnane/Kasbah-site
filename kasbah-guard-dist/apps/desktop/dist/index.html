@@ -183,24 +183,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 <div class="auth-screen" id="authScreen">
   <div class="auth-box">
     <div class="auth-logo">Kasbah<span>Guard</span></div>
-    <div class="auth-sub">Local AI enforcement. Sign in to claim authority.</div>
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="tabLogin" onclick="showAuthTab('login')">Sign In</button>
-      <button class="auth-tab" id="tabRegister" onclick="showAuthTab('register')">Create Account</button>
-    </div>
+    <div class="auth-sub">Sign in with your bekasbah.com account</div>
     <form id="loginForm" onsubmit="doLogin(event)">
       <div class="auth-field"><label>Email</label><input type="email" id="loginEmail" required placeholder="you@example.com" autocomplete="email"/></div>
       <div class="auth-field"><label>Password</label><input type="password" id="loginPass" required placeholder="Your password" autocomplete="current-password"/></div>
       <button class="auth-btn" type="submit" id="loginBtn">Sign In</button>
       <div class="auth-error" id="loginError"></div>
     </form>
-    <form id="registerForm" class="auth-hide" onsubmit="doRegister(event)">
-      <div class="auth-field"><label>Name</label><input type="text" id="regName" placeholder="Your name" autocomplete="name"/></div>
-      <div class="auth-field"><label>Email</label><input type="email" id="regEmail" required placeholder="you@example.com" autocomplete="email"/></div>
-      <div class="auth-field"><label>Password</label><input type="password" id="regPass" required placeholder="Min 6 characters" minlength="6" autocomplete="new-password"/></div>
-      <button class="auth-btn" type="submit" id="regBtn">Create Account</button>
-      <div class="auth-error" id="regError"></div>
-    </form>
+    <div style="margin-top:20px;font-size:13px;color:var(--text2)">
+      Don't have an account? <a href="https://bekasbah.com/#signup" target="_blank" style="color:var(--red);font-weight:700;text-decoration:none">Create one at bekasbah.com</a>
+    </div>
   </div>
 </div>
 
@@ -358,30 +350,52 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 <script>
 var GUARD='http://127.0.0.1:8788';
+var API='https://api.bekasbah.com';
 var authToken=null,currentUser=null,guardOnline=false,killSwitchOn=false;
 
 (function(){var t=localStorage.getItem('kasbah_token');if(t){authToken=t;checkSession()}})();
 
-function showAuthTab(tab){
-  document.getElementById('tabLogin').className='auth-tab'+(tab==='login'?' active':'');
-  document.getElementById('tabRegister').className='auth-tab'+(tab==='register'?' active':'');
-  document.getElementById('loginForm').className=tab==='login'?'':'auth-hide';
-  document.getElementById('registerForm').className=tab==='register'?'':'auth-hide';
-}
-
-function doRegister(e){e.preventDefault();var btn=document.getElementById('regBtn'),err=document.getElementById('regError');btn.disabled=true;err.textContent='';
-  fetch(GUARD+'/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('regName').value,email:document.getElementById('regEmail').value,password:document.getElementById('regPass').value})})
-    .then(function(r){return r.json()}).then(function(d){btn.disabled=false;if(d.ok){authToken=d.token;currentUser=d.user;localStorage.setItem('kasbah_token',d.token);enterApp()}else{err.textContent=d.error||'Registration failed'}}).catch(function(){btn.disabled=false;err.textContent='Cannot reach guard. Is the app running?'});
-}
-
-function doLogin(e){e.preventDefault();var btn=document.getElementById('loginBtn'),err=document.getElementById('loginError');btn.disabled=true;err.textContent='';
-  fetch(GUARD+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('loginEmail').value,password:document.getElementById('loginPass').value})})
-    .then(function(r){return r.json()}).then(function(d){btn.disabled=false;if(d.ok){authToken=d.token;currentUser=d.user;localStorage.setItem('kasbah_token',d.token);enterApp()}else{err.textContent=d.error||'Login failed'}}).catch(function(){btn.disabled=false;err.textContent='Cannot reach guard. Is the app running?'});
+function doLogin(e){e.preventDefault();var btn=document.getElementById('loginBtn'),errEl=document.getElementById('loginError');btn.disabled=true;errEl.textContent='';
+  var email=document.getElementById('loginEmail').value;
+  var password=document.getElementById('loginPass').value;
+  // Authenticate against the central API at bekasbah.com
+  fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:password})})
+    .then(function(r){return r.json()}).then(function(d){
+      btn.disabled=false;
+      if(d.ok){
+        authToken=d.token;
+        currentUser=d.user;
+        localStorage.setItem('kasbah_token',d.token);
+        localStorage.setItem('kasbah_user',JSON.stringify(d.user));
+        // Also register locally with the guard so it knows the user
+        fetch(GUARD+'/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:password,name:d.user.name||email})}).catch(function(){});
+        enterApp();
+      }else{errEl.textContent=d.error||'Login failed'}
+    }).catch(function(){
+      btn.disabled=false;
+      errEl.textContent='Cannot reach server. Check your internet connection.';
+    });
 }
 
 function checkSession(){
-  fetch(GUARD+'/auth/me',{headers:{'Authorization':'Bearer '+authToken}})
-    .then(function(r){return r.json()}).then(function(d){if(d.ok){currentUser=d.user;if(d.authority)updateAuthorityUI(d.authority);enterApp()}else{localStorage.removeItem('kasbah_token');authToken=null}}).catch(function(){});
+  // First try to verify with the central API
+  fetch(API+'/auth/me',{headers:{'Authorization':'Bearer '+authToken}})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.ok){
+        currentUser=d.user;
+        localStorage.setItem('kasbah_user',JSON.stringify(d.user));
+        enterApp();
+      }else{
+        // Token expired — try offline with saved user data
+        var saved=localStorage.getItem('kasbah_user');
+        if(saved){currentUser=JSON.parse(saved);enterApp()}
+        else{localStorage.removeItem('kasbah_token');authToken=null}
+      }
+    }).catch(function(){
+      // Offline — use saved user data if available
+      var saved=localStorage.getItem('kasbah_user');
+      if(saved){currentUser=JSON.parse(saved);enterApp()}
+    });
 }
 
 function enterApp(){
@@ -391,7 +405,7 @@ function enterApp(){
   pollGuard();setInterval(pollGuard,3000);setInterval(refreshEvents,5000);refreshEvents();verifyChain();
 }
 
-function doLogout(){fetch(GUARD+'/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+authToken}}).catch(function(){});localStorage.removeItem('kasbah_token');authToken=null;currentUser=null;location.reload()}
+function doLogout(){fetch(API+'/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+authToken}}).catch(function(){});fetch(GUARD+'/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+authToken}}).catch(function(){});localStorage.removeItem('kasbah_token');localStorage.removeItem('kasbah_user');authToken=null;currentUser=null;location.reload()}
 
 function showPage(page,el){
   var pages=document.querySelectorAll('.page');for(var i=0;i<pages.length;i++)pages[i].className='page';
