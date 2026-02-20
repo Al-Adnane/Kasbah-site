@@ -1,147 +1,44 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <title>Kasbah — Control AI before it acts</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <meta name="description" content="Kasbah is a local safety layer that intercepts AI actions and enforces allow / review / block decisions — before data leaks."/>
-  <style>
-    :root{
-      --bg:#0b0f14; --panel:#111827; --text:#e6e9ee; --muted:#9aa3b2; --link:#7aa2ff;
-      --ok:#22c55e; --warn:#eab308; --bad:#ef4444;
-      --r:14px;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Inter,Arial;background:var(--bg);color:var(--text)}
-    a{color:var(--link);text-decoration:none}
-    .wrap{max-width:1000px;margin:auto;padding:56px 20px}
-    header{display:flex;justify-content:space-between;align-items:center;gap:18px}
-    nav{color:var(--muted);font-size:14px;display:flex;gap:10px;align-items:center}
-    nav a{color:var(--muted)}
-    nav a:hover{color:var(--text)}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.2px}
-    .dot{width:10px;height:10px;border-radius:999px;background:var(--link);box-shadow:0 0 18px rgba(122,162,255,.7)}
-    .hero{margin-top:72px;display:grid;grid-template-columns:1.2fr .8fr;gap:22px;align-items:start}
-    @media (max-width: 860px){.hero{grid-template-columns:1fr;margin-top:44px}}
-    h1{font-size:46px;line-height:1.05;margin:0}
-    .sub{margin-top:14px;color:var(--muted);font-size:18px;line-height:1.45}
-    .hooks{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px}
-    .pill{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);padding:8px 10px;border-radius:999px;color:var(--muted);font-size:13px}
-    .panel{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);padding:18px}
-    .stack{display:flex;flex-direction:column;gap:12px}
-    .small{font-size:13px;color:var(--muted);line-height:1.4}
-    .ctaRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
-    .btn{appearance:none;border:0;border-radius:12px;padding:12px 14px;font-size:15px;cursor:pointer;font-weight:700}
-    .btn.primary{background:var(--link);color:#0b0f14}
-    .btn.ghost{background:rgba(255,255,255,.05);color:var(--text);border:1px solid rgba(255,255,255,.08)}
-    .btn:active{transform:translateY(1px)}
-    .grid2{margin-top:26px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    @media (max-width: 860px){.grid2{grid-template-columns:1fr}}
-    .card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);padding:18px}
-    .card.allow{border-left:4px solid var(--ok)}
-    .card.review{border-left:4px solid var(--warn)}
-    .card.block{border-left:4px solid var(--bad)}
-    .badge{font-weight:900;font-size:12px;letter-spacing:.6px;color:var(--muted)}
-    .kicker{font-size:12px;color:var(--muted);letter-spacing:.25px;text-transform:uppercase}
-    .h{font-size:18px;font-weight:800;margin:6px 0 0}
-    .muted{color:var(--muted)}
-    .formRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .input{flex:1;min-width:220px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 12px;color:var(--text);outline:none}
-    .input:focus{border-color:rgba(122,162,255,.7);box-shadow:0 0 0 3px rgba(122,162,255,.15)}
-    .status{margin-top:10px;font-size:13px;color:var(--muted)}
-    .status[data-ok="1"]{color:rgba(34,197,94,.9)}
-    .status[data-ok="0"]{color:rgba(239,68,68,.95)}
-    .section{margin-top:34px}
-    .list{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
-    .li{display:flex;gap:10px;align-items:flex-start}
-    .tick{margin-top:2px;width:18px;height:18px;border-radius:6px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.25);display:grid;place-items:center;color:rgba(34,197,94,.95);font-weight:900;font-size:12px}
-    footer{margin-top:70px;color:#6b7280;font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    .fine{color:#6b7280}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <div class="brand"><span class="dot"></span>Kasbah</div>
-      <nav>
-        <a href="/verify/">Verify</a>
-        <span>·</span>
-        <a href="/charter/">Charter</a>
-        <span>·</span>
-        <a href="/access/">Access</a>
-      </nav>
-    </header>
-
-    <section class="hero">
-      <div>
-        <div class="kicker">Local-first AI safety</div>
-        <h1>Stop data leaks before AI sees them.</h1>
-        <div class="sub">Kasbah intercepts AI actions and enforces <b>allow</b> / <b>review</b> / <b>block</b> — locally, before anything leaves your machine.</div>
-
-        <div class="hooks">
-          <div class="pill">No cloud exfiltration by default</div>
-          <div class="pill">Deterministic enforcement</div>
-          <div class="pill">Audit-friendly decisions</div>
-          <div class="pill">Built for paste, upload, and tool calls</div>
-        </div>
-
-        <div class="ctaRow">
-          <button class="btn primary" id="demoBtn" type="button">Run live demo</button>
-          <a class="btn ghost" href="#waitlist">Request early access</a>
-        </div>
-
-        <div class="section">
-          <div class="kicker">What you get</div>
-          <ul class="list">
-            <li class="li"><div class="tick">✓</div><div><b>Catch secrets and sensitive content</b> before a paste or upload reaches an AI tool.</div></li>
-            <li class="li"><div class="tick">✓</div><div><b>Force explicit user intent</b> for risky actions (review gates, overrides, policy prompts).</div></li>
-            <li class="li"><div class="tick">✓</div><div><b>Prove what happened</b> with decisions you can explain (and later audit).</div></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="stack">
-        <div id="demoCard" class="card">
-          <div class="badge" id="demoBadge">READY</div>
-          <div class="h" id="demoTitle">Click “Run live demo”</div>
-          <div class="muted" id="demoSubtitle">See Kasbah decide in 1 second</div>
-          <div id="demoLog" class="small" style="margin-top:12px"></div>
-        </div>
-
-        <div id="waitlist" class="panel">
-          <div class="kicker">Private beta</div>
-          <div class="h">Get early access</div>
-          <div class="small">No downloads here. Access is invite-based. One email is enough.</div>
-
-          <form id="waitlistForm" class="formRow">
-            <input id="waitlistEmail" class="input" type="email" placeholder="you@company.com" autocomplete="email" required />
-            <button id="waitlistCTA" class="btn primary" type="submit">Request access</button>
-          </form>
-          <div id="waitlistStatus" class="status" data-ok=""></div>
-
-          <div class="fine" style="margin-top:10px">Tip: include your use-case in the email (paste, upload, tool access). Faster approval.</div>
-        </div>
-
-        <div class="panel">
-          <div class="kicker">Trust, fast</div>
-          <div class="small">
-            Kasbah is designed so <b>risk decisions happen locally</b>. You should not need to “trust our servers” to stay safe.
-          </div>
-          <div class="ctaRow" style="margin-top:12px">
-            <a class="btn ghost" href="/verify/">Read verification</a>
-            <a class="btn ghost" href="/charter/">Read charter</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <footer>
-      <div>Kasbah — control layer for AI actions</div>
-      <div class="fine">© <span id="y"></span> bekasbah.com</div>
-    </footer>
-  </div>
-
-  <script>document.getElementById("y").textContent = new Date().getFullYear();</script>
-  <script src="/assets/app.js"></script>
-</body>
-</html>
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kasbah — Stop leaks before AI sees them</title>
+<meta name="description" content="Kasbah intercepts AI actions and enforces allow / review / block locally — before data leaks."/>
+<style>
+:root{--bg:#0b0f14;--panel:#111827;--text:#e6e9ee;--muted:#9aa3b2;--link:#7aa2ff;--ok:#22c55e;--warn:#eab308;--bad:#ef4444;--r:14px}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Inter,Arial;background:var(--bg);color:var(--text)}
+a{color:var(--link);text-decoration:none}.wrap{max-width:1000px;margin:auto;padding:56px 20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:18px}
+nav{color:var(--muted);font-size:14px;display:flex;gap:10px;align-items:center}
+nav a{color:var(--muted)}nav a:hover{color:var(--text)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800}.dot{width:10px;height:10px;border-radius:999px;background:var(--link);box-shadow:0 0 18px rgba(122,162,255,.7)}
+.hero{margin-top:72px;display:grid;grid-template-columns:1.2fr .8fr;gap:22px;align-items:start}
+@media (max-width:860px){.hero{grid-template-columns:1fr;margin-top:44px}}
+h1{font-size:46px;line-height:1.05;margin:0}.sub{margin-top:14px;color:var(--muted);font-size:18px;line-height:1.45}
+.hooks{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px}
+.pill{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);padding:8px 10px;border-radius:999px;color:var(--muted);font-size:13px}
+.panel{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);padding:18px}
+.stack{display:flex;flex-direction:column;gap:12px}.small{font-size:13px;color:var(--muted);line-height:1.4}
+.ctaRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+.btn{appearance:none;border:0;border-radius:12px;padding:12px 14px;font-size:15px;cursor:pointer;font-weight:700}
+.btn.primary{background:var(--link);color:#0b0f14}.btn.ghost{background:rgba(255,255,255,.05);color:var(--text);border:1px solid rgba(255,255,255,.08)}
+.card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);padding:18px}
+.card.allow{border-left:4px solid var(--ok)}.card.review{border-left:4px solid var(--warn)}.card.block{border-left:4px solid var(--bad)}
+.badge{font-weight:900;font-size:12px;letter-spacing:.6px;color:var(--muted)}
+.kicker{font-size:12px;color:var(--muted);text-transform:uppercase}.h{font-size:18px;font-weight:800;margin:6px 0 0}
+</style></head><body>
+<div class="wrap">
+<header><div class="brand"><span class="dot"></span>Kasbah</div><nav><a href="/verify/">Verify</a><span>·</span><a href="/charter/">Charter</a><span>·</span><a href="/access/">Access</a></nav></header>
+<section class="hero">
+<div>
+<div class="kicker">Local-first AI safety</div>
+<h1>Stop data leaks before AI sees them.</h1>
+<div class="sub">Kasbah intercepts AI actions and enforces <b>allow</b>/<b>review</b>/<b>block</b> — locally, before anything leaves your machine.</div>
+<div class="hooks"><div class="pill">No cloud exfiltration</div><div class="pill">Deterministic enforcement</div><div class="pill">Audit-friendly</div><div class="pill">Paste + upload ready</div></div>
+<div class="ctaRow"><button class="btn primary" id="demoBtn" type="button">Run live demo</button></div>
+</div>
+<div class="stack">
+<div id="demoCard" class="card"><div class="badge" id="demoBadge">READY</div><div class="h" id="demoTitle">Click “Run live demo”</div><div class="sub" id="demoSubtitle" style="margin-top:6px">See Kasbah decide in 1 second</div><div id="demoLog" class="small" style="margin-top:12px"></div></div>
+</div>
+</section>
+</div>
+<script src="/assets/app.js"></script>
+</body></html>
