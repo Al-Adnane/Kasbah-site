@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- FIX_VC_DEMO_20260220T041800Z -->
+
 <!-- BRAND_FORCE_20260220T040235Z -->
 
   <meta charset="UTF-8">
@@ -241,6 +243,17 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
 .human-line { margin-top:24px; font-size:14px; color:var(--muted); text-align:center; }
 
 </style>
+<!-- SW_OFF_20260220T042434Z -->
+
+<script>
+(function(){
+  if (!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){ r.unregister(); });
+  });
+})();
+</script>
+
 </head>
 <body>
 
@@ -251,8 +264,8 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
         <a href="#how">How it works</a>
         <a href="#demo">Try it</a>
         <a href="#download">Download</a>
-        <a href="/verify">Verify</a>
-        <a href="/charter">Charter</a>
+        <a href="/verify.html">Verify</a>
+        <a href="/charter.html">Charter</a>
         <a class="n-cta" href="#signup">Get protected</a>
       </div>
     </div>
@@ -295,7 +308,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
       <div style="margin-top:14px;padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)">
         <div style="font-weight:900">Fast start (60 seconds)</div>
         <div style="opacity:.9;margin-top:6px">1) Open the demo. 2) Click a scenario. 3) See what gets blocked — and why.</div>
-        <div style="opacity:.75;margin-top:6px">If you install: verify the download first → <a href="/verify" style="color:var(--kasbah-red);font-weight:900">Verification steps</a></div>
+        <div style="opacity:.75;margin-top:6px">If you install: verify the download first → <a href="/verify.html" style="color:var(--kasbah-red);font-weight:900">Verification steps</a></div>
       </div>
 
       <div class="section-label">Try it yourself</div>
@@ -457,7 +470,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
 <section class="download" id="download">
       <div style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02)">
         <div style="font-weight:900">Verify downloads (recommended)</div>
-        <div style="opacity:.85;margin-top:6px">Checksums + steps to confirm the DMG/ZIP are exactly what we shipped. <a href="/verify" style="color:var(--kasbah-red);font-weight:900">Open →</a></div>
+        <div style="opacity:.85;margin-top:6px">Checksums + steps to confirm the DMG/ZIP are exactly what we shipped. <a href="/verify.html" style="color:var(--kasbah-red);font-weight:900">Open →</a></div>
       </div>
 
 
@@ -506,7 +519,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
         <div class="f-ar">قصبة — Born in Morocco, trusted globally</div>
       </div>
       <div class="footer-links">
-        <a href="/charter">Charter</a>
+        <a href="/charter.html">Charter</a>
         <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">GitHub</a>
         <a href="#signup">Waitlist</a>
         <a href="#enterprise">Enterprise</a>
