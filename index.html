@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kasbah — The Fortress for AI Agents</title>
-  <meta name="description" content="Kasbah puts human authority in front of AI actions. Fortress-grade protection. Moroccan craftsmanship. Global trust. Born in Morocco, trusted globally.">
-  <meta property="og:title" content="Kasbah — The Fortress for AI Agents">
-  <meta property="og:description" content="Fortress-grade protection for AI agents. Detect. Bind. Enforce. Reclaim. Nothing happens without your permission.">
+  <title>Kasbah Guard — Stop accidental data leaks to AI</title>
+  <link rel="canonical" href="https://bekasbah.com/"/>
+<meta name="description" content="Kasbah puts human authority in front of AI actions. Guard-grade protection. Moroccan craftsmanship. Global trust. Born in Morocco, trusted globally.">
+  <meta property="og:title" content="Kasbah — Kasbah Guard">
+  <meta property="og:description" content="Guard-grade protection for AI agents. Detect. Bind. Enforce. Reclaim. Nothing happens without your permission.">
   <meta property="og:image" content="/og.png">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
@@ -209,7 +210,35 @@
       .footer-in{flex-direction:column;text-align:center}
       .enterprise-features{flex-direction:column;align-items:center}
     }
-  </style>
+  
+/* UX polish */
+.section { scroll-margin-top: 90px; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid rgba(220,38,38,.35); outline-offset: 2px; }
+.demo-note { margin-top: 10px; color: var(--muted); font-size: 13px; }
+.demo-foot { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.demo-disclaimer { color: var(--muted); font-size: 13px; }
+.demo-cta { display: inline-flex; align-self: flex-start; font-weight: 800; text-decoration: none; }
+.demo-cta:hover { text-decoration: underline; }
+.trust ul { margin: 12px 0 0; padding-left: 18px; }
+.trust li { margin: 8px 0; }
+.install-steps { margin-top: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: rgba(254,252,250,.6); }
+.install-steps h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .01em; }
+.install-steps ol { margin: 0; padding-left: 18px; }
+.install-steps li { margin: 6px 0; }
+.install-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.signup-micro { margin-top: 10px; font-size: 13px; color: var(--muted); }
+
+
+.hero-example { display:block; margin-top:8px; font-size:14px; color:var(--muted); }
+.sim-outcome { margin-top:12px; padding:10px 14px; border-radius:999px; font-weight:800; width:fit-content; }
+.sim-outcome.ok { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+.sim-outcome.blocked { background:#fef2f2; color:#7f1d1d; border:1px solid #fecaca; }
+.sim-outcome.hidden { display:none; }
+.who-for ul { margin-top:10px; padding-left:18px; }
+.who-for li { margin:6px 0; }
+.human-line { margin-top:24px; font-size:14px; color:var(--muted); text-align:center; }
+
+</style>
 </head>
 <body>
 
@@ -220,8 +249,10 @@
         <a href="#how">How it works</a>
         <a href="#demo">Try it</a>
         <a href="#download">Download</a>
+        <a href="/verify">Verify</a>
+        <a href="/changelog">Changelog</a>
         <a href="/charter">Charter</a>
-        <a class="n-cta" href="#signup">Get early access</a>
+        <a class="n-cta" href="#signup">Get protected</a>
       </div>
     </div>
   </nav>
@@ -231,13 +262,15 @@
     <!-- HERO -->
     <header class="hero">
       <div class="hero-eyebrow"><span class="dot"></span> Now in public preview</div>
-      <h1>The <em>Fortress</em> for<br>AI Agents</h1>
-      <div class="tagline">Fortress-grade protection. Moroccan craftsmanship. Global trust.</div>
+      <h1>Stop accidental data leaks to AI.</h1>
+<p class="hero-sub">Kasbah watches what you’re about to paste or upload, warns you instantly, and lets you allow or block.
+<span class="hero-example">For example: pasting an API key, credentials, or personal data into ChatGPT by mistake.</span></p>
+      <div class="tagline">Guard-grade protection. Moroccan craftsmanship. Global trust.</div>
       <div class="tagline-ar">قصبة — Born in Morocco, trusted globally</div>
       <p class="sub">Kasbah intercepts AI actions in real-time — blocking data leaks, unauthorized access, and secret exposure before they happen. 100% local. Cryptographically verified.</p>
       <div class="hero-actions">
-        <a class="btn-hero btn-primary" href="#signup">Get early access &rarr;</a>
-        <a class="btn-hero btn-secondary" href="#demo">Try the leak simulator</a>
+        <a class="btn-hero btn-primary" href="#signup">Get protected &rarr;</a>
+        <a class="btn-hero btn-secondary" href="#demo">Try the live leak simulator</a>
       </div>
       <div class="hero-proof">
         <span class="proof-badge badge-live"><span class="dot" style="width:7px;height:7px;border-radius:50%;background:var(--atlas-green);animation:pulse 2s ease infinite"></span> Extension v0.3 Live</span>
@@ -258,24 +291,37 @@
 
     <!-- INTERACTIVE LEAK SIMULATOR -->
     <section class="section" id="demo">
+      <div style="margin-top:14px;padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)">
+        <div style="font-weight:900">Fast start (60 seconds)</div>
+        <div style="opacity:.9;margin-top:6px">1) Open the demo. 2) Click a scenario. 3) See what gets blocked — and why.</div>
+        <div style="opacity:.75;margin-top:6px">If you install: verify the download first → <a href="/verify" style="color:var(--kasbah-red);font-weight:900">Verification steps</a></div>
+      </div>
+
       <div class="section-label">Try it yourself</div>
       <h2>See how Kasbah works.</h2>
       <p>This is a simulation of what happens when Kasbah intercepts an unauthorized action. Click a scenario below to see it in action.</p>
 
       <div class="sim-controls">
-        <button class="sim-btn active" onclick="runSim(event,\'credentials\')">Credential Leak</button>
-        <button class="sim-btn" onclick="runSim(event,\'apikey\')">API Key Paste</button>
-        <button class="sim-btn" onclick="runSim(event,\'pii\')">PII Exposure</button>
-        <button class="sim-btn" onclick="runSim(event,\'clean\')">Clean Message</button>
-      </div>
+        <button class="sim-btn active" data-sim="credentials">Password in a message</button>
+        <button class="sim-btn" data-sim="apikey">Accidentally paste an API key</button>
+        <button class="sim-btn" data-sim="pii">Share personal info</button>
+        <button class="sim-btn" data-sim="clean">Normal message</button>
+      
+<p class="demo-note">Click a scenario. Watch what Kasbah would do. Nothing you type is sent anywhere.</p></div>
 
       <div class="terminal">
         <div class="terminal-bar">
           <div class="td r"></div><div class="td y"></div><div class="td g"></div>
-          <div class="terminal-title">Kasbah Guard — Fortress Enforcement</div>
+          <div class="terminal-title">Kasbah Guard — Guard Enforcement</div>
         </div>
         <div class="terminal-body" id="simBody">
           <div class="tl visible"><span class="tm">Click a scenario above to start the simulation...</span></div>
+<div id="simOutcome" class="sim-outcome hidden"></div>
+<div class="demo-foot">
+  <div class="demo-disclaimer">This is a simulation. The real app runs locally on your Mac.</div>
+  <a class="demo-cta" href="#download">Want this on your Mac? Download Kasbah Guard →</a>
+</div>
+
         </div>
       </div>
 
@@ -289,11 +335,11 @@
     <!-- THREE PILLARS (Brand Pillars) -->
     <section class="section" id="difference">
       <div class="section-label">The Kasbah difference</div>
-      <h2>Fortress-grade protection. Beautiful inside.</h2>
+      <h2>Guard-grade protection. Beautiful inside.</h2>
       <div class="pillars">
         <div class="pillar">
           <div class="pillar-icon">&#127984;</div>
-          <h3>Fortress-Grade Protection</h3>
+          <h3>Guard-Grade Protection</h3>
           <p>Like a kasbah's walls, our enforcement can't be bypassed. Real-time interception at the point of action. No workarounds.</p>
         </div>
         <div class="pillar">
@@ -398,7 +444,22 @@
     </section>
 
     <!-- DOWNLOAD -->
-    <section class="download" id="download">
+    
+<section class="section who-for">
+  <h2>Kasbah Guard is for you if you:</h2>
+  <ul>
+    <li>Use ChatGPT, Claude, or Copilot at work</li>
+    <li>Paste code, configs, or documents regularly</li>
+    <li>Want protection without learning security</li>
+  </ul>
+</section>
+<section class="download" id="download">
+      <div style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02)">
+        <div style="font-weight:900">Verify downloads (recommended)</div>
+        <div style="opacity:.85;margin-top:6px">Checksums + steps to confirm the DMG/ZIP are exactly what we shipped. <a href="/verify" style="color:var(--kasbah-red);font-weight:900">Open →</a></div>
+      </div>
+
+
       <h3>Download the fortress</h3>
       <p class="dl-sub">Get started in 30 seconds. Free and open source.</p>
       <div class="dl-row">
@@ -440,7 +501,7 @@
   <footer>
     <div class="footer-in">
       <div class="footer-left">
-        &copy; 2025 <a href="/">Kasbah</a> — The Fortress for AI Agents
+        &copy; 2025 <a href="/">Kasbah</a> — Kasbah Guard
         <div class="f-ar">قصبة — Born in Morocco, trusted globally</div>
       </div>
       <div class="footer-links">
@@ -450,14 +511,15 @@
         <a href="#enterprise">Enterprise</a>
       </div>
     </div>
-  </footer>
+  <p class="human-line">Kasbah was built after too many “oh shit” moments with AI tools.</p>
+</footer>
 
   <script>
     // Leak Simulator
     var scenarios = {
       credentials: [
         {text:'<span class="tp">$</span> ai-agent paste .env to ChatGPT', delay:0},
-        {text:'<span class="tm">&gt; Fortress scanning clipboard content...</span>', delay:400},
+        {text:'<span class="tm">&gt; Guard scanning clipboard content...</span>', delay:400},
         {text:'<span class="tw">! DETECTED:</span> DATABASE_URL=postgres://admin:s3cret@prod:5432', delay:800},
         {text:'<span class="tw">! DETECTED:</span> STRIPE_SECRET=sk_live_FAKE_DEMO_ONLY_not_real_key', delay:1100},
         {text:'<span class="tr">KASBAH:</span> 2 secrets found. Risk: <strong>97/100</strong><span class="tag-block">BLOCKED</span>', delay:1500},
@@ -465,7 +527,7 @@
       ],
       apikey: [
         {text:'<span class="tp">$</span> cursor-agent send code snippet to Claude', delay:0},
-        {text:'<span class="tm">&gt; Fortress scanning outbound payload...</span>', delay:400},
+        {text:'<span class="tm">&gt; Guard scanning outbound payload...</span>', delay:400},
         {text:'<span class="tw">! DETECTED:</span> OPENAI_API_KEY=sk_demo_roj-abc123def456ghi789jkl012', delay:800},
         {text:'<span class="tw">! DETECTED:</span> AWS_SECRET_ACCESS_KEY=AWS_SECRET_DEMO_REDACTED', delay:1100},
         {text:'<span class="tr">KASBAH:</span> 2 API keys found. Risk: <strong>94/100</strong><span class="tag-block">BLOCKED</span>', delay:1500},
@@ -473,7 +535,7 @@
       ],
       pii: [
         {text:'<span class="tp">$</span> ai-assistant upload customer_data.csv to analysis', delay:0},
-        {text:'<span class="tm">&gt; Fortress scanning file content...</span>', delay:400},
+        {text:'<span class="tm">&gt; Guard scanning file content...</span>', delay:400},
         {text:'<span class="tw">! DETECTED:</span> SSN: 123-45-6789 (row 1 of 2,340)', delay:800},
         {text:'<span class="tw">! DETECTED:</span> Credit Card: 4532-XXXX-XXXX-7890 (row 47)', delay:1100},
         {text:'<span class="tw">! DETECTED:</span> 847 rows contain PII (names, emails, phone numbers)', delay:1400},
@@ -482,25 +544,40 @@
       ],
       clean: [
         {text:'<span class="tp">$</span> ai-agent send "refactor this sorting function" to Claude', delay:0},
-        {text:'<span class="tm">&gt; Fortress scanning message content...</span>', delay:400},
+        {text:'<span class="tm">&gt; Guard scanning message content...</span>', delay:400},
         {text:'<span class="tm">&gt; No secrets, PII, or credentials detected.</span>', delay:800},
         {text:'<span class="tok">KASBAH:</span> Clean. Risk: <strong>3/100</strong><span class="tag-allow">ALLOWED</span>', delay:1200},
         {text:'<span class="tm">&gt; Message passed through the gate. Authority preserved.</span>', delay:1600}
       ]
     };
 
-    var simRunning = false;
-    function runSim(ev, type) {
+    var simRunning = false; setOutcome(_simType);
+
+    function runSim(type, ev) {
+  var _simType = type;
+
+      if (ev && ev.preventDefault) ev.preventDefault();
       if (simRunning) return;
       simRunning = true;
+
       document.querySelectorAll('.sim-btn').forEach(function(b) { b.classList.remove('active'); });
-      var btn = (ev && ev.target) ? ev.target : document.querySelector('.sim-btn.active');
-      if (btn) btn.classList.add('active');
+
+      var activeBtn = null;
+      if (ev && (ev.currentTarget || ev.target)) {
+        activeBtn = ev.currentTarget || ev.target;
+      } else {
+        activeBtn = document.querySelector('.sim-btn[data-sim="' + type + '"]') || document.querySelector('.sim-btn');
+      }
+      if (activeBtn) activeBtn.classList.add('active');
+
       var body = document.getElementById('simBody');
       var share = document.getElementById('simShare');
-      share.style.display = 'none';
-      body.innerHTML = '';
-      var lines = scenarios[type];
+      if (share) share.style.display = 'none';
+      if (body) body.innerHTML = '';
+
+      var lines = (typeof scenarios !== 'undefined' && scenarios[type]) ? scenarios[type] : null;
+      if (!lines || !body) { simRunning = false; setOutcome(_simType); return; }
+
       lines.forEach(function(line, i) {
         setTimeout(function() {
           var div = document.createElement('div');
@@ -509,22 +586,33 @@
           body.appendChild(div);
           div.offsetHeight;
           div.classList.add('visible');
+
           if (i === lines.length - 1) {
-            simRunning = false;
-            if (type !== 'clean') {
+            simRunning = false; setOutcome(_simType);
+
+            if (share && type !== 'clean') {
               setTimeout(function() {
                 share.style.display = 'flex';
                 var msg = encodeURIComponent('Just watched Kasbah block a simulated data leak in real-time. The fortress held. Try the simulator:');
-                var url = encodeURIComponent('https://kasbah-site.pages.dev/#demo');
-                document.getElementById('shareX').href = 'https://x.com/intent/tweet?text=' + msg + '&url=' + url;
-                document.getElementById('shareLI').href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url;
+                var url = encodeURIComponent((location.origin || 'https://kasbah-site.pages.dev') + '/#demo');
+                var x = document.getElementById('shareX');
+                var li = document.getElementById('shareLI');
+                if (x) x.href = 'https://x.com/intent/tweet?text=' + msg + '&url=' + url;
+                if (li) li.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url;
               }, 400);
             }
           }
         }, line.delay);
       });
     }
-    setTimeout(function() { runSim(null,'credentials'); }, 800);
+
+    document.querySelectorAll('.sim-btn[data-sim]').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        runSim(btn.getAttribute('data-sim'), e);
+      });
+    });
+
+    setTimeout(function() { runSim('credentials'); }, 800);
 
     // Sign-up form
     var emailIn = document.getElementById('suEmail');
@@ -616,6 +704,21 @@
         if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
       });
     });
-  </script>
+  
+    function setOutcome(type) {
+      var el = document.getElementById('simOutcome');
+      if (!el) return;
+      el.className = 'sim-outcome';
+      if (type === 'clean') {
+        el.textContent = '✔ Allowed — nothing sensitive detected';
+        el.classList.add('ok');
+      } else {
+        el.textContent = '⛔ Blocked — sensitive data detected';
+        el.classList.add('blocked');
+      }
+      el.classList.remove('hidden');
+    }
+    
+</script>
 </body>
 </html>
