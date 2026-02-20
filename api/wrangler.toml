@@ -2,15 +2,18 @@ name = "kasbah-api"
 main = "src/worker.js"
 compatibility_date = "2024-12-01"
 
+# Custom domain — add once bekasbah.com is on Cloudflare DNS:
+# routes = [{ pattern = "api.bekasbah.com/*", zone_name = "bekasbah.com" }]
+
 [vars]
-CORS_ORIGIN = "https://bekasbah.com"
+CORS_ORIGIN = "*"
 JWT_ISSUER = "kasbah-guard"
 PLAN_DEFAULT = "pioneer"
 
 [[kv_namespaces]]
 binding = "USERS"
-id = "placeholder_users_kv_id"
+id = "f4c1faaf59de42daafe691ac5875bc8b"
 
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "placeholder_sessions_kv_id"
+id = "fe0ebf04d465464b94db671bf1831667"
