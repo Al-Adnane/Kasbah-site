@@ -57,3 +57,6 @@ kasbah-guard-dist/apps/desktop/src-tauri/icons/
 credentials*
 signing.key
 **/signing.key
+
+# local helper scripts
+CAT_*.sh
