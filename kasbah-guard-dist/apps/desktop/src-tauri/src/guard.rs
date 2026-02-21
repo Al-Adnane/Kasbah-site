@@ -1301,12 +1301,17 @@ pub fn spawn_guard_service() {
                                     .collect();
 
                                 let lower = preview.to_lowercase();
+                                let mut has_block_policy = false;
                                 for (pattern, action) in &policies {
                                     if lower.contains(&pattern.to_lowercase()) {
                                         risk = risk.max(70);
                                         if action == "block" {
-                                            preflight_decision = "WARN".to_string();
-                                            risk = risk.max(90);
+                                            preflight_decision = "DENY".to_string();
+                                            risk = risk.max(95);
+                                            has_block_policy = true;
+                                        } else if action == "warn" && !has_block_policy {
+                                            preflight_decision = "CHALLENGE".to_string();
+                                            risk = risk.max(80);
                                         }
                                         reason = format!("{}; Policy match: {}", reason, pattern);
                                     }
@@ -1391,19 +1396,40 @@ pub fn spawn_guard_service() {
                                 }
                             }
 
-                            let res = serde_json::json!({
-                                "ok": true,
-                                "decision": "PENDING",
-                                "ticket": signed_ticket,
-                                "ticket_id": ticket_id,
-                                "exp_ms": exp_ms,
-                                "risk": risk,
-                                "preflight": preflight_decision,
-                                "reason": reason,
-                                "content_hash": c_hash,
-                                "verb": verb
-                            });
-                            respond(request, 200, &res.to_string());
+                            // If preflight is DENY (block policy matched), return immediate denial
+                            if preflight_decision == "DENY" {
+                                {
+                                    let mut s = st.lock().unwrap();
+                                    s.stats.total += 1;
+                                    s.stats.denied += 1;
+                                    s.stats.threats_blocked += 1;
+                                }
+                                let res = serde_json::json!({
+                                    "ok": true,
+                                    "decision": "DENY",
+                                    "blocked": true,
+                                    "risk": risk,
+                                    "preflight": "DENY",
+                                    "reason": reason,
+                                    "content_hash": c_hash,
+                                    "verb": verb
+                                });
+                                respond(request, 200, &res.to_string());
+                            } else {
+                                let res = serde_json::json!({
+                                    "ok": true,
+                                    "decision": "PENDING",
+                                    "ticket": signed_ticket,
+                                    "ticket_id": ticket_id,
+                                    "exp_ms": exp_ms,
+                                    "risk": risk,
+                                    "preflight": preflight_decision,
+                                    "reason": reason,
+                                    "content_hash": c_hash,
+                                    "verb": verb
+                                });
+                                respond(request, 200, &res.to_string());
+                            }
                         }
                         Err(_) => {
                             respond(request, 400, r#"{"ok":false,"error":"invalid JSON"}"#);
@@ -1474,7 +1500,13 @@ pub fn spawn_guard_service() {
                                             &entry.scope,
                                         );
                                     }
-                                    if choice == "ALLOW" {
+                                    // Auto-deny high-risk actions regardless of user choice
+                                    if entry.risk >= 90 {
+                                        decision = "DENY".to_string();
+                                        reason = format!("auto-blocked: risk {} exceeds safety threshold", entry.risk);
+                                        s.stats.denied += 1;
+                                        s.stats.threats_blocked += 1;
+                                    } else if choice == "ALLOW" {
                                         decision = "ALLOW".to_string();
                                         reason = "user allowed".to_string();
                                         s.stats.allowed += 1;

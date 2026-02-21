@@ -394,19 +394,44 @@
       </div>
     </section>
 
-    <!-- SIGNUP (REAL REGISTRATION) -->
+    <!-- SIGNUP (REAL REGISTRATION + EMAIL VERIFICATION) -->
     <section class="signup" id="signup">
       <div class="signup-inner">
         <h2>Enter the fortress.</h2>
         <p class="su-sub">Create your Kasbah account. Download the app, sign in, and claim authority over your AI tools.</p>
         <div class="su-urgency">&#9889; Pioneer access — full features, free forever</div>
-        <div class="su-form" style="flex-direction:column;gap:12px">
-          <input class="su-input" type="text" id="suName" placeholder="Your name" autocomplete="name">
-          <input class="su-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email">
-          <input class="su-input" type="password" id="suPass" placeholder="Password (min 6 chars)" autocomplete="new-password" minlength="6">
-          <button class="su-btn" id="suBtn" disabled style="width:100%">Create Account</button>
+        <!-- Phase 1: Registration form -->
+        <div id="signupPhase1">
+          <div class="su-form" style="flex-direction:column;gap:12px">
+            <input class="su-input" type="text" id="suName" placeholder="Your name" autocomplete="name">
+            <input class="su-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email">
+            <input class="su-input" type="password" id="suPass" placeholder="Password (min 6 chars)" autocomplete="new-password" minlength="6">
+            <button class="su-btn" id="suBtn" disabled style="width:100%">Create Account</button>
+          </div>
+          <div class="su-note">100% local enforcement. Your data never leaves your machine.</div>
         </div>
-        <div class="su-note">100% local enforcement. Your data never leaves your machine.</div>
+        <!-- Phase 2: Verification code input (hidden by default) -->
+        <div id="signupPhase2" style="display:none">
+          <div style="font-size:48px;margin-bottom:16px">&#9993;</div>
+          <h3 style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:8px">Check your email</h3>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+            We sent a 6-digit verification code to <strong id="verifyEmailDisplay"></strong>
+          </p>
+          <input class="su-input" type="text" id="verifyCode" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" style="text-align:center;font-size:24px;font-weight:800;letter-spacing:0.3em;margin-bottom:12px" autofocus>
+          <button class="su-btn" id="verifyBtn" disabled style="width:100%">Verify Account</button>
+          <div style="margin-top:14px">
+            <button id="resendBtn" style="background:none;border:none;color:var(--kasbah-red);font-weight:700;cursor:pointer;font-family:inherit;font-size:13px">Didn't get the code? Resend</button>
+          </div>
+        </div>
+        <!-- Phase 3: Success (hidden by default) -->
+        <div id="signupPhase3" style="display:none">
+          <div style="font-size:48px;margin-bottom:16px">&#10004;</div>
+          <h3 style="font-size:18px;font-weight:800;color:var(--atlas-green);margin-bottom:8px">Account verified!</h3>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6">
+            Your account is active. Download the app and sign in with your credentials.
+          </p>
+          <a class="su-btn" href="#download" style="display:inline-block;text-decoration:none;text-align:center">Download Kasbah Guard</a>
+        </div>
         <div class="su-result" id="suResult"></div>
         <div class="su-count" id="suCount" style="display:none"><strong id="savesCounter">0</strong> users have claimed authority</div>
       </div>
@@ -450,7 +475,7 @@
         <a href="/charter">Charter</a>
         <a href="/access">Access</a>
         <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">GitHub</a>
-        <a href="#waitlist">Waitlist</a>
+        <a href="#signup">Sign Up</a>
         <a href="#enterprise">Enterprise</a>
       </div>
     </div>
@@ -559,13 +584,22 @@
     // Auto-run credentials demo on page load
     setTimeout(() => runSim('credentials'), 800);
 
-    // Registration form
+    // Registration + Email Verification
     const API_URL = 'https://kasbah-api.adnaneaddioui.workers.dev';
     const nameIn = document.getElementById('suName');
     const emailIn = document.getElementById('suEmail');
     const passIn = document.getElementById('suPass');
     const suBtn = document.getElementById('suBtn');
     const suResult = document.getElementById('suResult');
+    let pendingEmail = '';
+
+    function showResult(msg, isError) {
+      suResult.textContent = msg;
+      suResult.style.display = 'block';
+      suResult.style.background = isError ? '#fef2f2' : '#ecfdf5';
+      suResult.style.color = isError ? '#dc2626' : '#065f46';
+      suResult.style.borderColor = isError ? '#fecaca' : '#a7f3d0';
+    }
 
     function validateForm() {
       const email = emailIn.value.trim();
@@ -577,6 +611,7 @@
     emailIn.addEventListener('input', validateForm);
     passIn.addEventListener('input', validateForm);
 
+    // Phase 1: Create Account
     suBtn.addEventListener('click', () => {
       suBtn.disabled = true;
       suBtn.textContent = 'Creating account...';
@@ -592,39 +627,96 @@
       })
         .then(r => r.json())
         .then(d => {
-          if (d.ok) {
-            suResult.textContent = 'Account created! Download the app and sign in with your credentials.';
-            suResult.style.display = 'block';
-            suResult.style.background = '#ecfdf5';
-            suResult.style.color = '#065f46';
-            suResult.style.borderColor = '#a7f3d0';
-            suBtn.textContent = 'Account created ✓';
-            nameIn.disabled = true;
-            emailIn.disabled = true;
-            passIn.disabled = true;
-            // Scroll to download section
-            setTimeout(() => {
-              const dl = document.querySelector('.download');
-              if (dl) dl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 1500);
+          if (d.ok && d.needsVerification) {
+            // Show verification phase
+            pendingEmail = d.email || email;
+            document.getElementById('signupPhase1').style.display = 'none';
+            document.getElementById('signupPhase2').style.display = 'block';
+            document.getElementById('verifyEmailDisplay').textContent = pendingEmail;
+            suResult.style.display = 'none';
+            document.getElementById('verifyCode').focus();
+          } else if (d.ok) {
+            showResult('Account created! Download the app and sign in.', false);
+            suBtn.textContent = 'Account created';
           } else {
-            suResult.textContent = d.error || 'Registration failed. Please try again.';
-            suResult.style.display = 'block';
-            suResult.style.background = '#fef2f2';
-            suResult.style.color = '#dc2626';
-            suResult.style.borderColor = '#fecaca';
+            showResult(d.error || 'Registration failed. Please try again.', true);
             suBtn.disabled = false;
             suBtn.textContent = 'Create Account';
           }
         })
         .catch(() => {
-          suResult.textContent = 'Connection error. Please try again.';
-          suResult.style.display = 'block';
-          suResult.style.background = '#fef2f2';
-          suResult.style.color = '#dc2626';
-          suResult.style.borderColor = '#fecaca';
+          showResult('Connection error. Please try again.', true);
           suBtn.disabled = false;
           suBtn.textContent = 'Create Account';
+        });
+    });
+
+    // Phase 2: Verify code
+    const verifyCodeIn = document.getElementById('verifyCode');
+    const verifyBtn = document.getElementById('verifyBtn');
+
+    verifyCodeIn.addEventListener('input', () => {
+      const v = verifyCodeIn.value.replace(/\D/g, '').slice(0, 6);
+      verifyCodeIn.value = v;
+      verifyBtn.disabled = v.length !== 6;
+    });
+    verifyCodeIn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !verifyBtn.disabled) verifyBtn.click();
+    });
+
+    verifyBtn.addEventListener('click', () => {
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+      suResult.style.display = 'none';
+
+      fetch(API_URL + '/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail, code: verifyCodeIn.value })
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok && d.verified) {
+            // Show success phase
+            document.getElementById('signupPhase2').style.display = 'none';
+            document.getElementById('signupPhase3').style.display = 'block';
+            suResult.style.display = 'none';
+          } else {
+            showResult(d.error || 'Verification failed. Please try again.', true);
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify Account';
+          }
+        })
+        .catch(() => {
+          showResult('Connection error. Please try again.', true);
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = 'Verify Account';
+        });
+    });
+
+    // Resend code
+    document.getElementById('resendBtn').addEventListener('click', () => {
+      const rBtn = document.getElementById('resendBtn');
+      rBtn.textContent = 'Sending...';
+      rBtn.disabled = true;
+
+      fetch(API_URL + '/auth/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail })
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) {
+            rBtn.textContent = 'Code sent!';
+          } else {
+            rBtn.textContent = d.error || 'Failed to send';
+          }
+          setTimeout(() => { rBtn.textContent = "Didn't get the code? Resend"; rBtn.disabled = false; }, 4000);
+        })
+        .catch(() => {
+          rBtn.textContent = 'Failed — try again';
+          setTimeout(() => { rBtn.textContent = "Didn't get the code? Resend"; rBtn.disabled = false; }, 3000);
         });
     });
 

@@ -6,8 +6,8 @@ Thumbs.db
 # Build artifacts
 node_modules/
 **/node_modules/
-src-tauri/target/
-**/src-tauri/target/
+target/
+**/target/
 **/gen/
 
 # Compiled binaries (except public downloads)
@@ -21,6 +21,7 @@ src-tauri/target/
 # Package locks (regenerated)
 package-lock.json
 **/package-lock.json
+Cargo.lock
 
 # IDE
 .idea/
@@ -28,8 +29,15 @@ package-lock.json
 *.swp
 *.swo
 
-# Dist (built from source)
-kasbah-guard-dist/apps/desktop/dist/
+# Backup files
+*.bak
+*.bak_*
+**/*.bak
+**/*.bak_*
+
+# Wrangler build cache
+.wrangler/
+**/.wrangler/
 
 # Extension zips (built from source)
 kasbah-guard-dist/kasbah-*.zip
@@ -47,9 +55,15 @@ downloads/
 kasbah-guard-dist/apps/desktop/src-tauri/gen/
 kasbah-guard-dist/apps/desktop/src-tauri/icons/
 
+# Disabled services
+kasbah-guard-dist/services/
+kasbah-guard-dist/imports/
+
 # Secrets & credentials (defensive)
 .env
 .env.*
+!.env.example
+!.env.prod.example
 *.pem
 *.key
 *.p12
@@ -58,5 +72,16 @@ credentials*
 signing.key
 **/signing.key
 
-# local helper scripts
+# Local helper/fix scripts
 CAT_*.sh
+fix_*.sh
+final_*.sh
+
+# Databases
+*.db
+*.db-journal
+*.sqlite
+
+# Logs
+*.log
+*.pid
