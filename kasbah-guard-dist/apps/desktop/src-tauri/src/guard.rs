@@ -6392,10 +6392,12 @@ end tell"#
                 fn walk_files(dir: &std::path::Path, exts: &std::collections::HashSet<&str>,
                               skips: &std::collections::HashSet<&str>, depth: u32, max_depth: u32,
                               out: &mut Vec<std::path::PathBuf>) {
-                    if depth > max_depth { return; }
+                    if depth > max_depth || out.len() > 50_000 { return; }
                     let entries = match std::fs::read_dir(dir) { Ok(e) => e, Err(_) => return };
                     for entry in entries.flatten() {
                         let p = entry.path();
+                        // Skip symlinks to prevent infinite loops
+                        if p.symlink_metadata().map(|m| m.file_type().is_symlink()).unwrap_or(false) { continue; }
                         if p.is_dir() {
                             let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
                             if !skips.contains(name) {
@@ -6432,6 +6434,7 @@ end tell"#
                     eprintln!("[Kasbah Guard] FS watcher: indexed {} existing files (recursive, depth {})", known_mtimes.len(), MAX_DEPTH);
                 }
 
+                let mut prune_counter: u32 = 0;
                 loop {
                     std::thread::sleep(std::time::Duration::from_secs(5));
                     let (paths, fs_watch_enabled) = {
@@ -6439,6 +6442,18 @@ end tell"#
                         (s.config.watch_paths.clone(), s.config.fs_watch)
                     };
                     if !fs_watch_enabled { continue; }
+
+                    // Prune deleted files from known_mtimes every ~5 min (60 cycles)
+                    prune_counter += 1;
+                    if prune_counter >= 60 {
+                        prune_counter = 0;
+                        let before = known_mtimes.len();
+                        known_mtimes.retain(|path, _| std::path::Path::new(path).exists());
+                        let pruned = before - known_mtimes.len();
+                        if pruned > 0 {
+                            eprintln!("[Kasbah Guard] FS watcher: pruned {} deleted entries, {} remaining", pruned, known_mtimes.len());
+                        }
+                    }
 
                     let mut changed_files: Vec<String> = Vec::new();
                     for dir in &paths {
@@ -6534,9 +6549,24 @@ end tell"#
                                     Err(_) => "An app".to_string()
                                 }
                             };
+                            // Use modal alert for flagged files — impossible to miss
+                            let safe_summary = finding_summary.replace('"', "'").replace('\\', "/");
+                            let alert_script = format!(
+                                concat!(
+                                    "set choice to button returned of (display alert \"Kasbah Guard — Sensitive File\" ",
+                                    "message \"{} edited {}\\n\\nDetected: {}\\n\\nThis file contains data that could be exposed.\" ",
+                                    "as critical buttons {{\"Dismiss\", \"Open Dashboard\"}} default button \"Open Dashboard\")\n",
+                                    "if choice is \"Open Dashboard\" then\n",
+                                    "  open location \"http://127.0.0.1:8788\"\n",
+                                    "end if"
+                                ),
+                                editor_hint, safe_fname, safe_summary
+                            );
+                            spawn_detached("osascript", &["-e", &alert_script]);
+                            // Also fire notification banner as backup
                             spawn_detached("osascript", &["-e", &format!(
                                 "display notification \"{} edited {}\" with title \"Kasbah Guard\" subtitle \"Sensitive content: {}\"",
-                                editor_hint, safe_fname, finding_summary.replace('"', "'")
+                                editor_hint, safe_fname, safe_summary
                             )]);
                             // Audit
                             let db_lock = db_fs.lock().unwrap_or_else(|e| e.into_inner());
@@ -6580,8 +6610,13 @@ end tell"#
                                         Err(_) => "An app".to_string()
                                     }
                                 };
+                                // Visible notification: display dialog that auto-dismisses
                                 spawn_detached("osascript", &["-e", &format!(
                                     "display notification \"{} edited {} — no issues\" with title \"Kasbah Guard\" subtitle \"File OK\"",
+                                    editor_hint, safe_fname
+                                )]);
+                                spawn_detached("osascript", &["-e", &format!(
+                                    "display dialog \"{} edited {}\\n\\nNo sensitive content detected.\" with title \"Kasbah Guard\" buttons {{\"OK\"}} default button \"OK\" giving up after 3",
                                     editor_hint, safe_fname
                                 )]);
                             }
