@@ -387,10 +387,18 @@ fn is_password_false_positive(lower: &str) -> bool {
                 .collect();
             let val = value.trim();
 
+            // Too short to be a real password (< 4 chars)
+            if val.len() < 4 {
+                return true;
+            }
+            // Masked/redacted values (*****, ####, xxxx patterns)
+            if val.chars().all(|c| c == '*' || c == '#' || c == 'x' || c == 'X' || c == '●' || c == '•') {
+                return true;
+            }
             // Redacted values
             if val.contains("<redacted>") || val.contains("redacted") || val.contains("xxxxxx")
                 || val.contains("********") || (val.contains("xxx") && val.len() < 15)
-                || val.contains("xxxxxxxxx") {
+                || val.contains("xxxxxxxxx") || val.contains("####") {
                 return true;
             }
             // Placeholder/template variables: ${VAR}, $VAR, <your_*>, {{var}}
@@ -982,8 +990,13 @@ fn policy_preflight_inner(text: &str) -> (u16, String, String) {
         let in_html_or_code = lower.contains("<meta") || lower.contains("data-react-helmet")
             || lower.contains("google-site-verification") || lower.contains("content=")
             || lower.contains("msvalidate") || is_code_context(&lower);
+        // Suppress phone-like numbers preceded by version/year/port contexts
+        let in_version_context = lower.contains("year") || lower.contains("version") || lower.contains("port ")
+            || lower.contains("port:") || lower.contains("#") || lower.contains("v1.") || lower.contains("v2.")
+            || lower.contains("v3.") || lower.contains("issue #") || lower.contains("ticket #")
+            || lower.contains("bug #") || lower.contains("pr #");
         phone_count >= 1 && (has_context || phone_count >= 2 || (has_intl_prefix && (t.len() < 50 || short_phone_text)))
-            && !in_html_or_code
+            && !in_html_or_code && !in_version_context
     };
 
     // Email addresses (beyond just URLs)
@@ -3966,6 +3979,9 @@ struct State {
     velocity: VelocityTracker,
     behavioral: BehavioralTracker,
     last_fs_notify_ms: u64,
+    // Verb tracking
+    verb_counts: std::collections::HashMap<String, u64>,
+    verb_last_blocked: std::collections::HashMap<String, (u64, String)>,
     // Enterprise v2.0 fields
     ueba: UebaEngine,
     compliance: ComplianceEngine,
@@ -5855,6 +5871,14 @@ pub fn spawn_guard_service() {
             velocity: VelocityTracker::new(),
             behavioral: BehavioralTracker::new(),
             last_fs_notify_ms: 0,
+            verb_counts: {
+                let mut m = std::collections::HashMap::new();
+                for v in &["send", "paste", "upload", "download", "browse", "edit"] {
+                    m.insert(v.to_string(), 0u64);
+                }
+                m
+            },
+            verb_last_blocked: std::collections::HashMap::new(),
             ueba: UebaEngine::new(),
             compliance: ComplianceEngine::new(),
             rbac_fleet: RbacFleetManager::new(),
@@ -6598,7 +6622,8 @@ end tell"#
                         "ok": true,
                         "service": "kasbah-guard",
                         "build": "2.0.0",
-                        "features": ["hmac", "sqlite", "tickets", "tfidf-ml", "signed-audit", "os-authority", "ueba", "extended-pii", "ensemble-ml", "compliance-engine", "rbac-fleet", "process-monitor"],
+                        "features": ["hmac", "sqlite", "tickets", "tfidf-ml", "signed-audit", "os-authority", "verb-tracking", "pii-detection"],
+                        "enterprise_available": true,
                         "version": "2.0.0",
                         "port": PORT,
                         "ts_ms": now_ms()
@@ -6615,7 +6640,8 @@ end tell"#
                         "ok": true,
                         "service": "kasbah-guard",
                         "build": "2.0.0",
-                        "features": ["hmac", "sqlite", "tickets", "tfidf-ml", "signed-audit", "pii-detection", "clipboard-monitor", "keystroke-monitor", "fs-watcher", "os-authority", "ueba", "extended-pii-100+", "ensemble-ml", "compliance-gdpr-hipaa-pci", "rbac-fleet", "process-monitor", "entropy-detection", "semantic-pii"],
+                        "features": ["hmac", "sqlite", "tickets", "tfidf-ml", "signed-audit", "pii-detection", "clipboard-monitor", "keystroke-monitor", "fs-watcher", "os-authority", "verb-tracking"],
+                        "enterprise_available": true,
                         "version": "2.0.0",
                         "port": PORT,
                         "ts_ms": now_ms(),
@@ -6826,6 +6852,16 @@ end tell"#
                                 });
                                 while s.mem_events.len() > MAX_EVENTS_MEM {
                                     s.mem_events.pop_back();
+                                }
+                            }
+
+                            // Track verb counts
+                            {
+                                let mut s = st.lock().unwrap();
+                                let verb_key = verb.to_lowercase();
+                                *s.verb_counts.entry(verb_key.clone()).or_insert(0) += 1;
+                                if risk >= 60 {
+                                    s.verb_last_blocked.insert(verb_key, (now_ms(), reason.clone()));
                                 }
                             }
 
@@ -7367,6 +7403,25 @@ end tell"#
                         "threats_blocked": s.stats.threats_blocked,
                         "rate_limited": s.stats.rate_limited,
                         "locked_out": s.stats.locked_out
+                    });
+                    respond(request, 200, &body.to_string());
+                }
+
+                // ── Verb stats endpoint ──
+                ("GET", "/verb/stats") => {
+                    let s = st.lock().unwrap();
+                    let mut counts = serde_json::Map::new();
+                    for (k, v) in &s.verb_counts {
+                        counts.insert(k.clone(), serde_json::json!(v));
+                    }
+                    let mut last_blocked = serde_json::Map::new();
+                    for (k, (ts, reason)) in &s.verb_last_blocked {
+                        last_blocked.insert(k.clone(), serde_json::json!({"ts_ms": ts, "reason": reason}));
+                    }
+                    let body = serde_json::json!({
+                        "ok": true,
+                        "verb_counts": serde_json::Value::Object(counts),
+                        "verb_last_blocked": serde_json::Value::Object(last_blocked)
                     });
                     respond(request, 200, &body.to_string());
                 }

@@ -1,6 +1,7 @@
-// Kasbah Guard - Background Service Worker v1.1.0
+// Kasbah Guard - Background Service Worker v2.0.0
 const GUARD_URL = 'http://127.0.0.1:8788';
 let healthFailCount = 0;
+let badgeFlashTimeout = null;
 
 async function checkGuardStatus() {
   try {
@@ -18,8 +19,10 @@ async function updateBadge() {
   const data = await checkGuardStatus();
   const on = data && data.ok === true;
 
+  // Don't override flash badge
+  if (badgeFlashTimeout) return;
+
   if (healthFailCount >= 4) {
-    // 4 consecutive failures (1 minute) = crash detected
     chrome.action.setBadgeText({ text: '!' });
     chrome.action.setBadgeBackgroundColor({ color: '#dc2626' });
     return;
@@ -29,14 +32,25 @@ async function updateBadge() {
   chrome.action.setBadgeBackgroundColor({ color: on ? '#059669' : '#dc2626' });
 }
 
+// Flash badge red with "!" for 3s on block events, then reset
+function flashBadge() {
+  if (badgeFlashTimeout) clearTimeout(badgeFlashTimeout);
+  chrome.action.setBadgeText({ text: '!' });
+  chrome.action.setBadgeBackgroundColor({ color: '#C1440E' });
+  badgeFlashTimeout = setTimeout(function() {
+    badgeFlashTimeout = null;
+    updateBadge();
+  }, 3000);
+}
+
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[Kasbah Guard] Extension v1.1.0 installed \u2014 5-verb interception active across 30+ AI platforms');
+  console.log('[Kasbah Guard] Extension v2.0.0 installed — 6-verb interception across 30+ AI platforms');
   updateBadge();
-  chrome.storage.local.set({ guardEnabled: true, notifications: true, version: '1.1.0' });
+  chrome.storage.local.set({ guardEnabled: true, notifications: true, version: '2.0.0' });
 });
 
 chrome.runtime.onStartup.addListener(() => { updateBadge(); });
-setInterval(updateBadge, 15000);
+setInterval(updateBadge, 10000); // 10s (was 15s)
 
 chrome.runtime.onMessage.addListener((msg, sender, respond) => {
   if (msg.type === 'CHECK_STATUS') {
@@ -51,6 +65,10 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
       respond({ stats: data && data.stats ? data.stats : null });
     });
     return true;
+  }
+  // Block event from content.js — flash badge
+  if (msg.type === 'BLOCK_EVENT') {
+    flashBadge();
   }
   return true;
 });

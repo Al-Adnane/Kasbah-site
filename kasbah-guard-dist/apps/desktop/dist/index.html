@@ -36,6 +36,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
 @keyframes glow{0%,100%{box-shadow:0 0 20px var(--red-shadow)}50%{box-shadow:0 0 40px var(--red-glow)}}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+@keyframes bounce{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes heartbeat{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes stagger{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+@keyframes countUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ringFill{from{stroke-dashoffset:283}to{stroke-dashoffset:var(--ring-target,0)}}
 
 .spinner{width:18px;height:18px;border:2px solid rgba(193,68,14,.2);border-top-color:var(--red);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle}
 .spinner-white{border-color:rgba(255,255,255,.2);border-top-color:#fff}
@@ -380,6 +386,58 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
 .kill-switch.engaged .toggle{background:#ef4444}
 .kill-switch.engaged .toggle::after{left:2px}
 .kill-switch.engaged .kill-switch-title{color:#ef4444}
+
+/* ── Verb Grid ── */
+.verb-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}
+.verb-cell{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 8px;text-align:center;transition:all .25s;cursor:default}
+.verb-cell:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.verb-cell .verb-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto 6px}
+.verb-cell .verb-icon svg{width:16px;height:16px;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.verb-cell .verb-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.verb-cell .verb-count{font-size:22px;font-weight:900;letter-spacing:-.02em;line-height:1}
+.verb-cell .verb-blocked{font-size:9px;color:var(--subtle);margin-top:4px;min-height:14px}
+
+/* ── Score Ring ── */
+.score-ring-wrap{background:var(--card);border:2px solid var(--red);border-radius:var(--radius-lg);padding:20px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .3s;position:relative}
+.score-ring-wrap:hover{box-shadow:0 0 32px var(--red-glow)}
+.score-ring{position:relative;width:110px;height:110px}
+.score-ring svg{transform:rotate(-90deg)}
+.score-ring-bg{fill:none;stroke:var(--bg3);stroke-width:8}
+.score-ring-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s ease,stroke .5s ease}
+.score-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-ring-val{font-size:32px;font-weight:900;color:var(--red);letter-spacing:-.02em;line-height:1}
+.score-ring-label{font-size:10px;color:var(--muted);font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+
+/* ── Heartbeat Dot ── */
+.heartbeat-dot{width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block;animation:heartbeat 2s ease infinite;box-shadow:0 0 6px rgba(6,95,70,.4);vertical-align:middle;margin-right:6px}
+
+/* ── Severity borders on feed items ── */
+.feed-item.severity-critical{border-left:3px solid #ef4444}
+.feed-item.severity-high{border-left:3px solid var(--amber)}
+.feed-item.severity-medium{border-left:3px solid var(--blue)}
+.feed-item.severity-low{border-left:3px solid var(--green)}
+
+/* ── Verb badge pills ── */
+.verb-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin-left:6px}
+
+/* ── Progress bar (scanner) ── */
+.scan-progress{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-bottom:12px;opacity:0;transition:opacity .2s}
+.scan-progress.active{opacity:1}
+.scan-progress-bar{height:100%;background:var(--red);border-radius:2px;transition:width .4s ease}
+
+/* ── Collapsible setting groups ── */
+.setting-group-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.setting-group-header .sg-chevron{font-size:10px;color:var(--subtle);transition:transform .2s;display:inline-block}
+.setting-group.collapsed .sg-chevron{transform:rotate(-90deg)}
+.setting-group-body{overflow:hidden;transition:max-height .3s ease,opacity .2s ease;max-height:1000px;opacity:1}
+.setting-group.collapsed .setting-group-body{max-height:0;opacity:0}
+
+/* ── Feed "last updated" label ── */
+.feed-updated{font-size:10px;color:var(--subtle);font-weight:600}
+
+/* ── Enterprise hidden by default ── */
+#enterpriseSidebar{display:none}
+#enterpriseStats{display:none !important}
 </style>
 </head>
 <body>
@@ -435,12 +493,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
       <button class="sb-item" data-page="policies"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Rules</button>
       <button class="sb-item" data-page="settings"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span> Settings</button>
 
-      <!-- Enterprise -->
+      <!-- Enterprise (hidden by default, toggled via dev command) -->
+      <div id="enterpriseSidebar">
       <div class="sb-divider"></div>
       <div class="sb-section-label">Enterprise</div>
       <button class="sb-item" data-page="compliance"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span> Compliance</button>
       <button class="sb-item" data-page="ueba"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> UEBA</button>
       <button class="sb-item" data-page="processes"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg></span> Processes</button>
+      </div>
 
       <!-- Developer / Advanced toggle -->
       <div class="sb-divider"></div>
@@ -451,6 +511,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
         <button class="sb-item" data-page="authority"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span> Authority</button>
         <button class="sb-item" data-page="audit"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span> Audit Trail</button>
         <button class="sb-item" data-page="selftest"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> System Check</button>
+        <div style="padding:6px 16px"><input id="devInput" type="text" placeholder="command..." style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:10px;font-family:var(--font);background:var(--bg);color:var(--muted);outline:none" autocomplete="off"/></div>
       </div>
     </div>
     <div class="sb-guard">
@@ -482,7 +543,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
       <div class="protection-banner starting" id="protectionBanner">
         <div class="protection-shield" id="protectionShield"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <div class="protection-info">
-          <div class="protection-title" id="protectionTitle">Starting protection...</div>
+          <div class="protection-title" id="protectionTitle"><span class="heartbeat-dot" id="heartbeatDot" style="display:none"></span>Starting protection...</div>
           <div class="protection-desc" id="protectionDesc">Connecting to your local guard service</div>
         </div>
       </div>
@@ -504,15 +565,63 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
       </div>
 
       <div class="dash-pulse">
-        <div class="hero-stat">
-          <div class="hero-stat-val" id="dHeroSaves">0</div>
-          <div class="hero-stat-label">times we had<br>your back</div>
+        <div class="score-ring-wrap">
+          <div class="score-ring">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <circle class="score-ring-bg" cx="55" cy="55" r="45"/>
+              <circle class="score-ring-fill" id="scoreRingFill" cx="55" cy="55" r="45" stroke="var(--green)" stroke-dasharray="283" stroke-dashoffset="283"/>
+            </svg>
+            <div class="score-ring-center">
+              <div class="score-ring-val" id="dHeroSaves">0</div>
+              <div class="score-ring-label">saves</div>
+            </div>
+          </div>
         </div>
         <div class="dash-bars">
           <div class="bar-row"><span class="bar-label">Actions</span><div class="bar-track"><div class="bar-fill blue" id="barTotal" style="width:0%"></div></div><span class="bar-val" id="dTotal">0</span></div>
           <div class="bar-row"><span class="bar-label">Allowed</span><div class="bar-track"><div class="bar-fill green" id="barAllowed" style="width:0%"></div></div><span class="bar-val" id="dAllowed">0</span></div>
           <div class="bar-row"><span class="bar-label">Stopped</span><div class="bar-track"><div class="bar-fill red" id="barDenied" style="width:0%"></div></div><span class="bar-val" id="dDenied">0</span></div>
           <div class="bar-row"><span class="bar-label">Secrets</span><div class="bar-track"><div class="bar-fill amber" id="barSecrets" style="width:0%"></div></div><span class="bar-val" id="dSecrets">0</span></div>
+        </div>
+      </div>
+
+      <!-- 6-Verb Activity Grid -->
+      <div class="verb-grid" id="verbGrid">
+        <div class="verb-cell" data-verb="send" style="--vc:#1E3A8A">
+          <div class="verb-icon" style="background:rgba(30,58,138,.08)"><svg viewBox="0 0 24 24" stroke="#1E3A8A"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
+          <div class="verb-label" style="color:#1E3A8A">Send</div>
+          <div class="verb-count" style="color:#1E3A8A" id="vSend">0</div>
+          <div class="verb-blocked" id="vSendBlocked"></div>
+        </div>
+        <div class="verb-cell" data-verb="paste" style="--vc:#F59E0B">
+          <div class="verb-icon" style="background:rgba(245,158,11,.08)"><svg viewBox="0 0 24 24" stroke="#F59E0B"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+          <div class="verb-label" style="color:#F59E0B">Paste</div>
+          <div class="verb-count" style="color:#F59E0B" id="vPaste">0</div>
+          <div class="verb-blocked" id="vPasteBlocked"></div>
+        </div>
+        <div class="verb-cell" data-verb="upload" style="--vc:#C1440E">
+          <div class="verb-icon" style="background:rgba(193,68,14,.08)"><svg viewBox="0 0 24 24" stroke="#C1440E"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg></div>
+          <div class="verb-label" style="color:#C1440E">Upload</div>
+          <div class="verb-count" style="color:#C1440E" id="vUpload">0</div>
+          <div class="verb-blocked" id="vUploadBlocked"></div>
+        </div>
+        <div class="verb-cell" data-verb="download" style="--vc:#065F46">
+          <div class="verb-icon" style="background:rgba(6,95,70,.08)"><svg viewBox="0 0 24 24" stroke="#065F46"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg></div>
+          <div class="verb-label" style="color:#065F46">Download</div>
+          <div class="verb-count" style="color:#065F46" id="vDownload">0</div>
+          <div class="verb-blocked" id="vDownloadBlocked"></div>
+        </div>
+        <div class="verb-cell" data-verb="browse" style="--vc:#a855f7">
+          <div class="verb-icon" style="background:rgba(168,85,247,.08)"><svg viewBox="0 0 24 24" stroke="#a855f7"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+          <div class="verb-label" style="color:#a855f7">Browse</div>
+          <div class="verb-count" style="color:#a855f7" id="vBrowse">0</div>
+          <div class="verb-blocked" id="vBrowseBlocked"></div>
+        </div>
+        <div class="verb-cell" data-verb="edit" style="--vc:#14b8a6">
+          <div class="verb-icon" style="background:rgba(20,184,166,.08)"><svg viewBox="0 0 24 24" stroke="#14b8a6"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></div>
+          <div class="verb-label" style="color:#14b8a6">Edit</div>
+          <div class="verb-count" style="color:#14b8a6" id="vEdit">0</div>
+          <div class="verb-blocked" id="vEditBlocked"></div>
         </div>
       </div>
       <div class="dash-monitors">
@@ -528,12 +637,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
       <!-- Hidden counters for compatibility -->
       <span id="dTickets" style="display:none">0</span>
       <div class="section-head">
-        <div class="section-title">Recent Activity</div>
-        <div style="display:flex;gap:6px;align-items:center">
+        <div style="display:flex;align-items:center;gap:10px"><div class="section-title">Recent Activity</div><span class="feed-updated" id="feedUpdated"></span></div>
+        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
           <button class="section-btn feed-filter active" data-filter="all">All</button>
           <button class="section-btn feed-filter" data-filter="blocked">Blocked</button>
           <button class="section-btn feed-filter" data-filter="files">Files</button>
           <button class="section-btn feed-filter" data-filter="clipboard">Clipboard</button>
+          <button class="section-btn feed-filter" data-filter="send" style="border-color:rgba(30,58,138,.2);color:#1E3A8A">Send</button>
+          <button class="section-btn feed-filter" data-filter="paste" style="border-color:rgba(245,158,11,.2);color:#F59E0B">Paste</button>
+          <button class="section-btn feed-filter" data-filter="upload" style="border-color:rgba(193,68,14,.2);color:#C1440E">Upload</button>
           <button class="section-btn" id="btnRefreshEvents">Refresh</button>
         </div>
       </div>
@@ -556,6 +668,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
         </div>
       </div>
       <div class="classifier" style="margin-top:16px">
+        <div class="scan-progress" id="scanProgress"><div class="scan-progress-bar" id="scanProgressBar" style="width:0%"></div></div>
         <textarea id="scannerInput" placeholder="Paste or type something here..." rows="5"></textarea>
         <div style="display:flex;gap:10px;align-items:center">
           <button class="btn btn-red" id="btnScanText">Scan</button>
@@ -993,8 +1106,10 @@ function showToast(type,title,detail){
   div.className='toast '+type;
   div.id=id;
   div.innerHTML='<span class="toast-icon">'+(type==='alert'?'&#9888;':'&#10003;')+'</span><div class="toast-body"><div class="toast-title">'+escHtml(title)+'</div><div class="toast-detail">'+escHtml(detail)+'</div></div><button class="toast-close" onclick="dismissToast(\''+id+'\')">&times;</button>';
+  if(type==='alert'){div.style.animation='toastIn .3s ease both, shake .4s ease .3s'}
+  else{div.style.animation='toastIn .3s ease both, bounce .3s ease .3s'}
   container.appendChild(div);
-  setTimeout(function(){dismissToast(id)},6000);
+  setTimeout(function(){dismissToast(id)},4000);
 }
 function dismissToast(id){
   var el=document.getElementById(id);
@@ -1350,8 +1465,8 @@ function enterApp(){
 
   guardCheckCount=0;
   pollGuard();
-  pollInterval=setInterval(pollGuard,3000);
-  eventInterval=setInterval(refreshEvents,5000);
+  pollInterval=setInterval(pollGuard,2000);
+  eventInterval=setInterval(refreshEvents,3000);
   refreshEvents();
   verifyChain();
   // Init kill switch UI state (assume normal — poll will correct)
@@ -1425,7 +1540,9 @@ function pollGuard(){
       document.getElementById('guardPortDisplay').style.color='var(--green)';
       banner.className='protection-banner active';
       shield.innerHTML='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
-      pTitle.textContent='You\'re protected';
+      var hbDot=document.getElementById('heartbeatDot');if(hbDot)hbDot.style.display='inline-block';
+      pTitle.innerHTML='<span class="heartbeat-dot" style="display:inline-block"></span>You\'re protected';
+      pollVerbStats();
       var descParts = ['Guard active'];
       if(d.os_authority){
         if(d.os_authority.clipboard_monitor) descParts.push('Clipboard');
@@ -1578,6 +1695,11 @@ function eventCategory(kind){
 
 function filterEvents(events,filter){
   if(filter==='all')return events;
+  // Verb-specific filters
+  var verbFilters=['send','paste','upload','download','browse','edit'];
+  if(verbFilters.indexOf(filter)!==-1){
+    return events.filter(function(ev){return ev.data&&ev.data.verb===filter});
+  }
   return events.filter(function(ev){
     if(filter==='blocked'){
       return ev.kind==='KILL_SWITCH'||(ev.kind==='CONSUME'&&ev.data&&ev.data.decision!=='ALLOW')||ev.kind==='FS_ALERT'||(ev.kind==='CLIPBOARD_MONITOR'&&ev.data&&ev.data.flagged);
@@ -1594,6 +1716,9 @@ function refreshEvents(){
       return;
     }
     allEvents=events;
+    // Update "last updated" label
+    var updEl=document.getElementById('feedUpdated');
+    if(updEl)updEl.textContent='Updated '+timeAgo(Date.now());
     // Toast for new alert events
     if(lastSeenEventTs>0){
       for(var t=0;t<Math.min(events.length,5);t++){
@@ -1640,9 +1765,25 @@ function renderFeed(){
     else if(kind.indexOf('AUTH')===0||kind.indexOf('AUTHORITY')===0){ic='auth';sym='&#128274;'}
     else if(kind==='KILL_SWITCH'){ic='deny';sym='&#128721;'}
 
+    // Severity class based on risk
+    var risk=ev.data&&ev.data.risk!==undefined?ev.data.risk:0;
+    var sevClass='severity-low';
+    if(risk>=85)sevClass='severity-critical';
+    else if(risk>=60)sevClass='severity-high';
+    else if(risk>=30)sevClass='severity-medium';
+
+    // Verb badge
+    var verbBadge='';
+    var evVerb=ev.data&&ev.data.verb;
+    if(evVerb){
+      var verbColors={send:'#1E3A8A',paste:'#F59E0B',upload:'#C1440E',download:'#065F46',browse:'#a855f7',edit:'#14b8a6'};
+      var vc=verbColors[evVerb]||'var(--muted)';
+      verbBadge='<span class="verb-badge" style="background:'+vc+'12;color:'+vc+'">'+evVerb+'</span>';
+    }
+
     var title=friendlyEventKind(kind,ev.data);
     var det=friendlyDetail(ev);
-    html+='<div class="feed-item"><div class="feed-icon '+ic+'">'+sym+'</div><div class="feed-body"><div class="feed-title">'+title+'</div><div class="feed-detail">'+escHtml(det)+'</div></div><div class="feed-time">'+timeAgo(ev.ts_ms)+'</div></div>';
+    html+='<div class="feed-item '+sevClass+'" style="animation:stagger .3s ease both;animation-delay:'+i*50+'ms"><div class="feed-icon '+ic+'">'+sym+'</div><div class="feed-body"><div class="feed-title">'+title+verbBadge+'</div><div class="feed-detail">'+escHtml(det)+'</div></div><div class="feed-time">'+timeAgo(ev.ts_ms)+'</div></div>';
   }
   if(filtered.length>8&&!feedShowAll){
     html+='<button class="feed-show-more" id="btnShowMore">Show '+(filtered.length-8)+' more &darr;</button>';
@@ -1793,9 +1934,15 @@ function scanText(){
   var btn=document.getElementById('btnScanText');
   btn.disabled=true;btn.textContent='Scanning...';
   document.getElementById('scannerStatus').textContent='';
+  // Progress bar
+  var prog=document.getElementById('scanProgress');
+  var progBar=document.getElementById('scanProgressBar');
+  if(prog){prog.classList.add('active');progBar.style.width='30%'}
+  setTimeout(function(){if(progBar)progBar.style.width='65%'},200);
   fetch(GUARD+'/classify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text})})
     .then(function(r){return r.json()}).then(function(d){
       btn.disabled=false;btn.textContent='Scan';
+      if(progBar){progBar.style.width='100%';setTimeout(function(){if(prog)prog.classList.remove('active');progBar.style.width='0%'},600)}
       var result=document.getElementById('scannerResult');
       result.style.display='block';
       var summary=document.getElementById('scannerSummary');
@@ -1811,6 +1958,7 @@ function scanText(){
         summary.style.background='var(--green-bg)';
         summary.style.border='1px solid var(--green-border)';
         summary.innerHTML='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px;color:var(--green)">&#10003;</span><div><div style="font-size:14px;font-weight:800;color:var(--green)">Looks good</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Nothing personal found — you\'re all set.</div></div></div>';
+        showToast('info','All Clear','No sensitive data detected');
       }else if(isWarning){
         summary.style.background='var(--amber-bg)';
         summary.style.border='1px solid rgba(245,158,11,.25)';
@@ -1837,6 +1985,7 @@ function scanText(){
       raw.textContent=JSON.stringify(d,null,2);
     }).catch(function(e){
       btn.disabled=false;btn.textContent='Scan';
+      if(prog){prog.classList.remove('active');progBar.style.width='0%'}
       document.getElementById('scannerStatus').textContent='Error: Could not reach guard. Is it running?';
     });
 }
@@ -1963,6 +2112,62 @@ function installSafari(){installExtForBrowser('safari','','1. Open the Xcode pro
   var el=document.getElementById('dDaysProtected');
   if(el)el.textContent=days;
 })();
+
+// ── Enterprise Toggle (dev command) ──
+(function(){
+  var devInput=document.getElementById('devInput');
+  if(!devInput)return;
+  // Restore enterprise state
+  if(localStorage.getItem('kasbah_enterprise_enabled')==='true'){
+    document.getElementById('enterpriseSidebar').style.display='block';
+    var es=document.getElementById('enterpriseStats');if(es)es.style.display='grid';
+  }
+  devInput.addEventListener('keydown',function(e){
+    if(e.key!=='Enter')return;
+    var cmd=devInput.value.trim().toLowerCase();
+    devInput.value='';
+    if(cmd==='enterprise'){
+      var sidebar=document.getElementById('enterpriseSidebar');
+      var stats=document.getElementById('enterpriseStats');
+      var isOn=sidebar.style.display==='block';
+      sidebar.style.display=isOn?'none':'block';
+      if(stats)stats.style.display=isOn?'none':'grid';
+      localStorage.setItem('kasbah_enterprise_enabled',isOn?'false':'true');
+      showToast('info','Enterprise '+(isOn?'Hidden':'Enabled'),(isOn?'Enterprise features hidden':'Enterprise features activated'));
+    }
+  });
+})();
+
+// ── Verb Stats Polling ──
+var lastVerbStatsTs=0;
+function pollVerbStats(){
+  fetch(GUARD+'/verb/stats',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+    if(!d.ok)return;
+    var vc=d.verb_counts||{};
+    var vb=d.verb_last_blocked||{};
+    var verbMap={send:'vSend',paste:'vPaste',upload:'vUpload',download:'vDownload',browse:'vBrowse',edit:'vEdit'};
+    for(var v in verbMap){
+      animateCounter(verbMap[v],vc[v]||0);
+      var blockedEl=document.getElementById(verbMap[v]+'Blocked');
+      if(blockedEl&&vb[v]){
+        blockedEl.textContent=timeAgo(vb[v].ts_ms);
+      }
+    }
+    // Update score ring
+    var total=0;for(var k in vc){total+=(vc[k]||0)}
+    var saves=parseInt(document.getElementById('dHeroSaves').textContent)||0;
+    var ring=document.getElementById('scoreRingFill');
+    if(ring&&total>0){
+      var ratio=Math.min(saves/Math.max(total,1),1);
+      var offset=283-(ratio*283);
+      ring.style.strokeDashoffset=offset;
+      // Color: green if low saves ratio (good), amber if moderate, red if high
+      if(ratio<0.15){ring.style.stroke='var(--green)'}
+      else if(ratio<0.4){ring.style.stroke='var(--amber)'}
+      else{ring.style.stroke='#ef4444'}
+    }
+  }).catch(function(){});
+}
 
 // ── Enterprise: Compliance Page ──
 (function(){

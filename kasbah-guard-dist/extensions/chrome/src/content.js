@@ -127,14 +127,45 @@
     return (text.match(URL_RX) || []);
   }
 
-  // ── Toast notification helper ──
-  function showToast(message, isError) {
+  // ── Inject keyframe styles once ──
+  (function injectStyles() {
+    if (document.getElementById('kasbah-ext-styles')) return;
+    var style = document.createElement('style');
+    style.id = 'kasbah-ext-styles';
+    style.textContent = '@keyframes kasbahSlideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}@keyframes kasbahSlideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}@keyframes kasbahPulse{0%,100%{box-shadow:0 0 0 0 rgba(193,68,14,.2)}50%{box-shadow:0 0 0 8px rgba(193,68,14,0)}}';
+    document.head.appendChild(style);
+  })();
+
+  // ── Rich toast notification ──
+  function showToast(message, isError, verb) {
     var toast = document.createElement("div");
-    toast.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:2147483646;padding:12px 18px;border-radius:12px;font:13px/1.4 system-ui;box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:360px;" +
-      (isError ? "background:#dc2626;color:#fff" : "background:#18181b;color:#fff");
-    toast.textContent = message;
+    var bgColor = isError ? 'rgba(220,38,38,.92)' : 'rgba(24,24,27,.92)';
+    var borderColor = isError ? 'rgba(239,68,68,.3)' : 'rgba(255,255,255,.08)';
+    toast.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:2147483646;padding:14px 18px;border-radius:14px;font:13px/1.4 system-ui,-apple-system,sans-serif;box-shadow:0 8px 32px rgba(0,0,0,.24);max-width:380px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:" + bgColor + ";color:#fff;border:1px solid " + borderColor + ";animation:kasbahSlideIn .3s ease both";
+
+    // Shield icon
+    var icon = document.createElement("div");
+    icon.style.cssText = "width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:" + (isError ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.1)');
+    icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+    toast.appendChild(icon);
+
+    var textWrap = document.createElement("div");
+    textWrap.style.cssText = "flex:1;min-width:0";
+    var title = document.createElement("div");
+    title.style.cssText = "font-size:12px;font-weight:800;margin-bottom:1px";
+    title.textContent = isError ? 'Kasbah blocked' + (verb ? ' ' + verb : '') : 'Kasbah';
+    var detail = document.createElement("div");
+    detail.style.cssText = "font-size:11px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
+    detail.textContent = message;
+    textWrap.appendChild(title);
+    textWrap.appendChild(detail);
+    toast.appendChild(textWrap);
+
     document.body.appendChild(toast);
-    setTimeout(function () { if (toast.parentNode) toast.remove(); }, 4000);
+    setTimeout(function () {
+      toast.style.animation = 'kasbahSlideOut .3s ease forwards';
+      setTimeout(function () { if (toast.parentNode) toast.remove(); }, 300);
+    }, 4500);
   }
 
   // ── Helpers ──
@@ -347,10 +378,31 @@
       var alertDesc = document.createElement("div");
       alertDesc.style.cssText = "font-size:12px;color:" + c.text + ";line-height:1.45";
       alertDesc.textContent = secrets.length > 0
-        ? "This may contain personal info (" + secrets.join(", ") + "). Your call."
+        ? "This may contain personal info. Your call."
         : "Review this before continuing — just to be safe.";
       alert.appendChild(alertTitle);
       alert.appendChild(alertDesc);
+
+      // Findings list with severity dots
+      if (secrets.length > 0) {
+        var findingsList = document.createElement("div");
+        findingsList.style.cssText = "margin-top:8px;display:flex;flex-wrap:wrap;gap:5px";
+        var maxShow = Math.min(secrets.length, 5);
+        for (var fi = 0; fi < maxShow; fi++) {
+          var finding = document.createElement("span");
+          var sevDot = risk === "high" ? "#dc2626" : risk === "medium" ? "#d97706" : "#16a34a";
+          finding.style.cssText = "display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.04);font-size:10px;font-weight:700;color:" + c.text;
+          finding.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:' + sevDot + ';flex-shrink:0"></span>' + secrets[fi];
+          findingsList.appendChild(finding);
+        }
+        if (secrets.length > 5) {
+          var more = document.createElement("span");
+          more.style.cssText = "font-size:10px;color:" + c.text + ";font-weight:600;align-self:center;padding:3px 6px";
+          more.textContent = "+" + (secrets.length - 5) + " more";
+          findingsList.appendChild(more);
+        }
+        alert.appendChild(findingsList);
+      }
       body.appendChild(alert);
     }
 
@@ -372,13 +424,14 @@
     var row = document.createElement("div");
     row.style.cssText = "display:flex;gap:8px;justify-content:flex-end";
 
+    var verbCap = verb.charAt(0).toUpperCase() + verb.slice(1);
     var blockBtn = document.createElement("button");
-    blockBtn.textContent = "Block";
-    blockBtn.style.cssText = "font:700 12px system-ui;padding:9px 16px;border-radius:999px;cursor:pointer;border:1.5px solid #e4e4e7;background:transparent;color:#18181b;transition:transform .05s";
+    blockBtn.textContent = "Block " + verbCap;
+    blockBtn.style.cssText = "font:700 12px system-ui;padding:9px 16px;border-radius:999px;cursor:pointer;border:1.5px solid #dc2626;background:rgba(220,38,38,.06);color:#dc2626;transition:all .15s";
 
     var allowBtn = document.createElement("button");
-    allowBtn.textContent = risk === "high" ? "Allow anyway" : "Allow";
-    allowBtn.style.cssText = "font:700 12px system-ui;padding:9px 16px;border-radius:999px;cursor:pointer;border:0;background:#18181b;color:#fafaf9;transition:transform .05s";
+    allowBtn.textContent = risk === "high" ? "Allow " + verbCap + " anyway" : "Allow " + verbCap;
+    allowBtn.style.cssText = "font:700 12px system-ui;padding:9px 16px;border-radius:999px;cursor:pointer;border:0;background:#18181b;color:#fafaf9;transition:all .15s";
     var hasCritical = false; // kept for logging
 
     blockBtn.onmousedown = function () { blockBtn.style.transform = "scale(.96)"; };
@@ -447,8 +500,9 @@
               if (onAllowCb) onAllowCb();
             },
             onBlock: function () {
-              showToast("Stopped — you're in control", false);
+              showToast("Blocked — you're in control", true, verb);
               if (onBlockCb) onBlockCb();
+              try { chrome.runtime.sendMessage({ type: 'BLOCK_EVENT', verb: verb }); } catch(e) {}
             },
           });
           return;
