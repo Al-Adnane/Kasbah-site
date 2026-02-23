@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kasbah — Stop accidental data leaks before they happen</title>
+  <title>Kasbah — Your data, your call. The local AI firewall.</title>
   <link rel="canonical" href="https://bekasbah.com/">
-  <meta name="description" content="Kasbah puts human authority in front of AI actions. Guard‑grade protection. Moroccan craftsmanship. Global trust.">
-  <meta property="og:title" content="Kasbah — Stop data leaks before AI sees them">
-  <meta property="og:description" content="Guard‑grade protection for AI agents. Detect. Bind. Enforce. Reclaim. Nothing happens without your permission.">
+  <meta name="description" content="Kasbah is a local-first AI firewall. It sits between you and AI tools, asking before anything sensitive leaves your machine.">
+  <meta property="og:title" content="Kasbah — The last wall between your data and AI">
+  <meta property="og:description" content="A local fortress on your machine. Nothing leaves without your permission. 100% local. Cryptographically verified.">
   <meta property="og:image" content="/og.png">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
@@ -101,19 +101,13 @@
     .step-body{flex:1}
     .step-body strong{font-weight:800;font-size:16px;display:block;margin-bottom:4px;color:var(--midnight)}
     .step-body span{color:var(--muted);font-size:14px}
-    .heritage{padding:80px 0;border-top:1px solid var(--border);background:var(--bg2);margin:0 -28px;padding-left:28px;padding-right:28px}
-    .heritage-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
-    .heritage-text .section-label{color:var(--kasbah-red)}
-    .heritage-text h2{font-size:clamp(24px,4vw,32px);font-weight:900;letter-spacing:-.04em;margin-bottom:16px;line-height:1.1;color:var(--midnight)}
-    .heritage-text p{font-size:15px;color:var(--muted);line-height:1.8;margin-bottom:16px}
-    .heritage-features{list-style:none;padding:0;margin:20px 0 0}
-    .heritage-features li{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;font-weight:600;color:var(--ink)}
-    .heritage-features li::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--kasbah-red);flex-shrink:0}
-    .heritage-visual{text-align:center}
-    .heritage-fortress{font-size:120px;line-height:1;opacity:.15}
-    .heritage-quote{margin-top:20px;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);border-left:4px solid var(--kasbah-red)}
-    .heritage-quote p{font-size:14px;color:var(--muted);line-height:1.7;font-style:italic;margin:0}
-    .heritage-quote .attr{font-size:12px;font-weight:700;color:var(--kasbah-red);margin-top:8px;font-style:normal}
+    /* Step connectors */
+    .step{position:relative}
+    .step:not(:last-child) .step-n::after{content:'';position:absolute;top:40px;left:48px;width:2px;height:calc(100% - 16px);background:linear-gradient(to bottom,var(--kasbah-red),var(--border-light));opacity:.3}
+    /* MOAT category groups */
+    .moat-group{margin-bottom:20px}
+    .moat-group-title{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--kasbah-red);margin-bottom:10px;padding-left:4px}
+    .moat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
     .signup{padding:80px 0;border-top:1px solid var(--border);text-align:center;position:relative}
     .signup::before{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,var(--kasbah-red-light) 0%,transparent 70%);pointer-events:none}
     .signup>*{position:relative;z-index:1}
@@ -171,8 +165,7 @@
       .pillars{grid-template-columns:1fr}
       .dl-row{grid-template-columns:1fr}
       .safe-features{grid-template-columns:1fr}
-      .heritage-inner{grid-template-columns:1fr}
-      .heritage-visual{display:none}
+      .moat-grid{grid-template-columns:1fr}
       .hero{padding:60px 0 50px}
       .hero h1{font-size:clamp(32px,8vw,40px);} /* smaller on mobile */
       .hero .tagline{font-size:16px}
@@ -212,6 +205,8 @@
     .who-for ul { margin-top:10px; padding-left:18px; }
     .who-for li { margin:6px 0; }
     .human-line { margin-top:24px; font-size:14px; color:var(--muted); text-align:center; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); transition:all .2s; }
+    .card:hover { border-color:var(--kasbah-red); transform:translateY(-1px); box-shadow:0 4px 16px rgba(193,68,14,.06); }
   </style>
 </head>
 <body>
@@ -221,9 +216,10 @@
       <div class="n-links">
         <a href="#how">How it works</a>
         <a href="#demo">See it in action</a>
-        <a href="/verify">Verify</a>
-        <a href="/charter">Charter</a>
-        <a href="/access">Access</a>
+        <a href="#signup">Verify</a>
+        <a href="#moats">13-MOAT</a>
+        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">Charter</a>
+        <a href="#signup">Access</a>
         <a class="n-cta" href="#signup">Create Account</a>
       </div>
     </div>
@@ -232,18 +228,15 @@
   <div class="page">
     <!-- HERO -->
     <header class="hero">
-      <div class="hero-eyebrow"><span class="dot"></span> Now in private preview</div>
-      <h1>Never accidentally leak secrets to AI.<br><em>Kasbah stops it before it happens.</em></h1>
-      <p class="hero-sub">One‑time approval for every sensitive action. Local, cryptographic, and open source.</p>
-      <div class="tagline">Guard‑grade protection. Moroccan craftsmanship. Global trust.</div>
-      <div class="tagline-ar">قصبة — Born in Morocco, trusted globally</div>
-      <p class="sub">Kasbah intercepts AI actions in real‑time — blocking data leaks, unauthorized access, and secret exposure before they happen. 100% local. Cryptographically verified.</p>
+      <div class="hero-eyebrow"><span class="dot"></span> Local-first AI firewall</div>
+      <h1>You are the last wall<br>between your data and AI.</h1>
+      <p class="tagline">Controlling what AI agents do — before it's too late.</p>
+      <p class="sub">Not a cloud. Not a proxy. A local fortress on your machine that asks <em>you</em> before anything sensitive leaves — or gets changed. Passwords, API keys, personal data, and <strong>file edits by AI agents</strong> — caught in real time, on your device, before it's too late.</p>
       <div class="hero-actions">
-        <a class="btn-hero btn-primary" href="#waitlist">Request early access &rarr;</a>
-        <a class="btn-hero btn-secondary" href="#demo">Try the live simulator</a>
+        <a class="btn-hero btn-primary" href="#signup">Get started — it's free</a>
+        <a class="btn-hero btn-secondary" href="#demo">See it in action</a>
       </div>
       <div class="hero-proof">
-        <span class="proof-badge badge-live"><span class="dot" style="width:7px;height:7px;border-radius:50%;background:var(--atlas-green);animation:pulse 2s ease infinite"></span> Private preview</span>
         <span class="proof-badge badge-saves" id="heroBadge">Guard active</span>
         <a class="proof-badge badge-gh" href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">
           <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -266,15 +259,15 @@
       <p>This is a simulation of what happens when Kasbah intercepts an unauthorized action. Click a scenario below.</p>
 
       <div style="margin:20px 0 20px;padding:16px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)">
-        <div style="font-weight:800; margin-bottom:8px;">⚡ See it in 60 seconds</div>
-        <div style="opacity:.9; margin-bottom:4px;">1. Choose a scenario. 2. Watch Kasbah decide. 3. See what gets blocked — and why.</div>
-        <div style="opacity:.75; font-size:14px;">After the demo, <a href="/verify" style="color:var(--kasbah-red); font-weight:800;">verify your download</a> (available after access).</div>
+        <div style="font-weight:800; margin-bottom:8px;">See it in 60 seconds</div>
+        <div style="opacity:.9;">1. Choose a scenario. 2. Watch Kasbah decide. 3. See what gets blocked — and why.</div>
       </div>
 
       <div class="sim-controls">
         <button class="sim-btn active" data-sim="credentials">Accidental password paste</button>
         <button class="sim-btn" data-sim="apikey">API key in a chat</button>
         <button class="sim-btn" data-sim="pii">Personal info leak</button>
+        <button class="sim-btn" data-sim="fileedit">AI edits your code</button>
         <button class="sim-btn" data-sim="clean">Safe query</button>
       </div>
       <p class="demo-note">Click a scenario. Watch what Kasbah would do. Nothing you type is sent anywhere.</p>
@@ -289,7 +282,7 @@
           <div id="simOutcome" class="sim-outcome hidden"></div>
           <div class="demo-foot">
             <div class="demo-disclaimer">This is a simulation. The real app runs locally on your Mac.</div>
-            <a class="demo-cta" href="#waitlist">See how to get access →</a>
+            <a class="demo-cta" href="#signup">See how to get access →</a>
           </div>
         </div>
       </div>
@@ -307,17 +300,17 @@
       <h2>Guard‑grade protection. Beautiful inside.</h2>
       <div class="pillars">
         <div class="pillar">
-          <div class="pillar-icon">&#127984;</div>
+          <div class="pillar-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
           <h3>Unbreakable walls</h3>
           <p>Real‑time interception at the point of action. No workarounds, no bypasses.</p>
         </div>
         <div class="pillar">
-          <div class="pillar-icon">&#9883;</div>
+          <div class="pillar-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
           <h3>Beautiful inside, secure outside</h3>
           <p>Security that doesn't get in your way. Developer‑friendly by design.</p>
         </div>
         <div class="pillar">
-          <div class="pillar-icon">&#9875;</div>
+          <div class="pillar-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
           <h3>Built to last</h3>
           <p>Open‑source core, cryptographic audit trails, and a constitution that can't be changed.</p>
         </div>
@@ -331,7 +324,7 @@
       <div class="steps">
         <div class="step">
           <div class="step-n">1</div>
-          <div class="step-body"><strong>Detect</strong><span>Kasbah sees what the AI is attempting — paste, upload, API call, command execution. Five verbs intercepted at the gate.</span></div>
+          <div class="step-body"><strong>Detect</strong><span>Kasbah sees what the AI is attempting — send, paste, upload, download, browse, and <strong>edit your files</strong>. Six verbs intercepted at the gate.</span></div>
         </div>
         <div class="step">
           <div class="step-n">2</div>
@@ -347,27 +340,53 @@
         </div>
       </div>
     </section>
+
+    <!-- 13-MOAT SECURITY MODEL -->
+    <section class="section" id="moats">
+      <div class="section-label">Security architecture</div>
+      <h2>13-MOAT Defense Model</h2>
+      <p style="color:var(--muted);max-width:640px;margin:0 auto 32px;font-size:14px;line-height:1.7">Every layer is a moat around your data. Thirteen independent defenses &mdash; each one a wall an attacker must breach. Real security is depth.</p>
+
+      <div class="moat-group">
+        <div class="moat-group-title">Input Control</div>
+        <div class="moat-grid">
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M1</strong> 6-verb gate &mdash; send, paste, upload, download, browse, edit</div>
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M9</strong> Clipboard audit &mdash; real-time data channel monitoring</div>
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M10</strong> Default-DENY &mdash; fail-closed, nothing passes unchecked</div>
+        </div>
+      </div>
+
+      <div class="moat-group">
+        <div class="moat-group-title">Data Analysis</div>
+        <div class="moat-grid">
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M2</strong> PII detection &mdash; SSN, credit card, IBAN, passport</div>
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M3</strong> Secret scanning &mdash; API keys, private keys, JWTs</div>
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M4</strong> ML classification &mdash; TF-IDF with 4-class detection</div>
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M5</strong> Prompt injection defense &mdash; pattern + ML detection</div>
+        </div>
+      </div>
+
+      <div class="moat-group">
+        <div class="moat-group-title">Cryptographic</div>
+        <div class="moat-grid">
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M6</strong> HMAC-SHA256 tickets &mdash; cryptographic authority proof</div>
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M7</strong> Replay protection &mdash; single-use, SQLite-persisted</div>
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M8</strong> Hash-chained audit &mdash; tamper-evident logging</div>
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M12</strong> Signed export &mdash; HMAC-verified audit bundles</div>
+        </div>
+      </div>
+
+      <div class="moat-group">
+        <div class="moat-group-title">Operational</div>
+        <div class="moat-grid">
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M11</strong> Kill switch &mdash; instant authority reclaim</div>
+          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M13</strong> Posture enforcement &mdash; firewall, encryption, updates</div>
+        </div>
+      </div>
+    </section>
+
   </div>
 
-  <!-- HERITAGE -->
-  <div class="heritage">
-    <div class="heritage-inner">
-      <div class="heritage-text">
-        <div class="section-label">Moroccan wisdom, global reach</div>
-        <h2>A thousand years of protection, now for AI.</h2>
-        <p>For centuries, Moroccan kasbahs have stood as guardians — protecting entire cities with architectural precision and timeless strength. Kasbah brings that same wisdom to AI agents: strong walls, beautiful courtyards, built to last.</p>
-        <ul class="heritage-features">
-          <li>Strong walls — real‑time enforcement</li>
-          <li>Watchtowers — 5‑verb interception at every gate</li>
-          <li>Safe courtyards — protected execution environments</li>
-          <li>Built to last — infrastructure, not features</li>
-        </ul>
-      </div>
-      <div class="heritage-visual">
-        <div class="heritage-fortress">&#127984;</div>
-      </div>
-    </div>
-  </div>
 
   <div class="page">
     <!-- WHAT KASBAH IS -->
@@ -377,17 +396,17 @@
       <p><strong style="color:var(--midnight)">Kasbah doesn't judge content</strong> or rewrite prompts. It doesn't monitor conversations. It doesn't phone home. It enforces human authority — locally, cryptographically, before AI acts. The foundational layer that makes AI agents trustworthy.</p>
       <div class="safe-features">
         <div class="safe-feat">
-          <div class="sf-icon">&#127984;</div>
+          <div class="sf-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
           <strong>100% Local</strong>
           <span>Nothing leaves your machine. Ever.</span>
         </div>
         <div class="safe-feat">
-          <div class="sf-icon">&#128272;</div>
+          <div class="sf-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
           <strong>Cryptographic</strong>
           <span>HMAC‑SHA256 signed tickets</span>
         </div>
         <div class="safe-feat">
-          <div class="sf-icon">&#128065;</div>
+          <div class="sf-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
           <strong>Open Source</strong>
           <span>Fully auditable on GitHub</span>
         </div>
@@ -397,9 +416,9 @@
     <!-- SIGNUP (REAL REGISTRATION + EMAIL VERIFICATION) -->
     <section class="signup" id="signup">
       <div class="signup-inner">
-        <h2>Enter the fortress.</h2>
-        <p class="su-sub">Create your Kasbah account. Download the app, sign in, and claim authority over your AI tools.</p>
-        <div class="su-urgency">&#9889; Pioneer access — full features, free forever</div>
+        <h2>Create your account.</h2>
+        <p class="su-sub">Sign up, download the app, and take control of what AI sees. Takes 30 seconds.</p>
+        <div class="su-urgency">Free during early access. No credit card needed.</div>
         <!-- Phase 1: Registration form -->
         <div id="signupPhase1">
           <div class="su-form" style="flex-direction:column;gap:12px">
@@ -437,14 +456,46 @@
       </div>
     </section>
 
+    <!-- DOWNLOAD -->
+    <section class="download" id="download">
+      <h3>Download Kasbah Guard</h3>
+      <p class="dl-sub">Available for macOS. Install the app, sign in, and take control.</p>
+      <div class="dl-row">
+        <div class="dl-card">
+          <h4>macOS (Apple Silicon &amp; Intel)</h4>
+          <p>Desktop app with menu-bar integration. Runs locally, enforces in real time.</p>
+          <a class="dl-link" href="#signup">Sign up to get access &rarr;</a>
+        </div>
+        <div class="dl-card">
+          <h4>Browser Extensions</h4>
+          <p>Chrome, Edge, Firefox &amp; Safari. 6-verb interception across 30+ AI platforms.</p>
+          <a class="dl-link" href="#signup">Sign up to get access &rarr;</a>
+        </div>
+      </div>
+      <p class="dl-note">Access is gated during early release. Create an account above to get started.</p>
+    </section>
+
     <!-- WHO IT'S FOR -->
     <section class="section who-for">
-      <h2>Kasbah Guard is for you if you:</h2>
-      <ul>
-        <li>Use ChatGPT, Claude, or Copilot at work</li>
-        <li>Paste code, configs, or documents regularly</li>
-        <li>Want protection without learning security</li>
-      </ul>
+      <div class="section-label">Who it's for</div>
+      <h2>Built for people who use AI every day.</h2>
+      <div class="pillars" style="margin-top:24px">
+        <div class="pillar" style="text-align:center">
+          <div class="pillar-icon" style="margin:0 auto 14px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <h3>AI power users</h3>
+          <p>ChatGPT, Claude, Copilot, Gemini — use them all without worry.</p>
+        </div>
+        <div class="pillar" style="text-align:center">
+          <div class="pillar-icon" style="margin:0 auto 14px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <h3>Code & doc sharers</h3>
+          <p>Paste configs, docs, and code without leaking secrets.</p>
+        </div>
+        <div class="pillar" style="text-align:center">
+          <div class="pillar-icon" style="margin:0 auto 14px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <h3>Non-security people</h3>
+          <p>Protection that works automatically — no security degree needed.</p>
+        </div>
+      </div>
     </section>
 
     <!-- ENTERPRISE -->
@@ -455,10 +506,10 @@
         <p>We're building enterprise deployment — centralized policies, team‑wide enforcement, and compliance‑ready audit trails. Pilot slots are limited.</p>
         <a class="enterprise-btn" href="mailto:enterprise@bekasbah.com">Talk to us about a pilot &rarr;</a>
         <div class="enterprise-features">
-          <span>&#128274; Centralized policies</span>
-          <span>&#128101; Team deployment</span>
-          <span>&#128203; Compliance audit</span>
-          <span>&#128272; SSO integration</span>
+          <span>Centralized policies</span>
+          <span>Team deployment</span>
+          <span>Compliance audit</span>
+          <span>SSO integration</span>
         </div>
       </div>
     </section>
@@ -471,9 +522,10 @@
         <div class="f-ar">قصبة — Born in Morocco, trusted globally</div>
       </div>
       <div class="footer-links">
-        <a href="/verify">Verify</a>
-        <a href="/charter">Charter</a>
-        <a href="/access">Access</a>
+        <a href="#signup">Verify</a>
+        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">Charter</a>
+        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">Privacy</a>
+        <a href="#signup">Access</a>
         <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">GitHub</a>
         <a href="#signup">Sign Up</a>
         <a href="#enterprise">Enterprise</a>
@@ -509,6 +561,15 @@
         {text:'<span class="tw">! DETECTED:</span> 847 rows contain PII (names, emails, phone numbers)', delay:1400},
         {text:'<span class="tr">KASBAH:</span> PII exposure risk. Risk: <strong>99/100</strong><span class="tag-block">BLOCKED</span>', delay:1800},
         {text:'<span class="tm">&gt; Upload denied at the gate. Customer data stays in the fortress.</span>', delay:2200}
+      ],
+      fileedit: [
+        {text:'<span class="tp">$</span> claude‑code apply edit to config/database.yml', delay:0},
+        {text:'<span class="tm">&gt; Guard intercepting file edit via /fs/gate...</span>', delay:400},
+        {text:'<span class="tw">! DETECTED:</span> File: config/database.yml (sensitive config)', delay:800},
+        {text:'<span class="tw">! DETECTED:</span> password: "s3cret_prod_db_password" in new content', delay:1100},
+        {text:'<span class="tw">! DETECTED:</span> AI agent writing credentials to tracked file', delay:1400},
+        {text:'<span class="tr">KASBAH:</span> File edit blocked. Risk: <strong>95/100</strong><span class="tag-block">BLOCKED</span>', delay:1800},
+        {text:'<span class="tm">&gt; Your files stay unchanged. AI edits require your approval.</span>', delay:2200}
       ],
       clean: [
         {text:'<span class="tp">$</span> ai‑agent send "refactor this sorting function" to Claude', delay:0},
@@ -585,7 +646,7 @@
     setTimeout(() => runSim('credentials'), 800);
 
     // Registration + Email Verification
-    const API_URL = 'https://kasbah-api.adnaneaddioui.workers.dev';
+    const API_URL = 'https://api.bekasbah.com';
     const nameIn = document.getElementById('suName');
     const emailIn = document.getElementById('suEmail');
     const passIn = document.getElementById('suPass');

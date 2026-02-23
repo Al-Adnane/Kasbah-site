@@ -1,27 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- DEPLOY_MARK_20260220T062224Z -->
-
-<!-- NO_REFRESH_20260220T055633Z -->
-
-<!-- SIM_FIX_20260220T045158Z -->
-
-<!-- SIM_FIX_20260220T044703Z -->
-
-<!-- UX_FIX_20260220T043058Z -->
-
-<!-- FIX_VC_DEMO_20260220T041800Z -->
-
-<!-- BRAND_FORCE_20260220T040235Z -->
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kasbah Guard — Stop accidental data leaks to AI</title>
-  <link rel="canonical" href="https://bekasbah.com/"/>
-<meta name="description" content="Kasbah puts human authority in front of AI actions. Guard-grade protection. Moroccan craftsmanship. Global trust. Born in Morocco, trusted globally.">
-  <meta property="og:title" content="Kasbah — Kasbah Guard">
-  <meta property="og:description" content="Guard-grade protection for AI agents. Detect. Bind. Enforce. Reclaim. Nothing happens without your permission.">
+  <title>Kasbah — Stop accidental data leaks before they happen</title>
+  <link rel="canonical" href="https://bekasbah.com/">
+  <meta name="description" content="Kasbah puts human authority in front of AI actions. Guard‑grade protection. Moroccan craftsmanship. Global trust.">
+  <meta property="og:title" content="Kasbah — Stop data leaks before AI sees them">
+  <meta property="og:description" content="Guard‑grade protection for AI agents. Detect. Bind. Enforce. Reclaim. Nothing happens without your permission.">
   <meta property="og:image" content="/og.png">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
@@ -30,14 +16,12 @@
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     :root{
-      /* Brand Colors from KASBAH_COMPLETE_BRAND */
       --kasbah-red:#C1440E;--kasbah-red-light:rgba(193,68,14,.12);--kasbah-red-glow:rgba(193,68,14,.2);
       --fortress-stone:#D4C5B9;--fortress-stone-light:#EDE8E3;
       --desert-sky:#1E3A8A;--desert-sky-light:rgba(30,58,138,.08);
       --atlas-green:#065F46;--atlas-green-bg:rgba(6,95,70,.08);--atlas-green-border:rgba(6,95,70,.2);
       --saffron-gold:#F59E0B;--saffron-bg:rgba(245,158,11,.08);
       --midnight:#0F172A;
-      /* Layout */
       --bg:#FEFCFA;--bg2:#F8F5F1;--card:#FFFFFF;--card-hover:#FEFCFA;
       --ink:#0F172A;--muted:#64748B;--subtle:#94A3B8;
       --border:#E2DDD7;--border-light:#EDE8E3;
@@ -47,8 +31,6 @@
     html{scroll-behavior:smooth}
     body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased}
     ::selection{background:var(--kasbah-red);color:#fff}
-
-    /* NAV */
     nav{border-bottom:1px solid var(--border);padding:14px 0;background:rgba(254,252,250,.92);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100}
     .nav-in{max-width:1080px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
     .n-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
@@ -59,10 +41,7 @@
     .n-links a:hover{color:var(--ink)}
     .n-links a.n-cta{background:var(--kasbah-red);color:#fff;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:800;text-decoration:none;transition:all .2s}
     .n-links a.n-cta:hover{color:#fff;opacity:.9;box-shadow:0 4px 16px var(--kasbah-red-glow)}
-
     .page{max-width:1080px;margin:0 auto;padding:0 28px}
-
-    /* HERO */
     .hero{padding:100px 0 80px;text-align:center;position:relative}
     .hero::before{content:'';position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse,var(--kasbah-red-light) 0%,transparent 70%);pointer-events:none;z-index:0}
     .hero>*{position:relative;z-index:1}
@@ -87,14 +66,10 @@
     .badge-gh:hover{border-color:var(--kasbah-red);color:var(--ink)}
     .badge-gh svg{width:14px;height:14px;fill:currentColor}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-    /* SECTIONS */
     .section{padding:80px 0;border-top:1px solid var(--border)}
     .section-label{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--kasbah-red);margin-bottom:16px}
     .section h2{font-size:clamp(24px,4vw,36px);font-weight:900;letter-spacing:-.04em;margin-bottom:16px;line-height:1.1;color:var(--midnight)}
     .section p{font-size:15px;color:var(--muted);margin-bottom:14px;line-height:1.7}
-
-    /* TERMINAL */
     .terminal{background:var(--terminal);border-radius:var(--radius-lg);overflow:hidden;margin:28px 0;font-family:'SF Mono',ui-monospace,'Cascadia Code','JetBrains Mono',monospace;font-size:12.5px;line-height:1.9;border:1px solid #1e293b}
     .terminal-bar{background:#1e293b;padding:10px 16px;display:flex;align-items:center;gap:7px}
     .td{width:11px;height:11px;border-radius:50%}
@@ -113,16 +88,12 @@
     .sim-share{display:none;margin-top:12px;padding:10px 16px;background:var(--atlas-green-bg);border:1px solid var(--atlas-green-border);border-radius:8px;font-size:12px;font-weight:600;color:var(--atlas-green);align-items:center;gap:8px}
     .sim-share a{color:var(--atlas-green);font-weight:800;text-decoration:none;margin-left:4px}
     .sim-share a:hover{text-decoration:underline}
-
-    /* PILLARS */
     .pillars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:28px 0}
     .pillar{padding:28px;border:1px solid var(--border);background:var(--card);border-radius:var(--radius-lg);transition:all .25s}
     .pillar:hover{border-color:var(--kasbah-red);transform:translateY(-2px);box-shadow:0 8px 24px rgba(193,68,14,.06)}
     .pillar-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;background:var(--kasbah-red-light)}
     .pillar h3{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--midnight)}
     .pillar p{font-size:13px;color:var(--muted);line-height:1.6;margin:0}
-
-    /* STEPS */
     .steps{list-style:none;padding:0;margin:24px 0}
     .step{display:flex;align-items:flex-start;gap:18px;padding:24px 0;border-bottom:1px solid var(--border-light)}
     .step:last-child{border:0}
@@ -130,8 +101,6 @@
     .step-body{flex:1}
     .step-body strong{font-weight:800;font-size:16px;display:block;margin-bottom:4px;color:var(--midnight)}
     .step-body span{color:var(--muted);font-size:14px}
-
-    /* HERITAGE */
     .heritage{padding:80px 0;border-top:1px solid var(--border);background:var(--bg2);margin:0 -28px;padding-left:28px;padding-right:28px}
     .heritage-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
     .heritage-text .section-label{color:var(--kasbah-red)}
@@ -145,8 +114,6 @@
     .heritage-quote{margin-top:20px;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);border-left:4px solid var(--kasbah-red)}
     .heritage-quote p{font-size:14px;color:var(--muted);line-height:1.7;font-style:italic;margin:0}
     .heritage-quote .attr{font-size:12px;font-weight:700;color:var(--kasbah-red);margin-top:8px;font-style:normal}
-
-    /* SIGNUP */
     .signup{padding:80px 0;border-top:1px solid var(--border);text-align:center;position:relative}
     .signup::before{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,var(--kasbah-red-light) 0%,transparent 70%);pointer-events:none}
     .signup>*{position:relative;z-index:1}
@@ -165,15 +132,11 @@
     .su-result{display:none;padding:16px;background:var(--atlas-green-bg);border:1px solid var(--atlas-green-border);border-radius:var(--radius);margin-top:12px;font-size:14px;font-weight:600;color:var(--atlas-green)}
     .su-count{margin-top:24px;font-size:13px;color:var(--subtle)}
     .su-count strong{color:var(--kasbah-red);font-size:24px;font-weight:900}
-
-    /* SAFE */
     .safe-features{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:20px}
     .safe-feat{padding:20px;background:var(--bg2);border:1px solid var(--border-light);border-radius:var(--radius);text-align:center}
     .safe-feat .sf-icon{font-size:24px;margin-bottom:8px}
     .safe-feat strong{font-size:12px;display:block;margin-bottom:4px;color:var(--midnight)}
     .safe-feat span{color:var(--muted);font-size:11px}
-
-    /* DOWNLOAD */
     .download{padding:64px 0;border-top:1px solid var(--border)}
     .download h3{font-size:24px;font-weight:900;margin-bottom:8px;color:var(--midnight)}
     .download .dl-sub{font-size:14px;color:var(--muted);margin-bottom:24px}
@@ -186,8 +149,6 @@
     .dl-link:hover{opacity:.8}
     .dl-note{font-size:11px;color:var(--subtle);margin-top:14px;line-height:1.8}
     .dl-note code{background:var(--bg2);padding:2px 6px;font-size:11px;border-radius:4px;border:1px solid var(--border-light)}
-
-    /* ENTERPRISE */
     .enterprise{padding:64px 0;border-top:1px solid var(--border);text-align:center}
     .enterprise-inner{max-width:560px;margin:0 auto}
     .enterprise h3{font-size:24px;font-weight:900;margin-bottom:8px;color:var(--midnight)}
@@ -196,8 +157,6 @@
     .enterprise-btn:hover{opacity:.9;transform:translateY(-1px)}
     .enterprise-features{display:flex;gap:24px;justify-content:center;margin-top:20px;flex-wrap:wrap}
     .enterprise-features span{font-size:12px;color:var(--subtle);font-weight:600}
-
-    /* FOOTER */
     footer{padding:48px 0;border-top:1px solid var(--border);background:var(--bg2)}
     .footer-in{max-width:1080px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
     .footer-left{font-size:12px;color:var(--subtle)}
@@ -207,54 +166,619 @@
     .footer-links{display:flex;gap:20px}
     .footer-links a{font-size:12px;color:var(--subtle);text-decoration:none;font-weight:600;transition:color .15s}
     .footer-links a:hover{color:var(--kasbah-red)}
-
-    /* RESPONSIVE */
+    /* Mobile polish */
     @media(max-width:700px){
       .pillars{grid-template-columns:1fr}
       .dl-row{grid-template-columns:1fr}
-      .testimonials{grid-template-columns:1fr}
-      .blog-cards{grid-template-columns:1fr}
       .safe-features{grid-template-columns:1fr}
       .heritage-inner{grid-template-columns:1fr}
       .heritage-visual{display:none}
       .hero{padding:60px 0 50px}
+      .hero h1{font-size:clamp(32px,8vw,40px);} /* smaller on mobile */
+      .hero .tagline{font-size:16px}
+      .hero .sub{font-size:15px}
+      .pillar{padding:20px}
+      .section{padding:60px 0}
       .su-form{flex-direction:column}
       .hero-actions{flex-direction:column;align-items:center}
       .n-links a:not(.n-cta){display:none}
       .footer-in{flex-direction:column;text-align:center}
       .enterprise-features{flex-direction:column;align-items:center}
+      .step{padding:16px 0;gap:12px}
+      .step-n{width:32px;height:32px;font-size:13px}
+      .step-body strong{font-size:15px}
+      .step-body span{font-size:13px}
     }
-  
-/* UX polish */
-.section { scroll-margin-top: 90px; }
-a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid rgba(220,38,38,.35); outline-offset: 2px; }
-.demo-note { margin-top: 10px; color: var(--muted); font-size: 13px; }
-.demo-foot { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
-.demo-disclaimer { color: var(--muted); font-size: 13px; }
-.demo-cta { display: inline-flex; align-self: flex-start; font-weight: 800; text-decoration: none; }
-.demo-cta:hover { text-decoration: underline; }
-.trust ul { margin: 12px 0 0; padding-left: 18px; }
-.trust li { margin: 8px 0; }
-.install-steps { margin-top: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: rgba(254,252,250,.6); }
-.install-steps h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .01em; }
-.install-steps ol { margin: 0; padding-left: 18px; }
-.install-steps li { margin: 6px 0; }
-.install-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
-.signup-micro { margin-top: 10px; font-size: 13px; color: var(--muted); }
+    .section { scroll-margin-top: 90px; }
+    a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid rgba(220,38,38,.35); outline-offset: 2px; }
+    .demo-note { margin-top: 10px; color: var(--muted); font-size: 13px; }
+    .demo-foot { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .demo-disclaimer { color: var(--muted); font-size: 13px; }
+    .demo-cta { display: inline-flex; align-self: flex-start; font-weight: 800; text-decoration: none; }
+    .demo-cta:hover { text-decoration: underline; }
+    .trust ul { margin: 12px 0 0; padding-left: 18px; }
+    .trust li { margin: 6px 0; }
+    .install-steps { margin-top: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: rgba(254,252,250,.6); }
+    .install-steps h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .01em; }
+    .install-steps ol { margin: 0; padding-left: 18px; }
+    .install-steps li { margin: 6px 0; }
+    .install-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+    .signup-micro { margin-top: 10px; font-size: 13px; color: var(--muted); }
+    .hero-example { display:block; margin-top:8px; font-size:14px; color:var(--muted); }
+    .sim-outcome { margin-top:12px; padding:10px 14px; border-radius:999px; font-weight:800; width:fit-content; }
+    .sim-outcome.ok { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+    .sim-outcome.blocked { background:#fef2f2; color:#7f1d1d; border:1px solid #fecaca; }
+    .sim-outcome.hidden { display:none; }
+    .who-for ul { margin-top:10px; padding-left:18px; }
+    .who-for li { margin:6px 0; }
+    .human-line { margin-top:24px; font-size:14px; color:var(--muted); text-align:center; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-in">
+      <a class="n-brand" href="/"><img src="/logo-200.png" alt="Kasbah"><span>Kasbah</span></a>
+      <div class="n-links">
+        <a href="#how">How it works</a>
+        <a href="#demo">See it in action</a>
+        <a href="/verify">Verify</a>
+        <a href="#moats">13-MOAT</a>
+        <a href="/charter">Charter</a>
+        <a href="/access">Access</a>
+        <a class="n-cta" href="#signup">Create Account</a>
+      </div>
+    </div>
+  </nav>
 
+  <div class="page">
+    <!-- HERO -->
+    <header class="hero">
+      <div class="hero-eyebrow"><span class="dot"></span> Now in private preview</div>
+      <h1>Never accidentally leak secrets to AI.<br><em>Kasbah stops it before it happens.</em></h1>
+      <p class="hero-sub">One‑time approval for every sensitive action. Local, cryptographic, and open source.</p>
+      <div class="tagline">Guard‑grade protection. Moroccan craftsmanship. Global trust.</div>
+      <div class="tagline-ar">قصبة — Born in Morocco, trusted globally</div>
+      <p class="sub">Kasbah intercepts AI actions in real‑time — blocking data leaks, unauthorized access, and secret exposure before they happen. 100% local. Cryptographically verified.</p>
+      <div class="hero-actions">
+        <a class="btn-hero btn-primary" href="#waitlist">Request early access &rarr;</a>
+        <a class="btn-hero btn-secondary" href="#demo">Try the live simulator</a>
+      </div>
+      <div class="hero-proof">
+        <span class="proof-badge badge-live"><span class="dot" style="width:7px;height:7px;border-radius:50%;background:var(--atlas-green);animation:pulse 2s ease infinite"></span> Private preview</span>
+        <span class="proof-badge badge-saves" id="heroBadge">Guard active</span>
+        <a class="proof-badge badge-gh" href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span id="ghStars">Star on GitHub</span>
+        </a>
+      </div>
+    </header>
 
-.hero-example { display:block; margin-top:8px; font-size:14px; color:var(--muted); }
-.sim-outcome { margin-top:12px; padding:10px 14px; border-radius:999px; font-weight:800; width:fit-content; }
-.sim-outcome.ok { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
-.sim-outcome.blocked { background:#fef2f2; color:#7f1d1d; border:1px solid #fecaca; }
-.sim-outcome.hidden { display:none; }
-.who-for ul { margin-top:10px; padding-left:18px; }
-.who-for li { margin:6px 0; }
-.human-line { margin-top:24px; font-size:14px; color:var(--muted); text-align:center; }
+    <!-- PROBLEM -->
+    <section class="section" id="problem">
+      <div class="section-label">The problem</div>
+      <h2>AI acts first. You find out later.</h2>
+      <p>Every day, AI tools paste credentials, exfiltrate API keys, and send sensitive data to external servers. By the time you notice, it's already been sent. Kasbah stops it at the source — like a fortress wall stops invaders before they breach the gate.</p>
+    </section>
 
-</style>
-<!-- SW_OFF_20260220T042434Z -->
-<script src="/assets/app.js"></script>
-<script src="/assets/sim.js"></script>
+    <!-- INTERACTIVE DEMO -->
+    <section class="section" id="demo">
+      <div class="section-label">Try it yourself</div>
+      <h2>See how Kasbah works.</h2>
+      <p>This is a simulation of what happens when Kasbah intercepts an unauthorized action. Click a scenario below.</p>
+
+      <div style="margin:20px 0 20px;padding:16px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)">
+        <div style="font-weight:800; margin-bottom:8px;">⚡ See it in 60 seconds</div>
+        <div style="opacity:.9; margin-bottom:4px;">1. Choose a scenario. 2. Watch Kasbah decide. 3. See what gets blocked — and why.</div>
+        <div style="opacity:.75; font-size:14px;">After the demo, <a href="/verify" style="color:var(--kasbah-red); font-weight:800;">verify your download</a> (available after access).</div>
+      </div>
+
+      <div class="sim-controls">
+        <button class="sim-btn active" data-sim="credentials">Accidental password paste</button>
+        <button class="sim-btn" data-sim="apikey">API key in a chat</button>
+        <button class="sim-btn" data-sim="pii">Personal info leak</button>
+        <button class="sim-btn" data-sim="clean">Safe query</button>
+      </div>
+      <p class="demo-note">Click a scenario. Watch what Kasbah would do. Nothing you type is sent anywhere.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="td r"></div><div class="td y"></div><div class="td g"></div>
+          <div class="terminal-title">Kasbah Guard — Enforcement Log</div>
+        </div>
+        <div class="terminal-body" id="simBody">
+          <div class="tl visible"><span class="tm">Click a scenario above to start the simulation...</span></div>
+          <div id="simOutcome" class="sim-outcome hidden"></div>
+          <div class="demo-foot">
+            <div class="demo-disclaimer">This is a simulation. The real app runs locally on your Mac.</div>
+            <a class="demo-cta" href="#waitlist">See how to get access →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="sim-share" id="simShare">
+        The fortress held.
+        <a href="#" id="shareX" target="_blank" rel="noopener">Share on X</a> &middot;
+        <a href="#" id="shareLI" target="_blank" rel="noopener">Share on LinkedIn</a>
+      </div>
+    </section>
+
+    <!-- THREE PILLARS -->
+    <section class="section" id="difference">
+      <div class="section-label">The Kasbah difference</div>
+      <h2>Guard‑grade protection. Beautiful inside.</h2>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="pillar-icon">&#127984;</div>
+          <h3>Unbreakable walls</h3>
+          <p>Real‑time interception at the point of action. No workarounds, no bypasses.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-icon">&#9883;</div>
+          <h3>Beautiful inside, secure outside</h3>
+          <p>Security that doesn't get in your way. Developer‑friendly by design.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-icon">&#9875;</div>
+          <h3>Built to last</h3>
+          <p>Open‑source core, cryptographic audit trails, and a constitution that can't be changed.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section" id="how">
+      <div class="section-label">How it works</div>
+      <h2>Four steps. Thirty seconds.</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-n">1</div>
+          <div class="step-body"><strong>Detect</strong><span>Kasbah sees what the AI is attempting — paste, upload, API call, command execution. Five verbs intercepted at the gate.</span></div>
+        </div>
+        <div class="step">
+          <div class="step-n">2</div>
+          <div class="step-body"><strong>Bind</strong><span>"Who is in charge of this session?" You are. Authority is claimed locally on your device via HMAC‑signed tickets.</span></div>
+        </div>
+        <div class="step">
+          <div class="step-n">3</div>
+          <div class="step-body"><strong>Enforce</strong><span>Every action checked against your delegation. Secrets detected, risk scored, unauthorized actions blocked at the wall.</span></div>
+        </div>
+        <div class="step">
+          <div class="step-n">4</div>
+          <div class="step-body"><strong>Reclaim</strong><span>One click freezes all agentic processes. Authority reclaimed. Hash‑chained audit trail preserved. The fortress holds.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13-MOAT SECURITY MODEL -->
+    <section class="section" id="moats">
+      <div class="section-label">Security architecture</div>
+      <h2>13-MOAT Defense Model</h2>
+      <p style="color:var(--muted);max-width:640px;margin:0 auto 32px;font-size:14px;line-height:1.7">Every layer of Kasbah Guard is a moat around your data. Thirteen independent defenses, each one a wall an attacker must breach. Real security is not one feature &mdash; it is depth.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:24px">
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M1</strong> Input interception &mdash; 5-verb gate control</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M2</strong> PII detection &mdash; SSN, credit card, IBAN, passport</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M3</strong> Secret scanning &mdash; API keys, private keys, JWTs</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M4</strong> ML classification &mdash; TF-IDF with 4-class detection</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M5</strong> Prompt injection defense &mdash; pattern + ML detection</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M6</strong> HMAC-SHA256 signed tickets &mdash; cryptographic authority</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M7</strong> Replay protection &mdash; single-use, SQLite-persisted</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M8</strong> Hash-chained audit &mdash; tamper-evident logging</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M9</strong> Clipboard audit &mdash; data channel monitoring</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M10</strong> Default-DENY &mdash; fail-closed architecture</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M11</strong> Kill switch &mdash; instant authority reclaim</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M12</strong> Signed export &mdash; HMAC-verified audit bundles</div>
+        <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M13</strong> Posture enforcement &mdash; firewall, encryption, updates</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- HERITAGE -->
+  <div class="heritage">
+    <div class="heritage-inner">
+      <div class="heritage-text">
+        <div class="section-label">Moroccan wisdom, global reach</div>
+        <h2>A thousand years of protection, now for AI.</h2>
+        <p>For centuries, Moroccan kasbahs have stood as guardians — protecting entire cities with architectural precision and timeless strength. Kasbah brings that same wisdom to AI agents: strong walls, beautiful courtyards, built to last.</p>
+        <ul class="heritage-features">
+          <li>Strong walls — real‑time enforcement</li>
+          <li>Watchtowers — 5‑verb interception at every gate</li>
+          <li>Safe courtyards — protected execution environments</li>
+          <li>Built to last — infrastructure, not features</li>
+        </ul>
+      </div>
+      <div class="heritage-visual">
+        <div class="heritage-fortress">&#127984;</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <!-- WHAT KASBAH IS -->
+    <section class="section" id="safe">
+      <div class="section-label">What Kasbah is</div>
+      <h2>AI Agent Trust Infrastructure.</h2>
+      <p><strong style="color:var(--midnight)">Kasbah doesn't judge content</strong> or rewrite prompts. It doesn't monitor conversations. It doesn't phone home. It enforces human authority — locally, cryptographically, before AI acts. The foundational layer that makes AI agents trustworthy.</p>
+      <div class="safe-features">
+        <div class="safe-feat">
+          <div class="sf-icon">&#127984;</div>
+          <strong>100% Local</strong>
+          <span>Nothing leaves your machine. Ever.</span>
+        </div>
+        <div class="safe-feat">
+          <div class="sf-icon">&#128272;</div>
+          <strong>Cryptographic</strong>
+          <span>HMAC‑SHA256 signed tickets</span>
+        </div>
+        <div class="safe-feat">
+          <div class="sf-icon">&#128065;</div>
+          <strong>Open Source</strong>
+          <span>Fully auditable on GitHub</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SIGNUP (REAL REGISTRATION + EMAIL VERIFICATION) -->
+    <section class="signup" id="signup">
+      <div class="signup-inner">
+        <h2>Enter the fortress.</h2>
+        <p class="su-sub">Create your Kasbah account. Download the app, sign in, and claim authority over your AI tools.</p>
+        <div class="su-urgency">&#9889; Pioneer access — full features, free forever</div>
+        <!-- Phase 1: Registration form -->
+        <div id="signupPhase1">
+          <div class="su-form" style="flex-direction:column;gap:12px">
+            <input class="su-input" type="text" id="suName" placeholder="Your name" autocomplete="name">
+            <input class="su-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email">
+            <input class="su-input" type="password" id="suPass" placeholder="Password (min 6 chars)" autocomplete="new-password" minlength="6">
+            <button class="su-btn" id="suBtn" disabled style="width:100%">Create Account</button>
+          </div>
+          <div class="su-note">100% local enforcement. Your data never leaves your machine.</div>
+        </div>
+        <!-- Phase 2: Verification code input (hidden by default) -->
+        <div id="signupPhase2" style="display:none">
+          <div style="font-size:48px;margin-bottom:16px">&#9993;</div>
+          <h3 style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:8px">Check your email</h3>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+            We sent a 6-digit verification code to <strong id="verifyEmailDisplay"></strong>
+          </p>
+          <input class="su-input" type="text" id="verifyCode" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" style="text-align:center;font-size:24px;font-weight:800;letter-spacing:0.3em;margin-bottom:12px" autofocus>
+          <button class="su-btn" id="verifyBtn" disabled style="width:100%">Verify Account</button>
+          <div style="margin-top:14px">
+            <button id="resendBtn" style="background:none;border:none;color:var(--kasbah-red);font-weight:700;cursor:pointer;font-family:inherit;font-size:13px">Didn't get the code? Resend</button>
+          </div>
+        </div>
+        <!-- Phase 3: Success (hidden by default) -->
+        <div id="signupPhase3" style="display:none">
+          <div style="font-size:48px;margin-bottom:16px">&#10004;</div>
+          <h3 style="font-size:18px;font-weight:800;color:var(--atlas-green);margin-bottom:8px">Account verified!</h3>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6">
+            Your account is active. Download the app and sign in with your credentials.
+          </p>
+          <a class="su-btn" href="#download" style="display:inline-block;text-decoration:none;text-align:center">Download Kasbah Guard</a>
+        </div>
+        <div class="su-result" id="suResult"></div>
+        <div class="su-count" id="suCount" style="display:none"><strong id="savesCounter">0</strong> users have claimed authority</div>
+      </div>
+    </section>
+
+    <!-- WHO IT'S FOR -->
+    <section class="section who-for">
+      <h2>Kasbah Guard is for you if you:</h2>
+      <ul>
+        <li>Use ChatGPT, Claude, or Copilot at work</li>
+        <li>Paste code, configs, or documents regularly</li>
+        <li>Want protection without learning security</li>
+      </ul>
+    </section>
+
+    <!-- ENTERPRISE -->
+    <section class="enterprise" id="enterprise">
+      <div class="enterprise-inner">
+        <div class="section-label">For organizations</div>
+        <h3>Deploy Kasbah with your team.</h3>
+        <p>We're building enterprise deployment — centralized policies, team‑wide enforcement, and compliance‑ready audit trails. Pilot slots are limited.</p>
+        <a class="enterprise-btn" href="mailto:enterprise@bekasbah.com">Talk to us about a pilot &rarr;</a>
+        <div class="enterprise-features">
+          <span>&#128274; Centralized policies</span>
+          <span>&#128101; Team deployment</span>
+          <span>&#128203; Compliance audit</span>
+          <span>&#128272; SSO integration</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="footer-in">
+      <div class="footer-left">
+        &copy; 2026 <a href="/">Kasbah</a> — Kasbah Guard · <span style="color:var(--kasbah-red);">Constitutional</span>
+        <div class="f-ar">قصبة — Born in Morocco, trusted globally</div>
+      </div>
+      <div class="footer-links">
+        <a href="/verify">Verify</a>
+        <a href="/charter">Charter</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/access">Access</a>
+        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">GitHub</a>
+        <a href="#signup">Sign Up</a>
+        <a href="#enterprise">Enterprise</a>
+      </div>
+    </div>
+    <p class="human-line">Kasbah was built after too many “oh shit” moments with AI tools.</p>
+  </footer>
+
+  <script>
+    // Leak Simulator
+    const scenarios = {
+      credentials: [
+        {text:'<span class="tp">$</span> ai-agent paste .env to ChatGPT', delay:0},
+        {text:'<span class="tm">&gt; Guard scanning clipboard content...</span>', delay:400},
+        {text:'<span class="tw">! DETECTED:</span> DATABASE_URL=postgres://admin:s3cret@prod:5432', delay:800},
+        {text:'<span class="tw">! DETECTED:</span> STRIPE_SECRET=sk_live_FAKE_DEMO_ONLY_not_real_key', delay:1100},
+        {text:'<span class="tr">KASBAH:</span> 2 secrets found. Risk: <strong>97/100</strong><span class="tag-block">BLOCKED</span>', delay:1500},
+        {text:'<span class="tm">&gt; The fortress held. Credentials never left your device.</span>', delay:1900}
+      ],
+      apikey: [
+        {text:'<span class="tp">$</span> cursor‑agent send code snippet to Claude', delay:0},
+        {text:'<span class="tm">&gt; Guard scanning outbound payload...</span>', delay:400},
+        {text:'<span class="tw">! DETECTED:</span> OPENAI_API_KEY=sk_demo_roj‑abc123def456ghi789jkl012', delay:800},
+        {text:'<span class="tw">! DETECTED:</span> AWS_SECRET_ACCESS_KEY=AWS_SECRET_DEMO_REDACTED', delay:1100},
+        {text:'<span class="tr">KASBAH:</span> 2 API keys found. Risk: <strong>94/100</strong><span class="tag-block">BLOCKED</span>', delay:1500},
+        {text:'<span class="tm">&gt; Keys quarantined at the wall. Consider rotating credentials.</span>', delay:1900}
+      ],
+      pii: [
+        {text:'<span class="tp">$</span> ai‑assistant upload customer_data.csv to analysis', delay:0},
+        {text:'<span class="tm">&gt; Guard scanning file content...</span>', delay:400},
+        {text:'<span class="tw">! DETECTED:</span> SSN: 123‑45‑6789 (row 1 of 2,340)', delay:800},
+        {text:'<span class="tw">! DETECTED:</span> Credit Card: 4532‑XXXX‑XXXX‑7890 (row 47)', delay:1100},
+        {text:'<span class="tw">! DETECTED:</span> 847 rows contain PII (names, emails, phone numbers)', delay:1400},
+        {text:'<span class="tr">KASBAH:</span> PII exposure risk. Risk: <strong>99/100</strong><span class="tag-block">BLOCKED</span>', delay:1800},
+        {text:'<span class="tm">&gt; Upload denied at the gate. Customer data stays in the fortress.</span>', delay:2200}
+      ],
+      clean: [
+        {text:'<span class="tp">$</span> ai‑agent send "refactor this sorting function" to Claude', delay:0},
+        {text:'<span class="tm">&gt; Guard scanning message content...</span>', delay:400},
+        {text:'<span class="tm">&gt; No secrets, PII, or credentials detected.</span>', delay:800},
+        {text:'<span class="tok">KASBAH:</span> Clean. Risk: <strong>3/100</strong><span class="tag-allow">ALLOWED</span>', delay:1200},
+        {text:'<span class="tm">&gt; Message passed through the gate. Authority preserved.</span>', delay:1600}
+      ]
+    };
+
+    let simRunning = false;
+    function setOutcome(type) {
+      const el = document.getElementById('simOutcome');
+      if (!el) return;
+      el.className = 'sim-outcome';
+      if (type === 'clean') {
+        el.textContent = '✔ Allowed — nothing sensitive detected';
+        el.classList.add('ok');
+      } else {
+        el.textContent = '⛔ Blocked — sensitive data detected';
+        el.classList.add('blocked');
+      }
+      el.classList.remove('hidden');
+    }
+
+    function runSim(type, ev) {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      if (simRunning) return;
+      simRunning = true;
+
+      document.querySelectorAll('.sim-btn').forEach(b => b.classList.remove('active'));
+      if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
+      else document.querySelector('.sim-btn[data-sim="' + type + '"]')?.classList.add('active');
+
+      const body = document.getElementById('simBody');
+      const share = document.getElementById('simShare');
+      if (share) share.style.display = 'none';
+      if (body) body.innerHTML = '';
+
+      const lines = scenarios[type];
+      if (!lines || !body) { simRunning = false; setOutcome(type); return; }
+
+      lines.forEach((line, i) => {
+        setTimeout(() => {
+          const div = document.createElement('div');
+          div.className = 'tl';
+          div.innerHTML = line.text;
+          body.appendChild(div);
+          div.offsetHeight;
+          div.classList.add('visible');
+
+          if (i === lines.length - 1) {
+            simRunning = false;
+            setOutcome(type);
+            if (share && type !== 'clean') {
+              setTimeout(() => {
+                share.style.display = 'flex';
+                const msg = encodeURIComponent('Just watched Kasbah block a simulated data leak in real‑time. The fortress held. Try the simulator:');
+                const url = encodeURIComponent(location.origin + '/#demo');
+                document.getElementById('shareX').href = 'https://x.com/intent/tweet?text=' + msg + '&url=' + url;
+                document.getElementById('shareLI').href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url;
+              }, 400);
+            }
+          }
+        }, line.delay);
+      });
+    }
+
+    document.querySelectorAll('.sim-btn[data-sim]').forEach(btn => {
+      btn.addEventListener('click', e => runSim(btn.getAttribute('data-sim'), e));
+    });
+
+    // Auto-run credentials demo on page load
+    setTimeout(() => runSim('credentials'), 800);
+
+    // Registration + Email Verification
+    const API_URL = 'https://kasbah-api.adnaneaddioui.workers.dev';
+    const nameIn = document.getElementById('suName');
+    const emailIn = document.getElementById('suEmail');
+    const passIn = document.getElementById('suPass');
+    const suBtn = document.getElementById('suBtn');
+    const suResult = document.getElementById('suResult');
+    let pendingEmail = '';
+
+    function showResult(msg, isError) {
+      suResult.textContent = msg;
+      suResult.style.display = 'block';
+      suResult.style.background = isError ? '#fef2f2' : '#ecfdf5';
+      suResult.style.color = isError ? '#dc2626' : '#065f46';
+      suResult.style.borderColor = isError ? '#fecaca' : '#a7f3d0';
+    }
+
+    function validateForm() {
+      const email = emailIn.value.trim();
+      const pass = passIn.value;
+      const validEmail = email.length > 4 && email.includes('@') && email.includes('.') && email.indexOf('.') > email.indexOf('@');
+      suBtn.disabled = !(validEmail && pass.length >= 6);
+    }
+    nameIn.addEventListener('input', validateForm);
+    emailIn.addEventListener('input', validateForm);
+    passIn.addEventListener('input', validateForm);
+
+    // Phase 1: Create Account
+    suBtn.addEventListener('click', () => {
+      suBtn.disabled = true;
+      suBtn.textContent = 'Creating account...';
+      suResult.style.display = 'none';
+      const name = nameIn.value.trim();
+      const email = emailIn.value.trim();
+      const password = passIn.value;
+
+      fetch(API_URL + '/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok && d.needsVerification) {
+            // Show verification phase
+            pendingEmail = d.email || email;
+            document.getElementById('signupPhase1').style.display = 'none';
+            document.getElementById('signupPhase2').style.display = 'block';
+            document.getElementById('verifyEmailDisplay').textContent = pendingEmail;
+            suResult.style.display = 'none';
+            document.getElementById('verifyCode').focus();
+          } else if (d.ok) {
+            showResult('Account created! Download the app and sign in.', false);
+            suBtn.textContent = 'Account created';
+          } else {
+            showResult(d.error || 'Registration failed. Please try again.', true);
+            suBtn.disabled = false;
+            suBtn.textContent = 'Create Account';
+          }
+        })
+        .catch(() => {
+          showResult('Connection error. Please try again.', true);
+          suBtn.disabled = false;
+          suBtn.textContent = 'Create Account';
+        });
+    });
+
+    // Phase 2: Verify code
+    const verifyCodeIn = document.getElementById('verifyCode');
+    const verifyBtn = document.getElementById('verifyBtn');
+
+    verifyCodeIn.addEventListener('input', () => {
+      const v = verifyCodeIn.value.replace(/\D/g, '').slice(0, 6);
+      verifyCodeIn.value = v;
+      verifyBtn.disabled = v.length !== 6;
+    });
+    verifyCodeIn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !verifyBtn.disabled) verifyBtn.click();
+    });
+
+    verifyBtn.addEventListener('click', () => {
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+      suResult.style.display = 'none';
+
+      fetch(API_URL + '/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail, code: verifyCodeIn.value })
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok && d.verified) {
+            // Show success phase
+            document.getElementById('signupPhase2').style.display = 'none';
+            document.getElementById('signupPhase3').style.display = 'block';
+            suResult.style.display = 'none';
+          } else {
+            showResult(d.error || 'Verification failed. Please try again.', true);
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify Account';
+          }
+        })
+        .catch(() => {
+          showResult('Connection error. Please try again.', true);
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = 'Verify Account';
+        });
+    });
+
+    // Resend code
+    document.getElementById('resendBtn').addEventListener('click', () => {
+      const rBtn = document.getElementById('resendBtn');
+      rBtn.textContent = 'Sending...';
+      rBtn.disabled = true;
+
+      fetch(API_URL + '/auth/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail })
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) {
+            rBtn.textContent = 'Code sent!';
+          } else {
+            rBtn.textContent = d.error || 'Failed to send';
+          }
+          setTimeout(() => { rBtn.textContent = "Didn't get the code? Resend"; rBtn.disabled = false; }, 4000);
+        })
+        .catch(() => {
+          rBtn.textContent = 'Failed — try again';
+          setTimeout(() => { rBtn.textContent = "Didn't get the code? Resend"; rBtn.disabled = false; }, 3000);
+        });
+    });
+
+    // GitHub stars
+    fetch('https://api.github.com/repos/Al-Adnane/Kasbah-site', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.stargazers_count !== undefined) {
+          const el = document.getElementById('ghStars');
+          if (el) el.textContent = d.stargazers_count > 0 ? '★ ' + d.stargazers_count + ' Stars' : 'Star on GitHub';
+        }
+      })
+      .catch(() => {});
+
+    // Live user count from API
+    fetch(API_URL + '/auth/stats')
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok && d.users > 0) {
+          const counterEl = document.getElementById('savesCounter');
+          const suCount = document.getElementById('suCount');
+          if (counterEl) counterEl.textContent = d.users.toLocaleString();
+          if (suCount) suCount.style.display = 'block';
+        }
+      })
+      .catch(() => {});
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      });
+    });
+
+    // Update year in footer
+    document.querySelector('.footer-left').innerHTML = document.querySelector('.footer-left').innerHTML.replace('2026', new Date().getFullYear());
+  </script>
 </body>
 </html>

@@ -1,12 +1,11 @@
 /**
  * Kasbah Guard — Sovereign Intent Layer (Extension v1.1.0)
- * Intercepts 6 irreversible verbs before AI sees them:
+ * Intercepts 5 irreversible verbs before AI sees them:
  *   1. SEND — Send button click interception
  *   2. PASTE — Clipboard paste interception
  *   3. UPLOAD — File input / drag-drop interception
  *   4. BROWSE — URL detection in messages
  *   5. DOWNLOAD — Download link click interception
- *   6. EDIT — AI code apply/accept interception (file changes)
  *
  * Security Layers:
  *   L1 — beforeinput + MutationObserver for programmatic injection defense
@@ -329,7 +328,7 @@
 
     var badge = document.createElement("span");
     badge.style.cssText = "font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;color:#fff;background:" + c.badge;
-    badge.textContent = risk === "high" ? "Needs review" : risk === "medium" ? "Quick check" : "Looks good";
+    badge.textContent = risk === "high" ? "High risk" : risk === "medium" ? "Review" : "Low risk";
     header.appendChild(brand);
     header.appendChild(badge);
 
@@ -343,12 +342,12 @@
       alert.style.cssText = "background:" + c.bg + ";border:1px solid " + c.border + ";border-radius:10px;padding:12px;margin-bottom:12px";
       var alertTitle = document.createElement("div");
       alertTitle.style.cssText = "font-size:13px;font-weight:800;color:" + c.text + ";margin-bottom:3px";
-      alertTitle.textContent = secrets.length > 0 ? "Heads up" : "Quick check";
+      alertTitle.textContent = secrets.length > 0 ? "This looks sensitive" : "Review required";
       var alertDesc = document.createElement("div");
       alertDesc.style.cssText = "font-size:12px;color:" + c.text + ";line-height:1.45";
       alertDesc.textContent = secrets.length > 0
-        ? "This may contain personal info (" + secrets.join(", ") + "). Your call."
-        : "Review this before continuing — just to be safe.";
+        ? "Detected: " + secrets.join(", ") + ". Blocked before the model saw it."
+        : "This content requires your approval before proceeding.";
       alert.appendChild(alertTitle);
       alert.appendChild(alertDesc);
       body.appendChild(alert);
@@ -365,7 +364,7 @@
     // Message
     var msg = document.createElement("div");
     msg.style.cssText = "font-size:12px;color:#71717a;line-height:1.5;margin-bottom:14px";
-    msg.textContent = (verbLabels[verb] || "Action") + " on " + product().toUpperCase() + " — you decide.";
+    msg.textContent = (verbLabels[verb] || "Action") + " on " + product().toUpperCase() + ". This action requires your approval.";
     body.appendChild(msg);
 
     // Buttons
@@ -379,7 +378,6 @@
     var allowBtn = document.createElement("button");
     allowBtn.textContent = risk === "high" ? "Allow anyway" : "Allow";
     allowBtn.style.cssText = "font:700 12px system-ui;padding:9px 16px;border-radius:999px;cursor:pointer;border:0;background:#18181b;color:#fafaf9;transition:transform .05s";
-    var hasCritical = false; // kept for logging
 
     blockBtn.onmousedown = function () { blockBtn.style.transform = "scale(.96)"; };
     blockBtn.onmouseup = function () { blockBtn.style.transform = ""; };
@@ -436,18 +434,18 @@
 
     postJson(GUARD + "/decide", decidePayload)
       .then(function (res) {
-        // Guard says no — still give user the choice
+        // Handle immediate DENY from guard (block policy or critical PII)
         if (res.blocked === true || res.decision === "DENY") {
           createModal({
             risk: "high",
-            secrets: secrets.length > 0 ? secrets : ["Review needed"],
+            secrets: secrets.length > 0 ? secrets : ["Policy violation"],
             preview: text.slice(0, 400),
             verb: verb,
             onAllow: function () {
-              if (onAllowCb) onAllowCb();
+              showToast("This action was blocked by your security policy and cannot be overridden.", true);
             },
             onBlock: function () {
-              showToast("Stopped — you're in control", false);
+              showToast("Action blocked by guard policy", false);
               if (onBlockCb) onBlockCb();
             },
           });
@@ -456,7 +454,25 @@
 
         var ticket = res.ticket;
 
-        // Show review modal — user always decides
+        // If low risk on non-sensitive verbs, auto-allow (less friction)
+        if (risk === "low" && secrets.length === 0 && verb !== "send" && verb !== "upload") {
+          postJson(GUARD + "/consume", { ticket: ticket, choice: "ALLOW" })
+            .then(function (cr) {
+              if (cr && cr.decision === "ALLOW") {
+                if (onAllowCb) onAllowCb();
+              } else {
+                // Consume returned DENY (replay/expired) — notify user
+                showToast("Action blocked: " + (cr && cr.reason ? cr.reason : "denied by guard"), true);
+                if (onBlockCb) onBlockCb();
+              }
+            })
+            .catch(function () {
+              // Guard unreachable during consume — deny by default
+              if (onBlockCb) onBlockCb();
+            });
+          return;
+        }
+
         createModal({
           risk: risk,
           secrets: secrets,
@@ -467,7 +483,7 @@
             postJson(GUARD + "/consume", { ticket: ticket, choice: "ALLOW" })
               .then(function (cr) {
                 if (cr && cr.decision === "ALLOW" && onAllowCb) onAllowCb();
-                else showToast("Couldn't complete — try again", true);
+                else showToast("Action blocked by guard: " + (cr && cr.reason ? cr.reason : "denied"), true);
               })
               .catch(function () {});
           },
@@ -479,17 +495,17 @@
         });
       })
       .catch(function () {
-        // Guard not running — let user decide
+        // Guard unreachable → default DENY
         createModal({
-          risk: "medium",
-          secrets: ["Guard not running"],
-          preview: "Kasbah Guard isn't running right now.\n\nOpen the app to get full protection.",
+          risk: "high",
+          secrets: ["Guard offline"],
+          preview: "Kasbah Guard is not running. Default: DENY.\n\nStart the Kasbah Guard app to enable this action.",
           verb: verb,
           onAllow: function () {
-            if (onAllowCb) onAllowCb();
+            showToast("Cannot proceed: Kasbah Guard is offline. Start the app first.", true);
           },
           onBlock: function () {
-            showToast("Action stopped", false);
+            showToast("Action blocked (guard offline)", false);
           },
         });
       });
@@ -522,25 +538,25 @@
   heartbeatPoll();
   setInterval(heartbeatPoll, 5000);
 
-  // If guard heartbeat is lost, let user know but still give them the choice
+  // Fail-closed wrapper: if heartbeat is lost, show DENY modal immediately
   function failClosedCheck(verb, onBlock) {
     if (!__kasbah_guard_alive) {
       createModal({
-        risk: "medium",
-        secrets: ["Guard not connected"],
-        preview: "Kasbah Guard isn't responding right now.\n\nOpen the app for full protection, or continue at your discretion.",
+        risk: "high",
+        secrets: ["Guard heartbeat lost"],
+        preview: "Kasbah Guard heartbeat lost (" + __kasbah_heartbeat_failures + " consecutive failures).\n\nDefault: DENY. All actions blocked until guard is restored.",
         verb: verb,
         onAllow: function () {
-          showToast("Continuing without guard protection", false);
+          showToast("Cannot proceed: Kasbah Guard heartbeat lost. Default: DENY.", true);
         },
         onBlock: function () {
-          showToast("Action stopped", false);
+          showToast("Action blocked (heartbeat lost — fail-closed)", false);
           if (onBlock) onBlock();
         },
       });
-      return true; // show modal
+      return true; // blocked
     }
-    return false; // OK to proceed normally
+    return false; // OK to proceed
   }
 
   // ═══════════════════════════════════════════════════
@@ -578,7 +594,7 @@
       });
     } catch (e) { /* ignore */ }
 
-    showToast("Kasbah Guard caught a paste with personal info — review before sharing", false);
+    showToast("Kasbah Guard: Blocked programmatic injection (" + secrets.join(", ") + ")", true);
   }, true);
 
   // ═══════════════════════════════════════════════════
@@ -683,19 +699,18 @@
 
       postJson(GUARD + "/decide", decidePayload)
         .then(function (res) {
-          // Guard flags this — still give user the choice
+          // Handle immediate DENY from guard (block policy or critical PII)
           if (res.blocked === true || res.decision === "DENY") {
             createModal({
               risk: "high",
-              secrets: secrets.length > 0 ? secrets : ["Review needed"],
+              secrets: secrets.length > 0 ? secrets : ["Policy violation"],
               preview: msg.slice(0, 400),
               verb: "send",
               onAllow: function () {
-                btn[FLAG_KEY] = true;
-                btn.click();
+                showToast("This message was blocked by your security policy and cannot be sent.", true);
               },
               onBlock: function () {
-                showToast("Message not sent — your choice", false);
+                showToast("Message blocked by guard policy", false);
               },
             });
             return;
@@ -715,32 +730,31 @@
                     btn[FLAG_KEY] = true;
                     btn.click();
                   } else {
-                    showToast("Couldn't complete — try again", true);
+                    showToast("Send blocked: " + (cr && cr.reason ? cr.reason : "denied by guard"), true);
                   }
                 })
                 .catch(function () {
-                  showToast("Couldn't reach guard — try again", true);
+                  showToast("Send failed: guard unreachable during consume", true);
                 });
             },
             onBlock: function () {
               if (!ticket) return;
               postJson(GUARD + "/consume", { ticket: ticket, choice: "DENY" }).catch(function () {});
-              showToast("Message not sent — your choice", false);
+              showToast("Message blocked by your choice", false);
             },
           });
         })
         .catch(function () {
           createModal({
-            risk: "medium",
-            secrets: ["Guard not running"],
-            preview: "Kasbah Guard isn't running.\n\nOpen the app for full protection, or send anyway.",
+            risk: "high",
+            secrets: ["Guard offline"],
+            preview: "Kasbah Guard is not running. Default: DENY.\n\nStart the Kasbah Guard app to enable sending.",
             verb: "send",
             onAllow: function () {
-              btn[FLAG_KEY] = true;
-              btn.click();
+              showToast("Cannot send: Kasbah Guard is offline. Start the app first.", true);
             },
             onBlock: function () {
-              showToast("Message not sent", false);
+              showToast("Message blocked (guard offline)", false);
             },
           });
         });
@@ -836,7 +850,7 @@
       var previewText = "Files: " + fileList.join(", ");
       // If sensitive filename detected, add context so guard and local scanner both flag it
       if (sensitiveDocNames.length > 0) {
-        previewText += "\nThis looks like a personal document: " + sensitiveDocNames.join(", ");
+        previewText += "\nSensitive document detected: passport / national id / identity document upload — " + sensitiveDocNames.join(", ");
       }
       var extraMeta = {
         file_count: files.length,
@@ -1027,231 +1041,6 @@
     true
   );
 
-  // ═══════════════════════════════════════════════════
-  // VERB 6: EDIT — Intercept AI code apply/accept/insert actions
-  // ═══════════════════════════════════════════════════
-  // Catches: "Apply", "Accept", "Insert code", "Replace", "Apply to file",
-  // "Accept all", "Apply changes", "Run", "Execute" buttons in AI response areas
-  var EDIT_FLAG = "__kasbah_edit_ok__";
-  var EDIT_SELECTORS = [
-    // Generic apply/accept patterns
-    'button[aria-label*="apply" i]',
-    'button[aria-label*="accept" i]',
-    'button[aria-label*="insert" i]',
-    'button[aria-label*="replace" i]',
-    'button[data-testid*="apply"]',
-    'button[data-testid*="accept"]',
-    // Claude Artifacts
-    'button[class*="apply"]',
-    '[data-testid="artifact-apply"]',
-    // ChatGPT Canvas
-    'button[class*="canvas-apply"]',
-    '[data-testid*="canvas"][data-testid*="apply"]',
-    // Cursor / Copilot / Generic IDE web
-    'button[class*="accept-edit"]',
-    'button[class*="apply-edit"]',
-    'button[class*="apply-diff"]',
-    'button[class*="accept-change"]',
-    'button[class*="apply-suggestion"]',
-    // v0.dev / Bolt / Replit
-    'button[class*="deploy"]',
-    '[data-action="apply"]',
-    '[data-action="accept"]',
-  ];
-
-  function isEditButton(el) {
-    if (!el) return false;
-    // Check selectors
-    for (var i = 0; i < EDIT_SELECTORS.length; i++) {
-      if (el.matches && el.matches(EDIT_SELECTORS[i])) return true;
-    }
-    // Check text content of the button
-    var text = (el.textContent || "").trim().toLowerCase();
-    var editWords = ["apply", "accept", "insert code", "replace file", "apply to", "accept all", "apply changes", "apply edit", "accept edit", "apply diff", "run code", "execute"];
-    for (var j = 0; j < editWords.length; j++) {
-      if (text === editWords[j] || text.indexOf(editWords[j]) === 0) {
-        // Make sure it's in an AI response context (not generic UI buttons)
-        var inResponse = el.closest("[data-message-author-role='assistant']") ||
-          el.closest(".markdown") || el.closest(".prose") ||
-          el.closest("[class*='response']") || el.closest("[class*='message']") ||
-          el.closest("[class*='artifact']") || el.closest("[class*='output']") ||
-          el.closest("[class*='result']") || el.closest("[class*='code']") ||
-          el.closest("[class*='editor']") || el.closest("[class*='diff']") ||
-          el.closest("[class*='canvas']") || el.closest("[class*='suggestion']") ||
-          el.closest("[data-role='assistant']");
-        if (inResponse) return true;
-      }
-    }
-    return false;
-  }
-
-  // Find the code content that would be applied
-  function findEditContent(btn) {
-    // Look for nearby code blocks
-    var codeBlock = btn.closest("[class*='code']") ||
-      btn.closest("[class*='artifact']") ||
-      btn.closest("[class*='diff']") ||
-      btn.closest("[class*='canvas']") ||
-      btn.closest("[class*='suggestion']");
-    if (codeBlock) {
-      var code = codeBlock.querySelector("code, pre, [class*='code-content'], [class*='diff-content']");
-      if (code) return code.textContent || "";
-    }
-    // Walk up to find the message container, then find code within it
-    var container = btn.closest("[data-message-author-role='assistant']") ||
-      btn.closest("[class*='response']") ||
-      btn.closest("[class*='message']") ||
-      btn.closest("[class*='output']");
-    if (container) {
-      var allCode = container.querySelectorAll("code, pre");
-      var combined = "";
-      for (var i = 0; i < allCode.length; i++) {
-        combined += (allCode[i].textContent || "") + "\n";
-      }
-      if (combined.length > 10) return combined;
-    }
-    return btn.closest("div")?.textContent || "AI-generated code edit";
-  }
-
-  // Find the target file name if visible
-  function findEditFilename(btn) {
-    var container = btn.closest("[class*='artifact']") ||
-      btn.closest("[class*='code']") ||
-      btn.closest("[class*='diff']") ||
-      btn.closest("[class*='canvas']") ||
-      btn.closest("[class*='message']");
-    if (container) {
-      // Look for filename indicators
-      var filename = container.querySelector("[class*='filename'], [class*='file-name'], [class*='title'], [class*='header'] span");
-      if (filename) return filename.textContent || "";
-    }
-    // Check aria-label or title on the button itself
-    return btn.getAttribute("aria-label") || btn.getAttribute("title") || "";
-  }
-
-  document.addEventListener(
-    "click",
-    function (ev) {
-      var target = ev.target;
-      var btn = target && target.closest ? target.closest("button,[role='button'],a") : null;
-      if (!btn) return;
-      if (!isEditButton(btn)) return;
-
-      // Skip if we already approved this
-      if (btn[EDIT_FLAG]) {
-        btn[EDIT_FLAG] = false;
-        return;
-      }
-
-      ev.preventDefault();
-      ev.stopPropagation();
-      ev.stopImmediatePropagation();
-
-      // L6: Fail-closed check
-      if (failClosedCheck("edit", null)) return;
-
-      var codeContent = findEditContent(btn);
-      var fileName = findEditFilename(btn);
-      var secrets = scanSecrets(codeContent);
-      var score = riskScore(codeContent, secrets);
-      var risk = riskLabel(score);
-
-      var previewText = (fileName ? "File: " + fileName + "\n" : "") + codeContent.slice(0, 500);
-
-      var meta = {
-        length: codeContent.length,
-        preview: codeContent.slice(0, 200),
-        secrets: secrets,
-        risk: score,
-        file_name: fileName,
-        verb_type: "edit",
-        source: "ai_code_apply"
-      };
-
-      // Use /fs/gate for file edits (if it exists), fall back to /decide
-      var gatePayload = {
-        path: fileName || "unknown",
-        agent: product(),
-        action: "write",
-        preview: codeContent.slice(0, 2000),
-        diff: codeContent.slice(0, 5000)
-      };
-
-      postJson(GUARD + "/fs/gate", gatePayload)
-        .then(function (res) {
-          if (res.decision === "DENY" || res.decision === "BLOCK") {
-            createModal({
-              risk: "high",
-              secrets: secrets.length > 0 ? secrets : ["AI file edit blocked"],
-              preview: previewText.slice(0, 400),
-              verb: "edit",
-              onAllow: function () {
-                if (res.ticket) {
-                  postJson(GUARD + "/consume", { ticket: res.ticket, choice: "ALLOW" })
-                    .then(function (cr) {
-                      if (cr && cr.decision === "ALLOW") {
-                        btn[EDIT_FLAG] = true;
-                        btn.click();
-                      }
-                    }).catch(function () {});
-                } else {
-                  btn[EDIT_FLAG] = true;
-                  btn.click();
-                }
-              },
-              onBlock: function () {
-                if (res.ticket) {
-                  postJson(GUARD + "/consume", { ticket: res.ticket, choice: "DENY" }).catch(function () {});
-                }
-                showToast("Code edit blocked — your files are safe", false);
-              },
-            });
-            return;
-          }
-
-          createModal({
-            risk: risk,
-            secrets: secrets,
-            preview: previewText.slice(0, 400),
-            verb: "edit",
-            onAllow: function () {
-              if (res.ticket) {
-                postJson(GUARD + "/consume", { ticket: res.ticket, choice: "ALLOW" })
-                  .then(function (cr) {
-                    if (cr && cr.decision === "ALLOW") {
-                      btn[EDIT_FLAG] = true;
-                      btn.click();
-                    }
-                  }).catch(function () {});
-              } else {
-                btn[EDIT_FLAG] = true;
-                btn.click();
-              }
-            },
-            onBlock: function () {
-              if (res.ticket) {
-                postJson(GUARD + "/consume", { ticket: res.ticket, choice: "DENY" }).catch(function () {});
-              }
-              showToast("Code edit stopped — you're in control", false);
-            },
-          });
-        })
-        .catch(function () {
-          // /fs/gate not available — fall back to guardFlow with /decide
-          guardFlow("edit", codeContent, { file_name: fileName, source: "ai_code_apply" },
-            function () {
-              btn[EDIT_FLAG] = true;
-              btn.click();
-            },
-            function () {
-              showToast("Code edit stopped", false);
-            }
-          );
-        });
-    },
-    true
-  );
-
   // ── Startup notification ──
-  console.log("[Kasbah Guard] Extension v1.2.0 loaded on " + product().toUpperCase() + " — intercepting: send, paste, upload, browse, download, edit — PII + secret detection active");
+  console.log("[Kasbah Guard] Extension v1.1.0 loaded on " + product().toUpperCase() + " — intercepting: send, paste, upload, browse, download — PII + secret detection active");
 })();

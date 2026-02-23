@@ -49,6 +49,7 @@ fn main() {
       #[cfg(desktop)]
       {
         use tauri_plugin_clipboard_manager::ClipboardExt;
+        #[allow(unused_imports)]
         use tauri_plugin_dialog::DialogExt;
         use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 

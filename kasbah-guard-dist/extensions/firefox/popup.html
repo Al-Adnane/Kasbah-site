@@ -63,7 +63,7 @@
     <img class="logo" src="icon48.png" alt="Kasbah">
     <div class="brand">
       <div class="brand-name">Kasbah Guard</div>
-      <div class="brand-tag">Your data, your rules</div>
+      <div class="brand-tag">Authority Before Action</div>
     </div>
   </div>
   <div class="status">
@@ -79,7 +79,7 @@
   <!-- Binding Ceremony (shown when UNBOUND) -->
   <div class="ceremony" id="ceremonyBox">
     <div class="ceremony-prompt">Who is in charge of this browser session?</div>
-    <div class="ceremony-sub">Confirm to activate browser protection.</div>
+    <div class="ceremony-sub">Claim authority to enable enforcement.</div>
     <button class="btn-bind" id="bindBtn">I am.</button>
   </div>
 
@@ -105,14 +105,14 @@
     <div class="saves-box">
       <div class="saves-label">Interceptions</div>
       <div class="saves-count" id="savesCount">0</div>
-      <div class="saves-sub">times we had your back</div>
+      <div class="saves-sub">PII &amp; secrets blocked</div>
     </div>
   </div>
 
   <div class="stats">
     <div class="stat"><div class="stat-val" id="sTotal">0</div><div class="stat-lbl">Decisions</div></div>
     <div class="stat"><div class="stat-val" id="sAllow" style="color:#16a34a">0</div><div class="stat-lbl">Allowed</div></div>
-    <div class="stat"><div class="stat-val" id="sDeny" style="color:#dc2626">0</div><div class="stat-lbl">Stopped</div></div>
+    <div class="stat"><div class="stat-val" id="sDeny" style="color:#dc2626">0</div><div class="stat-lbl">Denied</div></div>
   </div>
 
   <div class="actions">
@@ -121,7 +121,7 @@
   </div>
 
   <div class="footer">
-    <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">GitHub</a> &middot; v1.3.0 &middot; <span id="engineTag" style="font-size:10px;color:#16a34a">TF-IDF ML</span>
+    <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">GitHub</a> &middot; v1.1.0 &middot; <span id="engineTag" style="font-size:10px;color:#16a34a">TF-IDF ML</span>
   </div>
 
   <script>
@@ -173,7 +173,7 @@
 
     // Reclaim — the kill switch
     document.getElementById('reclaimBtn').addEventListener('click', function() {
-      if (!confirm('Reset your session? You can re-bind anytime.')) return;
+      if (!confirm('You are reclaiming sovereignty. All delegated rights will be revoked immediately.')) return;
 
       var btn = this;
       btn.disabled = true;
@@ -211,7 +211,7 @@
       fetch(GUARD + '/status', {cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
         var ok = d.ok === true;
         document.getElementById('dot').className = 'dot' + (ok ? ' on' : '');
-        document.getElementById('txt').textContent = ok ? 'Active' : 'Offline';
+        document.getElementById('txt').textContent = ok ? 'Enforcement Active' : 'Enforcement Offline';
         if (d.crypto) document.getElementById('cryptoTag').textContent = d.crypto.toUpperCase();
         if (d.classifier) document.getElementById('engineTag').textContent = d.classifier_type === 'statistical_ml' ? 'TF-IDF ML' : d.classifier;
         if (d.stats) {
@@ -224,7 +224,7 @@
         }
       }).catch(function(){
         document.getElementById('dot').className = 'dot';
-        document.getElementById('txt').textContent = 'Offline';
+        document.getElementById('txt').textContent = 'Enforcement Offline';
       });
     }
 
