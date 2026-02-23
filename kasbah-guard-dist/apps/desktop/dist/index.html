@@ -701,42 +701,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
         </div>
       </div>
 
-      <!-- Enterprise Quick Stats -->
-      <div class="stats-row" id="enterpriseStats" style="margin-bottom:16px">
-        <div class="stat-card" style="border-left:3px solid var(--green)">
-          <div class="stat-label">Days Protected</div>
-          <div class="stat-val green" id="dDaysProtected">0</div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid var(--blue)">
-          <div class="stat-label">Compliance</div>
-          <div class="stat-val" id="dCompFrameworks" style="font-size:20px;color:var(--blue)">5 frameworks</div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid var(--amber)">
-          <div class="stat-label">UEBA Risk</div>
-          <div class="stat-val" id="dUebaRisk" style="font-size:20px;color:var(--green)">LOW</div>
-        </div>
+      <!-- Quick Stats Row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+        <div class="insight-stat"><div class="insight-val" style="color:var(--green)" id="dHeroSaves">0</div><div class="insight-lbl">Saves</div></div>
+        <div class="insight-stat"><div class="insight-val" style="color:var(--ink)" id="dTotal">0</div><div class="insight-lbl">Decisions</div></div>
+        <div class="insight-stat"><div class="insight-val" style="color:#ef4444" id="dDenied">0</div><div class="insight-lbl">Blocked</div></div>
+        <div class="insight-stat"><div class="insight-val" style="color:var(--amber)" id="dSecrets">0</div><div class="insight-lbl">Secrets</div></div>
       </div>
-
-      <div class="dash-pulse">
-        <div class="score-ring-wrap">
-          <div class="score-ring">
-            <svg width="110" height="110" viewBox="0 0 110 110">
-              <circle class="score-ring-bg" cx="55" cy="55" r="45"/>
-              <circle class="score-ring-fill" id="scoreRingFill" cx="55" cy="55" r="45" stroke="var(--green)" stroke-dasharray="283" stroke-dashoffset="283"/>
-            </svg>
-            <div class="score-ring-center">
-              <div class="score-ring-val" id="dHeroSaves">0</div>
-              <div class="score-ring-label">saves</div>
-            </div>
-          </div>
-        </div>
-        <div class="dash-bars">
-          <div class="bar-row"><span class="bar-label">Actions</span><div class="bar-track"><div class="bar-fill blue" id="barTotal" style="width:0%"></div></div><span class="bar-val" id="dTotal">0</span></div>
-          <div class="bar-row"><span class="bar-label">Allowed</span><div class="bar-track"><div class="bar-fill green" id="barAllowed" style="width:0%"></div></div><span class="bar-val" id="dAllowed">0</span></div>
-          <div class="bar-row"><span class="bar-label">Stopped</span><div class="bar-track"><div class="bar-fill red" id="barDenied" style="width:0%"></div></div><span class="bar-val" id="dDenied">0</span></div>
-          <div class="bar-row"><span class="bar-label">Secrets</span><div class="bar-track"><div class="bar-fill amber" id="barSecrets" style="width:0%"></div></div><span class="bar-val" id="dSecrets">0</span></div>
-        </div>
-      </div>
+      <!-- Hidden compat counters -->
+      <span id="dDaysProtected" style="display:none">0</span>
+      <span id="dCompFrameworks" style="display:none">0</span>
+      <span id="dUebaRisk" style="display:none">0</span>
+      <span id="dAllowed" style="display:none">0</span>
+      <span id="barTotal" style="display:none"></span>
+      <span id="barAllowed" style="display:none"></span>
+      <span id="barDenied" style="display:none"></span>
+      <span id="barSecrets" style="display:none"></span>
+      <span id="scoreRingFill" style="display:none"></span>
 
       <!-- 6-Verb Activity Grid -->
       <div class="verb-grid" id="verbGrid">
@@ -803,8 +784,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
           <div class="ps-item" id="psFsWatch" data-pts="10"><span class="ps-dot"></span><span class="ps-label">File system watcher active</span><span class="ps-weight">10 pts</span></div>
           <div class="ps-item" id="psRules" data-pts="10"><span class="ps-dot"></span><span class="ps-label">At least 1 custom rule configured</span><span class="ps-weight">10 pts</span></div>
           <div class="ps-item" id="psAudit" data-pts="10"><span class="ps-dot"></span><span class="ps-label">Audit chain verified intact</span><span class="ps-weight">10 pts</span></div>
-          <div class="ps-item" id="psActive7d" data-pts="10"><span class="ps-dot"></span><span class="ps-label">Active for 7+ days</span><span class="ps-weight">10 pts</span></div>
+          <div class="ps-item" id="psSelftest" data-pts="10"><span class="ps-dot"></span><span class="ps-label">Self-test suite passed (18/18)</span><span class="ps-weight">10 pts</span></div>
           <div class="ps-item" id="psScan" data-pts="5"><span class="ps-dot"></span><span class="ps-label">Run at least one text scan</span><span class="ps-weight">5 pts</span></div>
+          <!-- Hidden compat -->
+          <span id="psActive7d" class="ps-item" style="display:none"></span>
         </div>
 
         <div class="ps-passport-row" id="psPassportRow" style="display:none">
@@ -816,88 +799,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
         </div>
       </div>
 
-      <!-- Reward Tiers -->
-      <div class="reward-tiers-card" id="rewardTiersCard">
-        <div class="rt-header">
-          <span class="rt-title">Your Rewards</span>
-          <span class="rt-current" id="rtCurrentTier" style="background:rgba(6,95,70,.08);color:var(--green)">--</span>
-        </div>
-
-        <div class="rt-track" id="rtTrack">
-          <div class="rt-track-fill" id="rtTrackFill" style="width:0"></div>
-          <div class="rt-node locked" id="rtN0"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg></div><div class="rt-node-label">Observer</div><div class="rt-node-score">0+</div></div>
-          <div class="rt-node locked" id="rtN1"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="rt-node-label">Guardian</div><div class="rt-node-score">30+</div></div>
-          <div class="rt-node locked" id="rtN2"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div class="rt-node-label">Sentinel</div><div class="rt-node-score">60+</div></div>
-          <div class="rt-node locked" id="rtN3"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div class="rt-node-label">Protector</div><div class="rt-node-score">80+</div></div>
-          <div class="rt-node locked" id="rtN4"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="rt-node-label">Sovereign</div><div class="rt-node-score">100</div></div>
-        </div>
-
-        <div class="rt-perks" id="rtPerks">
-          <div class="rt-perk locked" id="rtP0" data-tier="0">
-            <div class="rt-perk-icon" style="background:rgba(100,116,139,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
-            <div class="rt-perk-info"><div class="rt-perk-name">Community Access</div><div class="rt-perk-desc">Join the Kasbah community forum. Share tips, report threats, vote on features.</div></div>
-            <span class="rt-perk-tag locked">Observer</span>
-          </div>
-          <div class="rt-perk locked" id="rtP1" data-tier="1">
-            <div class="rt-perk-icon" style="background:rgba(6,95,70,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
-            <div class="rt-perk-info"><div class="rt-perk-name">Threat Intelligence Feed</div><div class="rt-perk-desc">Weekly digest of AI platform data practices and new threat patterns detected by the Kasbah network.</div></div>
-            <span class="rt-perk-tag locked">Guardian</span>
-          </div>
-          <div class="rt-perk locked" id="rtP2" data-tier="2">
-            <div class="rt-perk-icon" style="background:rgba(168,85,247,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
-            <div class="rt-perk-info"><div class="rt-perk-name">Priority Detection Updates</div><div class="rt-perk-desc">Early access to new detectors, classifiers, and AI platform coverage before general release.</div></div>
-            <span class="rt-perk-tag locked">Sentinel</span>
-          </div>
-          <div class="rt-perk locked" id="rtP3" data-tier="3">
-            <div class="rt-perk-icon" style="background:rgba(193,68,14,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-            <div class="rt-perk-info"><div class="rt-perk-name">Compliance Reports &amp; Export</div><div class="rt-perk-desc">Export GDPR/HIPAA/SOC2 compliance reports. Professional PDF with your protection history and audit proof.</div></div>
-            <span class="rt-perk-tag locked">Protector</span>
-          </div>
-          <div class="rt-perk locked" id="rtP4" data-tier="4">
-            <div class="rt-perk-icon" style="background:rgba(245,158,11,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-            <div class="rt-perk-info"><div class="rt-perk-name">Sovereignty Passport &amp; API Access</div><div class="rt-perk-desc">Cryptographically signed proof of data protection. API keys for automated compliance checks and CI/CD integration.</div></div>
-            <span class="rt-perk-tag locked">Sovereign</span>
-          </div>
-        </div>
-
-        <div class="rt-upgrade-row" id="rtUpgradeRow">
-          <div style="flex:1">
-            <div class="rt-upgrade-text" id="rtUpgradeText">Complete checklist items above to unlock rewards</div>
-            <div class="rt-upgrade-sub" id="rtUpgradeSub">Each tier unlocks real perks based on your actual protection posture</div>
-          </div>
-          <a href="https://bekasbah.com/pricing" target="_blank" class="btn btn-red" style="white-space:nowrap;text-decoration:none;font-size:11px;padding:8px 14px">Upgrade Plan</a>
-        </div>
-      </div>
-
-      <!-- Protection Insights -->
-      <div class="insights-card" id="insightsCard">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div>
-            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Protection Insights</div>
-            <div style="font-size:10px;color:var(--subtle);margin-top:2px" id="insightsPeriod">This session</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--green)"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:heartbeat 2s ease infinite"></span> Live</div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-          <div class="insight-stat">
-            <div class="insight-val" id="inBlocked" style="color:#ef4444">0</div>
-            <div class="insight-lbl">Threats stopped</div>
-          </div>
-          <div class="insight-stat">
-            <div class="insight-val" id="inSaved" style="color:var(--green)">0</div>
-            <div class="insight-lbl">Data saves</div>
-          </div>
-          <div class="insight-stat">
-            <div class="insight-val" id="inDecisions" style="color:var(--ink)">0</div>
-            <div class="insight-lbl">Total decisions</div>
-          </div>
-          <div class="insight-stat">
-            <div class="insight-val" id="inAccuracy" style="color:#1E3A8A">--</div>
-            <div class="insight-lbl">Detection accuracy</div>
-          </div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);padding:10px 12px;background:var(--bg);border-radius:8px;line-height:1.5" id="insightMessage">Kasbah Guard is watching. Protection insights will appear as you use AI tools.</div>
-      </div>
+      <!-- Hidden compat elements for reward tiers JS -->
+      <span id="rtCurrentTier" style="display:none"></span>
+      <span id="rtTrackFill" style="display:none"></span>
+      <span id="rtN0" style="display:none"></span><span id="rtN1" style="display:none"></span><span id="rtN2" style="display:none"></span><span id="rtN3" style="display:none"></span><span id="rtN4" style="display:none"></span>
+      <span id="rtP0" style="display:none" data-tier="0"></span><span id="rtP1" style="display:none" data-tier="1"></span><span id="rtP2" style="display:none" data-tier="2"></span><span id="rtP3" style="display:none" data-tier="3"></span><span id="rtP4" style="display:none" data-tier="4"></span>
+      <span id="rtUpgradeRow" style="display:none"></span><span id="rtUpgradeText" style="display:none"></span><span id="rtUpgradeSub" style="display:none"></span>
+      <span id="insightsCard" style="display:none"></span>
+      <span id="inBlocked" style="display:none"></span><span id="inSaved" style="display:none"></span><span id="inDecisions" style="display:none"></span><span id="inAccuracy" style="display:none"></span><span id="insightMessage" style="display:none"></span>
 
       <div class="dash-monitors">
         <div class="monitor-card">
@@ -1011,6 +920,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
           <div class="toggle" id="killToggle" title="Toggle emergency stop"></div>
         </div>
         <div id="killStatus" style="margin-top:10px;font-size:11px;font-weight:700;color:var(--muted);display:none"></div>
+      </div>
+
+      <!-- Notification Preferences -->
+      <div class="setting-group">
+        <div class="setting-group-title">Notifications</div>
+        <div class="setting-row"><div><div class="setting-label">Alert on flagged files</div><div class="setting-desc">Show a dialog when the file watcher detects sensitive content</div></div><div class="toggle active" id="notifFlaggedToggle" title="Toggle flagged file alerts"></div></div>
+        <div class="setting-row"><div><div class="setting-label">Alert on clean files</div><div class="setting-desc">Show brief notifications for files reviewed with no issues</div></div><div class="toggle" id="notifCleanToggle" title="Toggle clean file alerts"></div></div>
       </div>
 
       <!-- 6 Verbs -->
@@ -1473,6 +1389,26 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Kill switch toggle
   document.getElementById('killToggle').addEventListener('click', toggleKillSwitch);
+
+  // Notification toggles
+  (function(){
+    var ft=document.getElementById('notifFlaggedToggle');
+    var ct=document.getElementById('notifCleanToggle');
+    // Load initial state from guard
+    fetch(GUARD+'/config/notifications').then(function(r){return r.json()}).then(function(d){
+      if(d.notify_flagged)ft.classList.add('active');else ft.classList.remove('active');
+      if(d.notify_clean)ct.classList.add('active');else ct.classList.remove('active');
+    }).catch(function(){});
+    if(ft)ft.addEventListener('click',function(){
+      var isOn=ft.classList.toggle('active');
+      fetch(GUARD+'/config/notifications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notify_flagged:isOn})}).catch(function(){});
+    });
+    if(ct)ct.addEventListener('click',function(){
+      var isOn=ct.classList.toggle('active');
+      fetch(GUARD+'/config/notifications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notify_clean:isOn})}).catch(function(){});
+    });
+  })();
+
   document.getElementById('btnInstallExt').addEventListener('click', installExtension);
   document.getElementById('btnInstallEdge').addEventListener('click', installEdge);
   document.getElementById('btnInstallFirefox').addEventListener('click', installFirefox);
@@ -1802,6 +1738,19 @@ function enterApp(){
   // Init kill switch UI state (assume normal — poll will correct)
   killSwitchOn=false;
   updateKillUI();
+  // Version check — non-blocking
+  checkForUpdates();
+}
+
+function checkForUpdates(){
+  fetch(GUARD+'/health',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+    var localVer=d.version||'2.0.0';
+    fetch(API+'/version').then(function(r){return r.json()}).then(function(v){
+      if(v.latest&&v.latest!==localVer){
+        showToast('info','Update Available','v'+v.latest+' is available. Visit bekasbah.com to download.');
+      }
+    }).catch(function(){/* no update server yet, that's fine */});
+  }).catch(function(){});
 }
 
 // ── Logout ──
@@ -2475,10 +2424,10 @@ function installSafari(){installExtForBrowser('safari','','1. Open the Xcode pro
 
 // ── Privacy Score System ──
 // Real, measurable posture score. Each checklist item maps to an actual protection layer.
-var psState={guard:false,extension:false,authority:false,clipboard:false,fswatch:false,rules:false,audit:false,active7d:false,scan:false};
+var psState={guard:false,extension:false,authority:false,clipboard:false,fswatch:false,rules:false,audit:false,selftest:false,scan:false};
 
 function computePrivacyScore(){
-  var weights={guard:15,extension:15,authority:15,clipboard:10,fswatch:10,rules:10,audit:10,active7d:10,scan:5};
+  var weights={guard:15,extension:15,authority:15,clipboard:10,fswatch:10,rules:10,audit:10,selftest:10,scan:5};
   var score=0;
   for(var k in psState){if(psState[k])score+=weights[k]||0}
   return score;
@@ -2517,7 +2466,7 @@ function updatePrivacyScoreUI(){
   var items=[
     {id:'psGuard',key:'guard'},{id:'psExtension',key:'extension'},{id:'psAuthority',key:'authority'},
     {id:'psClipboard',key:'clipboard'},{id:'psFsWatch',key:'fswatch'},{id:'psRules',key:'rules'},
-    {id:'psAudit',key:'audit'},{id:'psActive7d',key:'active7d'},{id:'psScan',key:'scan'}
+    {id:'psAudit',key:'audit'},{id:'psSelftest',key:'selftest'},{id:'psScan',key:'scan'}
   ];
   for(var i=0;i<items.length;i++){
     var el=document.getElementById(items[i].id);
@@ -2654,11 +2603,14 @@ function checkPrivacyPosture(force){
     psState.audit=d.integrity==='INTACT';
   }).catch(function(){});
 
-  // Active 7+ days
-  var firstKey='kasbah_first_protected';
-  var first=parseInt(localStorage.getItem(firstKey))||Date.now();
-  var days=Math.floor((Date.now()-first)/86400000);
-  psState.active7d=days>=7;
+  // Self-test passed — check cache first, only run once per session
+  psState.selftest=!!localStorage.getItem('kasbah_selftest_passed');
+  if(!psState.selftest&&!window._selftestChecked){
+    window._selftestChecked=true;
+    fetch(GUARD+'/selftest/run').then(function(r){return r.json()}).then(function(d){
+      if(d.ok&&d.passed===d.total){psState.selftest=true;localStorage.setItem('kasbah_selftest_passed','true')}
+    }).catch(function(){});
+  }
 
   // Scan performed
   psState.scan=!!localStorage.getItem('kasbah_first_scan');
@@ -2705,7 +2657,7 @@ function generatePassport(){
         fs_watcher:psState.fswatch,
         custom_rules:psState.rules,
         audit_intact:psState.audit,
-        active_days:Math.floor((Date.now()-(parseInt(localStorage.getItem('kasbah_first_protected'))||Date.now()))/86400000),
+        selftest_passed:psState.selftest,
         scan_performed:psState.scan
       },
       proof:{

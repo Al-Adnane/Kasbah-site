@@ -3701,6 +3701,8 @@ struct GuardConfig {
     watch_paths: Vec<String>,
     clipboard_interval_ms: u64,
     fs_poll_interval_ms: u64,
+    notify_flagged: bool,
+    notify_clean: bool,
 }
 
 impl Default for GuardConfig {
@@ -3716,6 +3718,8 @@ impl Default for GuardConfig {
             ],
             clipboard_interval_ms: 80,
             fs_poll_interval_ms: 5000,
+            notify_flagged: true,
+            notify_clean: false, // off by default — zero spam
         }
     }
 }
@@ -6520,11 +6524,18 @@ end tell"#
                             while s.mem_events.len() > MAX_EVENTS_MEM { s.mem_events.pop_back(); }
                         }
 
+                        // Read notification preferences
+                        let (should_notify_flagged, should_notify_clean) = {
+                            let s = st_fs.lock().unwrap_or_else(|e| e.into_inner());
+                            (s.config.notify_flagged, s.config.notify_clean)
+                        };
+
                         if flagged {
                             let finding_types: Vec<&str> = findings.iter().map(|f| f.ftype).collect();
                             let finding_summary = finding_types.join(", ");
                             eprintln!("[Kasbah Guard] FS WATCHER ALERT: {} — {} findings: {}",
                                 fname, findings.len(), finding_summary);
+                            if !should_notify_flagged { /* skip notification per user pref */ } else {
                             // macOS notification for flagged files — identify the editing tool
                             let safe_fname = fname.replace('"', "'").replace('\\', "/");
                             // Detect which tool is editing based on common process patterns
@@ -6581,8 +6592,10 @@ end tell"#
                                     })).collect::<Vec<_>>(), "size": file_size
                                 }).to_string()),
                             );
+                            } // end notify_flagged gate
                         } else {
-                            // Clean file — brief notification (rate-limited)
+                            // Clean file — brief notification (rate-limited, off by default)
+                            if !should_notify_clean { /* skip per user pref */ } else {
                             let now = now_ms();
                             let should_notify = {
                                 let s = st_fs.lock().unwrap_or_else(|e| e.into_inner());
@@ -6620,6 +6633,7 @@ end tell"#
                                     editor_hint, safe_fname
                                 )]);
                             }
+                            } // end notify_clean gate
                         }
                     }
                 }
@@ -7673,6 +7687,31 @@ end tell"#
                         "verb_last_blocked": serde_json::Value::Object(last_blocked)
                     });
                     respond(request, 200, &body.to_string());
+                }
+
+                // ── Notification Config ──
+                ("GET", "/config/notifications") => {
+                    let s = st.lock().unwrap();
+                    respond(request, 200, &serde_json::json!({
+                        "ok": true,
+                        "notify_flagged": s.config.notify_flagged,
+                        "notify_clean": s.config.notify_clean
+                    }).to_string());
+                }
+                ("POST", "/config/notifications") => {
+                    let body_str = read_body(&mut request);
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(&body_str) {
+                        let mut s = st.lock().unwrap();
+                        if let Some(f) = v.get("notify_flagged").and_then(|x| x.as_bool()) {
+                            s.config.notify_flagged = f;
+                        }
+                        if let Some(c) = v.get("notify_clean").and_then(|x| x.as_bool()) {
+                            s.config.notify_clean = c;
+                        }
+                        respond(request, 200, &serde_json::json!({"ok": true}).to_string());
+                    } else {
+                        respond(request, 400, r#"{"ok":false,"error":"invalid json"}"#);
+                    }
                 }
 
                 // ── Velocity / Behavioral Analytics ──
