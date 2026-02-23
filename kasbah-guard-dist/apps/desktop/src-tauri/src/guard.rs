@@ -6381,32 +6381,55 @@ end tell"#
             thread::spawn(move || {
                 eprintln!("[Kasbah Guard] FS watcher thread started (5s poll, Desktop/Documents/Downloads)");
                 let mut known_mtimes: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
-                let watch_extensions = ["txt", "csv", "json", "xml", "html", "md", "yml", "yaml",
+                let watch_extensions: std::collections::HashSet<&str> = ["txt", "csv", "json", "xml", "html", "md", "yml", "yaml",
                     "toml", "env", "cfg", "conf", "ini", "log", "sql", "py", "js", "ts",
-                    "rs", "go", "java", "c", "cpp", "h", "rb", "php", "sh", "swift"];
+                    "rs", "go", "java", "c", "cpp", "h", "rb", "php", "sh", "swift"].iter().copied().collect();
+                let skip_dirs: std::collections::HashSet<&str> = [".git", "node_modules", "target", ".build", "__pycache__",
+                    ".DS_Store", "dist-electron", ".cache", ".next", "build"].iter().copied().collect();
+                const MAX_DEPTH: u32 = 6;
+
+                // Recursive directory walker — collects all matching files
+                fn walk_files(dir: &std::path::Path, exts: &std::collections::HashSet<&str>,
+                              skips: &std::collections::HashSet<&str>, depth: u32, max_depth: u32,
+                              out: &mut Vec<std::path::PathBuf>) {
+                    if depth > max_depth { return; }
+                    let entries = match std::fs::read_dir(dir) { Ok(e) => e, Err(_) => return };
+                    for entry in entries.flatten() {
+                        let p = entry.path();
+                        if p.is_dir() {
+                            let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                            if !skips.contains(name) {
+                                walk_files(&p, exts, skips, depth + 1, max_depth, out);
+                            }
+                        } else if p.is_file() {
+                            let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
+                            if exts.contains(ext) {
+                                out.push(p);
+                            }
+                        }
+                    }
+                }
+
                 // Initial scan: populate known_mtimes without triggering notifications
                 {
                     let s = st_fs.lock().unwrap();
                     let paths = s.config.watch_paths.clone();
                     drop(s);
                     for dir in &paths {
-                        if let Ok(entries) = std::fs::read_dir(dir) {
-                            for entry in entries.flatten() {
-                                let p = entry.path();
-                                if !p.is_file() { continue; }
-                                let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
-                                if !watch_extensions.contains(&ext) { continue; }
-                                if let Ok(m) = p.metadata() {
-                                    let mtime = m.modified().ok()
-                                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                                        .map(|d| d.as_millis() as u64)
-                                        .unwrap_or(0);
-                                    known_mtimes.insert(p.to_string_lossy().to_string(), mtime);
-                                }
+                        let dir_path = std::path::Path::new(dir);
+                        let mut files = Vec::new();
+                        walk_files(dir_path, &watch_extensions, &skip_dirs, 0, MAX_DEPTH, &mut files);
+                        for p in files {
+                            if let Ok(m) = p.metadata() {
+                                let mtime = m.modified().ok()
+                                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                                    .map(|d| d.as_millis() as u64)
+                                    .unwrap_or(0);
+                                known_mtimes.insert(p.to_string_lossy().to_string(), mtime);
                             }
                         }
                     }
-                    eprintln!("[Kasbah Guard] FS watcher: indexed {} existing files", known_mtimes.len());
+                    eprintln!("[Kasbah Guard] FS watcher: indexed {} existing files (recursive, depth {})", known_mtimes.len(), MAX_DEPTH);
                 }
 
                 loop {
@@ -6419,12 +6442,10 @@ end tell"#
 
                     let mut changed_files: Vec<String> = Vec::new();
                     for dir in &paths {
-                        let entries = match std::fs::read_dir(dir) { Ok(e) => e, Err(_) => continue };
-                        for entry in entries.flatten() {
-                            let p = entry.path();
-                            if !p.is_file() { continue; }
-                            let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
-                            if !watch_extensions.contains(&ext) { continue; }
+                        let dir_path = std::path::Path::new(dir);
+                        let mut files = Vec::new();
+                        walk_files(dir_path, &watch_extensions, &skip_dirs, 0, MAX_DEPTH, &mut files);
+                        for p in files {
                             let meta = match p.metadata() { Ok(m) => m, Err(_) => continue };
                             if meta.len() > 5_000_000 || meta.len() == 0 { continue; }
                             let mtime = meta.modified().ok()
@@ -6435,9 +6456,9 @@ end tell"#
                             let old_mtime = known_mtimes.get(&path_str).copied().unwrap_or(0);
                             if mtime > old_mtime && mtime > 0 {
                                 known_mtimes.insert(path_str.clone(), mtime);
-                                // Only scan files modified in the last 10 seconds (not old files)
+                                // Scan files modified in the last 15 seconds
                                 let age_ms = now_ms().saturating_sub(mtime);
-                                if age_ms < 10_000 {
+                                if age_ms < 15_000 {
                                     changed_files.push(path_str);
                                 }
                             }
