@@ -3,12 +3,16 @@ name = "kasbah-kernel"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = ["sqlite"]
+sqlite = ["dep:rusqlite"]
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
 time = { version = "0.3", features = ["formatting"] }
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.31", features = ["bundled"], optional = true }
 hex = "0.4"
 hmac = "0.12"
 rand = "0.8"

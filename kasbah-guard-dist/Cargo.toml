@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "crates/kasbah-kernel",
   "crates/kasbah-daemon",
+  "crates/kasbah-wasm",
   "apps/desktop/src-tauri",
 ]
 

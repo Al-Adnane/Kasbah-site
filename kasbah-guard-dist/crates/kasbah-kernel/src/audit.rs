@@ -1,3 +1,4 @@
+#[cfg(feature = "sqlite")]
 use rusqlite::{params, Connection};
 use sha2::{Digest, Sha256};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -12,6 +13,7 @@ pub fn now_ms() -> u64 {
   SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64
 }
 
+#[cfg(feature = "sqlite")]
 pub fn init_audit_db(path: &str) -> Connection {
     let conn = Connection::open(path).expect("Failed to open SQLite DB");
     conn.execute_batch(
@@ -130,6 +132,7 @@ pub fn verify_ticket(signing_key: &[u8], signed_ticket: &str) -> Result<String, 
     Ok(ticket_id)
 }
 
+#[cfg(feature = "sqlite")]
 fn get_last_hash(conn: &Connection) -> String {
     conn.query_row(
         "SELECT entry_hash FROM audit ORDER BY id DESC LIMIT 1",
@@ -139,6 +142,7 @@ fn get_last_hash(conn: &Connection) -> String {
     .unwrap_or_else(|_| "GENESIS".to_string())
 }
 
+#[cfg(feature = "sqlite")]
 pub fn append_audit(
     conn: &Connection,
     kind: &str,
@@ -182,4 +186,3 @@ pub fn append_audit(
 
     entry_hash
 }
-
