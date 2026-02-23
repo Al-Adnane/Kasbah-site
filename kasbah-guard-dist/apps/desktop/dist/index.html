@@ -438,6 +438,42 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
 /* ── Enterprise hidden by default ── */
 #enterpriseSidebar{display:none}
 #enterpriseStats{display:none !important}
+
+/* ── Gamification ── */
+.guardian-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
+.guardian-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));opacity:.6}
+.guardian-level{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.guardian-shield{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;border:2px solid}
+.guardian-meta{flex:1}
+.guardian-rank{font-size:16px;font-weight:900;letter-spacing:-.02em;line-height:1.2}
+.guardian-subtitle{font-size:11px;color:var(--muted);font-weight:600}
+.xp-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:6px}
+.xp-fill{height:100%;border-radius:3px;transition:width .8s ease;background:linear-gradient(90deg,var(--red),#e85d04)}
+.xp-label{font-size:9px;color:var(--subtle);font-weight:700;margin-top:3px;display:flex;justify-content:space-between}
+
+/* Streak */
+.streak-row{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.streak-flame{font-size:28px;line-height:1}
+.streak-info{flex:1}
+.streak-days{font-size:22px;font-weight:900;line-height:1}
+.streak-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+
+/* Achievements */
+.achievements{display:flex;gap:8px;flex-wrap:wrap}
+.ach{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:default;position:relative;transition:all .2s;border:1.5px solid var(--border);background:var(--bg)}
+.ach.unlocked{border-color:var(--amber);background:rgba(245,158,11,.06);animation:bounce .4s ease}
+.ach.locked{opacity:.3;filter:grayscale(1)}
+.ach:hover{transform:scale(1.1)}
+.ach-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:9px;font-weight:700;padding:4px 8px;border-radius:5px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
+.ach:hover .ach-tooltip{opacity:1}
+
+/* Daily challenge */
+.daily-challenge{background:linear-gradient(135deg,rgba(193,68,14,.04),rgba(245,158,11,.04));border:1.5px solid rgba(193,68,14,.12);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;gap:12px}
+.daily-icon{font-size:20px;flex-shrink:0}
+.daily-text{flex:1;font-size:12px;color:var(--ink);font-weight:600;line-height:1.4}
+.daily-text small{display:block;font-size:10px;color:var(--muted);font-weight:500;margin-top:2px}
+.daily-check{width:28px;height:28px;border-radius:8px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:14px;background:var(--bg)}
+.daily-check.done{border-color:var(--green);background:var(--green);color:#fff}
 </style>
 </head>
 <body>
@@ -624,6 +660,44 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
           <div class="verb-blocked" id="vEditBlocked"></div>
         </div>
       </div>
+
+      <!-- Guardian Level + Achievements + Streak -->
+      <div class="guardian-card" id="guardianCard">
+        <div class="guardian-level">
+          <div class="guardian-shield" id="guardianShield" style="background:rgba(193,68,14,.06);border-color:var(--red);color:var(--red)">&#128737;</div>
+          <div class="guardian-meta">
+            <div class="guardian-rank" id="guardianRank">Novice</div>
+            <div class="guardian-subtitle" id="guardianSubtitle">Level 1 Privacy Guardian</div>
+            <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+            <div class="xp-label"><span id="xpCurrent">0 XP</span><span id="xpNext">100 XP to Level 2</span></div>
+          </div>
+        </div>
+
+        <div class="streak-row">
+          <div class="streak-flame" id="streakFlame">&#128293;</div>
+          <div class="streak-info">
+            <div class="streak-days" id="streakDays">1</div>
+            <div class="streak-label">day streak</div>
+          </div>
+          <div class="achievements" id="achievementRow">
+            <div class="ach locked" id="achFirstScan" title="First Scan">&#128269;<span class="ach-tooltip">Run your first scan</span></div>
+            <div class="ach locked" id="achFirstBlock" title="First Block">&#128721;<span class="ach-tooltip">Block your first action</span></div>
+            <div class="ach locked" id="achAuthority" title="Authority Claimed">&#128274;<span class="ach-tooltip">Claim authority</span></div>
+            <div class="ach locked" id="ach100Saves" title="100 Saves">&#128170;<span class="ach-tooltip">100 saves milestone</span></div>
+            <div class="ach locked" id="achWeekStreak" title="Week Streak">&#128293;<span class="ach-tooltip">7-day streak</span></div>
+            <div class="ach locked" id="achAllVerbs" title="All Verbs">&#127775;<span class="ach-tooltip">Activity in all 6 verbs</span></div>
+            <div class="ach locked" id="achCleanScan" title="Clean Scan">&#9989;<span class="ach-tooltip">Scan with zero findings</span></div>
+            <div class="ach locked" id="achSentinel" title="Sentinel">&#128737;<span class="ach-tooltip">Reach Level 5</span></div>
+          </div>
+        </div>
+
+        <div class="daily-challenge" id="dailyChallenge">
+          <div class="daily-icon">&#127919;</div>
+          <div class="daily-text" id="dailyChallengeText">Run a text scan to check for sensitive data<small>+25 XP</small></div>
+          <div class="daily-check" id="dailyCheck">&#10003;</div>
+        </div>
+      </div>
+
       <div class="dash-monitors">
         <div class="monitor-card">
           <div class="monitor-icon"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
@@ -1174,20 +1248,34 @@ document.addEventListener('DOMContentLoaded', function(){
     if(btn) deletePolicy(btn.getAttribute('data-del-policy'));
   });
 
-  // Scanner
-  document.getElementById('btnScanText').addEventListener('click', scanText);
+  // Scanner (with gamification tracking)
+  document.getElementById('btnScanText').addEventListener('click', function(){
+    scanText();
+    localStorage.setItem('kasbah_first_scan','true');
+    localStorage.setItem('kasbah_scans_today',(parseInt(localStorage.getItem('kasbah_scans_today'))||0)+1);
+    if(getXp()===0)addXp(10); // First ever scan bonus
+    updateDailyChallenge();
+  });
   document.getElementById('btnScanClear').addEventListener('click', function(){
     document.getElementById('scannerInput').value='';
     document.getElementById('scannerResult').style.display='none';
     document.getElementById('scannerStatus').textContent='';
   });
 
-  // Audit
-  document.getElementById('btnVerifyChain').addEventListener('click', verifyChain);
+  // Audit (with gamification tracking)
+  document.getElementById('btnVerifyChain').addEventListener('click', function(){
+    verifyChain();
+    localStorage.setItem('kasbah_chain_verified_today','true');
+    updateDailyChallenge();
+  });
   document.getElementById('btnExportAudit').addEventListener('click', exportAudit);
 
-  // Self-Test
-  document.getElementById('btnRunTests').addEventListener('click', runSelfTests);
+  // Self-Test (with gamification tracking)
+  document.getElementById('btnRunTests').addEventListener('click', function(){
+    runSelfTests();
+    localStorage.setItem('kasbah_selftest_today','true');
+    updateDailyChallenge();
+  });
 
   // Kill switch toggle
   document.getElementById('killToggle').addEventListener('click', toggleKillSwitch);
@@ -1469,6 +1557,8 @@ function enterApp(){
   eventInterval=setInterval(refreshEvents,3000);
   refreshEvents();
   verifyChain();
+  // Initialize gamification
+  updateGuardianUI();
   // Init kill switch UI state (assume normal — poll will correct)
   killSwitchOn=false;
   updateKillUI();
@@ -1511,9 +1601,9 @@ function showPage(page,el){
     for(var i=0;i<items.length;i++)items[i].className='sb-item';
     if(el)el.className='sb-item active';
 
-    if(page==='policies')loadPolicies();
-    if(page==='audit')loadAudit();
-    if(page==='authority'){loadAuthorityStatus();loadAuthorityHistory()}
+    if(page==='policies'){loadPolicies();localStorage.setItem('kasbah_rules_viewed_today','true');updateDailyChallenge();}
+    if(page==='audit'){loadAudit();localStorage.setItem('kasbah_feed_views',(parseInt(localStorage.getItem('kasbah_feed_views'))||0)+1);updateDailyChallenge();}
+    if(page==='authority'){loadAuthorityStatus();loadAuthorityHistory();localStorage.setItem('kasbah_authority_viewed_today','true');updateDailyChallenge();}
     if(page==='settings'){updateKillUI();updateSettingsChain()}
     if(page==='processes'){/* auto-scan on first visit */}
     if(page==='ueba'){var btn=document.getElementById('btnUebaAssess');if(btn)btn.click()}
@@ -1579,6 +1669,15 @@ function pollGuard(){
       animateCounter('dFsFlags',d.os_authority.fs_flags||0);
       animateCounter('dClipScans',d.os_authority.clipboard_scans||0);
       animateCounter('dClipFlags',d.os_authority.clipboard_flags||0);
+    }
+    // Gamification: grant XP from activity
+    if(d.stats){
+      grantActivityXp(
+        saves,
+        d.stats.total||0,
+        d.stats.denied||0,
+        d.stats.secrets_caught||0
+      );
     }
     if(d.active_tickets!==undefined)animateCounter('dTickets',d.active_tickets);
     if(d.version){document.getElementById('sbVersion').innerHTML='<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle;box-shadow:0 0 4px rgba(6,95,70,.4)"></span>v'+d.version;document.getElementById('settingsVersion').textContent=d.version}
@@ -1959,6 +2058,8 @@ function scanText(){
         summary.style.border='1px solid var(--green-border)';
         summary.innerHTML='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px;color:var(--green)">&#10003;</span><div><div style="font-size:14px;font-weight:800;color:var(--green)">Looks good</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Nothing personal found — you\'re all set.</div></div></div>';
         showToast('info','All Clear','No sensitive data detected');
+        localStorage.setItem('kasbah_clean_scan','true');
+        checkAchievements();
       }else if(isWarning){
         summary.style.background='var(--amber-bg)';
         summary.style.border='1px solid rgba(245,158,11,.25)';
@@ -2137,6 +2238,232 @@ function installSafari(){installExtForBrowser('safari','','1. Open the Xcode pro
     }
   });
 })();
+
+// ── Gamification System ──
+var LEVELS = [
+  {name:'Novice',      icon:'\u{1F6E1}', minXp:0,    color:'var(--muted)'},
+  {name:'Watcher',     icon:'\u{1F441}', minXp:100,  color:'#1E3A8A'},
+  {name:'Guardian',    icon:'\u{1F6E1}', minXp:300,  color:'var(--amber)'},
+  {name:'Protector',   icon:'\u26A1',    minXp:600,  color:'var(--red)'},
+  {name:'Sentinel',    icon:'\u{1F6E1}\uFE0F', minXp:1200, color:'#a855f7'},
+  {name:'Sovereign',   icon:'\u{1F451}', minXp:2500, color:'var(--green)'}
+];
+
+var DAILY_CHALLENGES = [
+  {id:'scan',    text:'Run a text scan to check for sensitive data',     xp:25, check:function(){return (parseInt(localStorage.getItem('kasbah_scans_today'))||0)>0}},
+  {id:'review',  text:'Review an activity in the feed',                  xp:15, check:function(){return (parseInt(localStorage.getItem('kasbah_feed_views'))||0)>0}},
+  {id:'audit',   text:'Verify your audit chain is intact',              xp:20, check:function(){return !!localStorage.getItem('kasbah_chain_verified_today')}},
+  {id:'selftest',text:'Run all system checks',                          xp:30, check:function(){return !!localStorage.getItem('kasbah_selftest_today')}},
+  {id:'rules',   text:'View or add a custom rule',                      xp:20, check:function(){return !!localStorage.getItem('kasbah_rules_viewed_today')}},
+  {id:'authority',text:'Check your authority status',                    xp:15, check:function(){return !!localStorage.getItem('kasbah_authority_viewed_today')}}
+];
+
+function getXp(){return parseInt(localStorage.getItem('kasbah_xp'))||0}
+function addXp(amount){
+  var xp=getXp()+amount;
+  localStorage.setItem('kasbah_xp',xp);
+  updateGuardianUI();
+  // Flash XP gain
+  if(amount>0){showToast('info','+'+amount+' XP','Keep going!')}
+}
+function getLevelForXp(xp){
+  var lvl=LEVELS[0];
+  for(var i=LEVELS.length-1;i>=0;i--){
+    if(xp>=LEVELS[i].minXp){lvl=LEVELS[i];break}
+  }
+  return lvl;
+}
+function getLevelIndex(xp){
+  for(var i=LEVELS.length-1;i>=0;i--){
+    if(xp>=LEVELS[i].minXp) return i;
+  }
+  return 0;
+}
+
+function updateGuardianUI(){
+  var xp=getXp();
+  var lvlIdx=getLevelIndex(xp);
+  var lvl=LEVELS[lvlIdx];
+  var nextLvl=lvlIdx<LEVELS.length-1?LEVELS[lvlIdx+1]:null;
+
+  document.getElementById('guardianRank').textContent=lvl.name;
+  document.getElementById('guardianSubtitle').textContent='Level '+(lvlIdx+1)+' Privacy Guardian';
+  var shield=document.getElementById('guardianShield');
+  shield.innerHTML=lvl.icon;
+  shield.style.borderColor=lvl.color;
+  shield.style.color=lvl.color;
+
+  var pct=0;
+  if(nextLvl){
+    var range=nextLvl.minXp-lvl.minXp;
+    pct=Math.min(100,((xp-lvl.minXp)/range)*100);
+    document.getElementById('xpNext').textContent=(nextLvl.minXp-xp)+' XP to Level '+(lvlIdx+2);
+  }else{
+    pct=100;
+    document.getElementById('xpNext').textContent='MAX LEVEL';
+  }
+  document.getElementById('xpFill').style.width=pct+'%';
+  document.getElementById('xpCurrent').textContent=xp+' XP';
+
+  // Streak
+  updateStreak();
+
+  // Achievements
+  checkAchievements();
+
+  // Daily challenge
+  updateDailyChallenge();
+}
+
+function updateStreak(){
+  var key='kasbah_streak';
+  var lastKey='kasbah_streak_last';
+  var streak=parseInt(localStorage.getItem(key))||0;
+  var last=localStorage.getItem(lastKey)||'';
+  var today=new Date().toISOString().slice(0,10);
+  var yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+
+  if(last===today){
+    // Already counted today
+  }else if(last===yesterday){
+    streak++;
+    localStorage.setItem(key,streak);
+    localStorage.setItem(lastKey,today);
+  }else if(!last){
+    streak=1;
+    localStorage.setItem(key,1);
+    localStorage.setItem(lastKey,today);
+  }else{
+    // Streak broken
+    streak=1;
+    localStorage.setItem(key,1);
+    localStorage.setItem(lastKey,today);
+  }
+
+  var el=document.getElementById('streakDays');
+  if(el)el.textContent=streak;
+  var flame=document.getElementById('streakFlame');
+  if(flame){
+    if(streak>=30)flame.innerHTML='\u{1F525}\u{1F525}\u{1F525}';
+    else if(streak>=7)flame.innerHTML='\u{1F525}\u{1F525}';
+    else flame.innerHTML='\u{1F525}';
+  }
+}
+
+function checkAchievements(){
+  var xp=getXp();
+  var achs=JSON.parse(localStorage.getItem('kasbah_achievements')||'{}');
+  var saves=parseInt(document.getElementById('dHeroSaves').textContent)||0;
+  var streak=parseInt(localStorage.getItem('kasbah_streak'))||0;
+
+  function unlock(id){
+    if(achs[id])return false;
+    achs[id]=Date.now();
+    localStorage.setItem('kasbah_achievements',JSON.stringify(achs));
+    var el=document.getElementById(id);
+    if(el){el.classList.remove('locked');el.classList.add('unlocked')}
+    return true;
+  }
+
+  // Check each achievement
+  if(localStorage.getItem('kasbah_first_scan'))unlock('achFirstScan');
+  if(localStorage.getItem('kasbah_first_block'))unlock('achFirstBlock');
+  if(localStorage.getItem('kasbah_authority_bound'))unlock('achAuthority');
+  if(saves>=100)unlock('ach100Saves');
+  if(streak>=7){if(unlock('achWeekStreak'))addXp(50)}
+  if(localStorage.getItem('kasbah_all_verbs'))unlock('achAllVerbs');
+  if(localStorage.getItem('kasbah_clean_scan'))unlock('achCleanScan');
+  if(getLevelIndex(xp)>=4)unlock('achSentinel');
+
+  // Render locked/unlocked state
+  for(var achId in achs){
+    var el=document.getElementById(achId);
+    if(el){el.classList.remove('locked');el.classList.add('unlocked')}
+  }
+}
+
+function updateDailyChallenge(){
+  var today=new Date().toISOString().slice(0,10);
+  var lastChallengeDay=localStorage.getItem('kasbah_challenge_day');
+  var challengeIdx=parseInt(localStorage.getItem('kasbah_challenge_idx'))||0;
+
+  if(lastChallengeDay!==today){
+    // New day, new challenge
+    challengeIdx=(challengeIdx+1)%DAILY_CHALLENGES.length;
+    localStorage.setItem('kasbah_challenge_day',today);
+    localStorage.setItem('kasbah_challenge_idx',challengeIdx);
+    localStorage.removeItem('kasbah_challenge_done');
+    // Reset daily tracking keys
+    localStorage.removeItem('kasbah_scans_today');
+    localStorage.removeItem('kasbah_feed_views');
+    localStorage.removeItem('kasbah_chain_verified_today');
+    localStorage.removeItem('kasbah_selftest_today');
+    localStorage.removeItem('kasbah_rules_viewed_today');
+    localStorage.removeItem('kasbah_authority_viewed_today');
+  }
+
+  var challenge=DAILY_CHALLENGES[challengeIdx];
+  var done=localStorage.getItem('kasbah_challenge_done')==='true';
+  var textEl=document.getElementById('dailyChallengeText');
+  var checkEl=document.getElementById('dailyCheck');
+
+  if(textEl)textEl.innerHTML=challenge.text+'<small>'+(done?'Completed!':'+'+challenge.xp+' XP')+'</small>';
+  if(checkEl){
+    if(done){
+      checkEl.classList.add('done');
+      checkEl.innerHTML='\u2713';
+    }else{
+      checkEl.classList.remove('done');
+      // Check if challenge is now complete
+      if(challenge.check()){
+        done=true;
+        localStorage.setItem('kasbah_challenge_done','true');
+        checkEl.classList.add('done');
+        checkEl.innerHTML='\u2713';
+        if(textEl)textEl.innerHTML=challenge.text+'<small>Completed!</small>';
+        addXp(challenge.xp);
+      }
+    }
+  }
+}
+
+// Auto-XP from guard activity (called from pollGuard)
+var lastKnownSaves=0;
+function grantActivityXp(saves,total,denied,secrets){
+  // Grant XP for new saves since last check
+  if(saves>lastKnownSaves&&lastKnownSaves>0){
+    var newSaves=saves-lastKnownSaves;
+    if(newSaves>0&&newSaves<50){
+      var xpGain=newSaves*2;
+      var xp=getXp()+xpGain;
+      localStorage.setItem('kasbah_xp',xp);
+      // No toast for small auto-XP (too noisy)
+    }
+  }
+  lastKnownSaves=saves;
+
+  // Check all-verbs achievement
+  if(!localStorage.getItem('kasbah_all_verbs')){
+    fetch(GUARD+'/verb/stats',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+      if(!d.ok)return;
+      var vc=d.verb_counts||{};
+      var allActive=vc.send>0&&vc.paste>0&&vc.upload>0&&vc.download>0&&vc.browse>0&&vc.edit>0;
+      if(allActive)localStorage.setItem('kasbah_all_verbs','true');
+    }).catch(function(){});
+  }
+
+  // Track first block
+  if(denied>0&&!localStorage.getItem('kasbah_first_block')){
+    localStorage.setItem('kasbah_first_block','true');
+    addXp(25);
+  }
+
+  updateGuardianUI();
+}
+
+// Hook into existing scan/audit/selftest to track daily challenges
+var origScanText=typeof scanText==='function'?scanText:null;
+// We'll track via event listeners instead
 
 // ── Verb Stats Polling ──
 var lastVerbStatsTs=0;

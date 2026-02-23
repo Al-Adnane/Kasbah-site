@@ -6372,11 +6372,204 @@ end tell"#
             });
         }
 
-        // ── File system monitoring is API-driven via /fs/notify ──
-        // No background scanning. AI agents call POST /fs/notify after editing files.
-        eprintln!("[Kasbah Guard] FS monitoring: API-driven via /fs/notify (no background scan)");
-        // REMOVED: poll-based FS watcher and FSEvents monitor
-        // All file scanning is now on-demand via /fs/notify and /fs/scan endpoints
+        // ── File system monitoring: Background watcher thread ──
+        // Polls watched directories every 5s for recently modified files.
+        // Scans new/changed files and notifies via macOS notifications.
+        {
+            let st_fs = Arc::clone(&state);
+            let db_fs = Arc::clone(&db);
+            thread::spawn(move || {
+                eprintln!("[Kasbah Guard] FS watcher thread started (5s poll, Desktop/Documents/Downloads)");
+                let mut known_mtimes: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
+                let watch_extensions = ["txt", "csv", "json", "xml", "html", "md", "yml", "yaml",
+                    "toml", "env", "cfg", "conf", "ini", "log", "sql", "py", "js", "ts",
+                    "rs", "go", "java", "c", "cpp", "h", "rb", "php", "sh", "swift"];
+                // Initial scan: populate known_mtimes without triggering notifications
+                {
+                    let s = st_fs.lock().unwrap();
+                    let paths = s.config.watch_paths.clone();
+                    drop(s);
+                    for dir in &paths {
+                        if let Ok(entries) = std::fs::read_dir(dir) {
+                            for entry in entries.flatten() {
+                                let p = entry.path();
+                                if !p.is_file() { continue; }
+                                let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
+                                if !watch_extensions.contains(&ext) { continue; }
+                                if let Ok(m) = p.metadata() {
+                                    let mtime = m.modified().ok()
+                                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                                        .map(|d| d.as_millis() as u64)
+                                        .unwrap_or(0);
+                                    known_mtimes.insert(p.to_string_lossy().to_string(), mtime);
+                                }
+                            }
+                        }
+                    }
+                    eprintln!("[Kasbah Guard] FS watcher: indexed {} existing files", known_mtimes.len());
+                }
+
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    let (paths, fs_watch_enabled) = {
+                        let s = st_fs.lock().unwrap();
+                        (s.config.watch_paths.clone(), s.config.fs_watch)
+                    };
+                    if !fs_watch_enabled { continue; }
+
+                    let mut changed_files: Vec<String> = Vec::new();
+                    for dir in &paths {
+                        let entries = match std::fs::read_dir(dir) { Ok(e) => e, Err(_) => continue };
+                        for entry in entries.flatten() {
+                            let p = entry.path();
+                            if !p.is_file() { continue; }
+                            let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
+                            if !watch_extensions.contains(&ext) { continue; }
+                            let meta = match p.metadata() { Ok(m) => m, Err(_) => continue };
+                            if meta.len() > 5_000_000 || meta.len() == 0 { continue; }
+                            let mtime = meta.modified().ok()
+                                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                                .map(|d| d.as_millis() as u64)
+                                .unwrap_or(0);
+                            let path_str = p.to_string_lossy().to_string();
+                            let old_mtime = known_mtimes.get(&path_str).copied().unwrap_or(0);
+                            if mtime > old_mtime && mtime > 0 {
+                                known_mtimes.insert(path_str.clone(), mtime);
+                                // Only scan files modified in the last 10 seconds (not old files)
+                                let age_ms = now_ms().saturating_sub(mtime);
+                                if age_ms < 10_000 {
+                                    changed_files.push(path_str);
+                                }
+                            }
+                        }
+                    }
+
+                    // Scan changed files
+                    for file_path in changed_files.iter().take(10) {
+                        let path = std::path::Path::new(file_path);
+                        let raw_bytes = match std::fs::read(path) { Ok(b) => b, Err(_) => continue };
+                        let content = String::from_utf8_lossy(&raw_bytes).into_owned();
+                        let findings = policy_findings(&content);
+                        let flagged = !findings.is_empty();
+                        let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
+                        let file_hash = content_hash(&content);
+                        let file_size = raw_bytes.len();
+
+                        // Update state
+                        {
+                            let mut s = st_fs.lock().unwrap();
+                            s.fs_scans += 1;
+                            if flagged { s.fs_flags += 1; }
+                            s.fs_events.push_front(FsEvent {
+                                ts_ms: now_ms(),
+                                path: file_path.clone(),
+                                kind: "fs_watcher".to_string(),
+                                findings_count: findings.len(),
+                                flagged,
+                            });
+                            while s.fs_events.len() > 200 { s.fs_events.pop_back(); }
+                            // Push event to mem_events for dashboard feed
+                            s.mem_events.push_front(MemEvent {
+                                ts_ms: now_ms(),
+                                kind: if flagged { "FS_ALERT".to_string() } else { "FS_SCAN".to_string() },
+                                data: serde_json::json!({
+                                    "path": file_path,
+                                    "flagged": flagged,
+                                    "findings_count": findings.len(),
+                                    "finding_types": findings.iter().map(|f| f.ftype).collect::<Vec<_>>(),
+                                    "size": file_size,
+                                    "source": "fs_watcher"
+                                }),
+                            });
+                            while s.mem_events.len() > MAX_EVENTS_MEM { s.mem_events.pop_back(); }
+                        }
+
+                        if flagged {
+                            let finding_types: Vec<&str> = findings.iter().map(|f| f.ftype).collect();
+                            let finding_summary = finding_types.join(", ");
+                            eprintln!("[Kasbah Guard] FS WATCHER ALERT: {} — {} findings: {}",
+                                fname, findings.len(), finding_summary);
+                            // macOS notification for flagged files — identify the editing tool
+                            let safe_fname = fname.replace('"', "'").replace('\\', "/");
+                            // Detect which tool is editing based on common process patterns
+                            let editor_hint = {
+                                let out = run_command_with_timeout("bash", &["-c",
+                                    &format!("lsof -t '{}' 2>/dev/null | head -1 | xargs -I{{}} ps -p {{}} -o comm= 2>/dev/null", file_path.replace("'", "'\\''"))
+                                ], None, 2000);
+                                match out {
+                                    Ok(bytes) => {
+                                        let proc = String::from_utf8_lossy(&bytes).trim().to_lowercase();
+                                        if proc.contains("claude") || proc.contains("cursor") { "Claude".to_string() }
+                                        else if proc.contains("code") { "VS Code".to_string() }
+                                        else if proc.contains("vim") || proc.contains("nvim") { "Vim".to_string() }
+                                        else if proc.contains("emacs") { "Emacs".to_string() }
+                                        else if proc.contains("xcode") { "Xcode".to_string() }
+                                        else if proc.contains("sublime") { "Sublime".to_string() }
+                                        else if proc.contains("node") { "Node.js".to_string() }
+                                        else if proc.contains("python") { "Python".to_string() }
+                                        else if !proc.is_empty() { proc }
+                                        else { "An app".to_string() }
+                                    }
+                                    Err(_) => "An app".to_string()
+                                }
+                            };
+                            spawn_detached("osascript", &["-e", &format!(
+                                "display notification \"{} edited {}\" with title \"Kasbah Guard\" subtitle \"Sensitive content: {}\"",
+                                editor_hint, safe_fname, finding_summary.replace('"', "'")
+                            )]);
+                            // Audit
+                            let db_lock = db_fs.lock().unwrap_or_else(|e| e.into_inner());
+                            append_audit(
+                                &db_lock, "FS_ALERT", None, Some("fs_watcher"), None,
+                                Some("FLAGGED"), None,
+                                Some(&format!("{} findings in {}: {}", findings.len(), fname, finding_summary)),
+                                Some(&file_hash),
+                                Some(&serde_json::json!({
+                                    "path": file_path, "findings": findings.iter().map(|f| serde_json::json!({
+                                        "type": f.ftype, "category": f.category, "severity": f.severity
+                                    })).collect::<Vec<_>>(), "size": file_size
+                                }).to_string()),
+                            );
+                        } else {
+                            // Clean file — brief notification (rate-limited)
+                            let now = now_ms();
+                            let should_notify = {
+                                let s = st_fs.lock().unwrap_or_else(|e| e.into_inner());
+                                now - s.last_fs_notify_ms > 3000
+                            };
+                            if should_notify {
+                                {
+                                    let mut s = st_fs.lock().unwrap_or_else(|e| e.into_inner());
+                                    s.last_fs_notify_ms = now;
+                                }
+                                let safe_fname = fname.replace('"', "'");
+                                // Detect editor
+                                let editor_hint = {
+                                    let out = run_command_with_timeout("bash", &["-c",
+                                        &format!("lsof -t '{}' 2>/dev/null | head -1 | xargs -I{{}} ps -p {{}} -o comm= 2>/dev/null", file_path.replace("'", "'\\''"))
+                                    ], None, 2000);
+                                    match out {
+                                        Ok(bytes) => {
+                                            let proc = String::from_utf8_lossy(&bytes).trim().to_lowercase();
+                                            if proc.contains("claude") || proc.contains("cursor") { "Claude".to_string() }
+                                            else if proc.contains("code") { "VS Code".to_string() }
+                                            else if !proc.is_empty() { proc }
+                                            else { "An app".to_string() }
+                                        }
+                                        Err(_) => "An app".to_string()
+                                    }
+                                };
+                                spawn_detached("osascript", &["-e", &format!(
+                                    "display notification \"{} edited {} — no issues\" with title \"Kasbah Guard\" subtitle \"File OK\"",
+                                    editor_hint, safe_fname
+                                )]);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        eprintln!("[Kasbah Guard] FS monitoring: background watcher + API /fs/notify");
 
         let mut request_count: u64 = 0;
 
