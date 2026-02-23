@@ -15,6 +15,27 @@ fn preflight_text(text: String) -> serde_json::Value {
   })
 }
 
+/// Tauri IPC command: restore session from persistent file + Keychain.
+/// This is called by the webview JS on startup to bypass HTTP fetch issues.
+/// Returns {ok: true, user: {...}} or {ok: false}.
+#[tauri::command]
+fn get_session() -> serde_json::Value {
+  match guard::get_persistent_session() {
+    Some(session) => {
+      let email = session.get("email").and_then(|e| e.as_str()).unwrap_or("");
+      let name = session.get("name").and_then(|n| n.as_str()).unwrap_or("");
+      let role = session.get("role").and_then(|r| r.as_str()).unwrap_or("owner");
+      let uid = session.get("user_id").and_then(|u| u.as_i64()).unwrap_or(1);
+      serde_json::json!({
+        "ok": true,
+        "user": {"email": email, "name": name, "role": role, "id": uid},
+        "source": "tauri_ipc"
+      })
+    }
+    None => serde_json::json!({"ok": false})
+  }
+}
+
 fn main() {
   eprintln!("KASBAH_GUARD_BOOT");
 
@@ -41,9 +62,18 @@ fn main() {
   guard::spawn_guard_service();
   eprintln!("KASBAH_GUARD_SERVICE_SPAWNED port=8788");
 
+  // Wait for the guard HTTP server to be ready (webview loads from it)
+  for i in 0..50 {
+    if std::net::TcpStream::connect("127.0.0.1:8788").is_ok() {
+      eprintln!("KASBAH_GUARD_READY after {}ms", i * 100);
+      break;
+    }
+    std::thread::sleep(std::time::Duration::from_millis(100));
+  }
+
   tauri::Builder::default()
     .plugin(tauri_plugin_clipboard_manager::init())
-    .invoke_handler(tauri::generate_handler![preflight_text])
+    .invoke_handler(tauri::generate_handler![preflight_text, get_session])
     .plugin(tauri_plugin_dialog::init())
     .setup(|app| {
       #[cfg(desktop)]

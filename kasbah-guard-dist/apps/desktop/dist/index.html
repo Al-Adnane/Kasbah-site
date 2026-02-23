@@ -41,6 +41,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
 .spinner-white{border-color:rgba(255,255,255,.2);border-top-color:#fff}
 
 /* ── Auth Screen ── */
+/* Auth screen shows "Connecting..." by default — JS hides it on session restore or shows login form */
 .auth-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);animation:fadeIn .6s ease;position:relative;overflow:hidden}
 .auth-screen::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse,var(--red-light) 0%,transparent 70%);pointer-events:none;z-index:0}
 .auth-box{width:420px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px 40px;text-align:center;animation:fadeUp .6s ease;position:relative;z-index:1;box-shadow:0 4px 24px rgba(0,0,0,.04)}
@@ -422,7 +423,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
   <div class="sidebar">
     <div class="sb-brand">
       <div class="sb-name">Kasbah<span>Guard</span></div>
-      <span class="sb-version" id="sbVersion">v1.3.0</span>
+      <span class="sb-version" id="sbVersion">v1.5.0</span>
     </div>
     <div class="sb-nav" id="sbNav">
       <!-- User-friendly pages -->
@@ -712,8 +713,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
       <!-- Account -->
       <div class="setting-group">
         <div class="setting-group-title">Account</div>
-        <div class="setting-row"><div><div class="setting-label">Plan</div><div class="setting-desc" id="settingsPlan">Early access — free forever during beta</div></div></div>
-        <div class="setting-row"><div><div class="setting-label">Guard Version</div></div><span style="color:var(--muted);font-size:13px;font-weight:600" id="settingsVersion">1.3.0</span></div>
+        <div class="setting-row"><div><div class="setting-label">Plan</div><div class="setting-desc" id="settingsPlan">Early access — free</div></div></div>
+        <div class="setting-row"><div><div class="setting-label">Guard Version</div></div><span style="color:var(--muted);font-size:13px;font-weight:600" id="settingsVersion">1.5.0</span></div>
         <div class="setting-row"><div><div class="setting-label">Extensions</div></div><span style="color:var(--muted);font-size:13px;font-weight:600">v1.2.0 (Chrome, Edge, Firefox, Safari)</span></div>
         <div class="setting-row"><div><div class="setting-label">Architecture</div></div><span style="color:var(--muted);font-size:13px;font-weight:600">13-MOAT Defense Model</span></div>
       </div>
@@ -872,7 +873,7 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('btnReclaim').addEventListener('click', reclaimAuthority);
 
   // Policies
-  document.getElementById('btnAddPolicy').addEventListener('click', addPolicy);
+  var btnAddPol=document.getElementById('btnAddPolicy');if(btnAddPol)btnAddPol.addEventListener('click', addPolicy);
 
   // Policy delete - event delegation
   document.getElementById('policyList').addEventListener('click', function(e){
@@ -956,62 +957,70 @@ document.addEventListener('DOMContentLoaded', function(){
     showToast('info','Custom Rule Added','Pattern: '+p);
   })}
 
-  // Check for existing guard session first (persistent local login)
-  var gt=localStorage.getItem('kasbah_guard_token');
-  if(gt){
-    console.log('[Kasbah] Found saved guard token, validating...');
-    guardToken=gt;
-    fetch(GUARD+'/auth/me',{headers:{'Authorization':'Bearer '+gt}})
-      .then(function(r){return r.json()}).then(function(d){
-        if(d.ok&&d.user){
-          console.log('[Kasbah] Guard session valid — entering app');
-          currentUser=d.user;
-          localStorage.setItem('kasbah_user',JSON.stringify(d.user));
-          enterApp();
-        } else {
-          console.log('[Kasbah] Guard session expired — re-authenticating');
-          localStorage.removeItem('kasbah_guard_token');
-          guardAutoLogin();
-        }
-      }).catch(function(){
-        console.log('[Kasbah] Guard unreachable — using cached user');
-        var saved=localStorage.getItem('kasbah_user');
-        if(saved){currentUser=JSON.parse(saved);enterApp()}
-        else{guardAutoLogin()}
-      });
-  } else {
-    guardAutoLogin();
+  // ── Session Restore (3 layers, ordered by reliability) ──
+  // Layer 1: Tauri IPC (reads persistent file + Keychain — instant, no HTTP)
+  // Layer 2: localStorage (fast but wiped by cache clears)
+  // Layer 3: HTTP fetch to guard /auth/session (fallback)
+  // If ALL fail → show login form
+
+  function sessionRestored(user, token, source){
+    console.log('[Kasbah] Session restored via '+source+': '+user.name);
+    currentUser=user;
+    guardToken=token||null;
+    localStorage.setItem('kasbah_user',JSON.stringify(user));
+    if(token) localStorage.setItem('kasbah_guard_token',token);
+    var isFirst=!localStorage.getItem('kasbah_onboarded');
+    if(isFirst){showOnboarding()}else{enterApp()}
   }
-  function guardAutoLogin(retries){
-    retries=retries||0;
-    console.log('[Kasbah] Auto-login with guard (attempt '+(retries+1)+')...');
-    fetch(GUARD+'/auth/auto-login',{method:'POST',headers:{'Content-Type':'application/json'}})
-      .then(function(r){return r.json()}).then(function(d){
-        if(d.ok&&d.token){
-          console.log('[Kasbah] Auto-login success');
-          guardToken=d.token;
-          localStorage.setItem('kasbah_guard_token',d.token);
-          currentUser=d.user;
-          localStorage.setItem('kasbah_user',JSON.stringify(d.user));
-          enterApp();
-        } else {
-          console.log('[Kasbah] Auto-login response not ok, entering app anyway');
-          currentUser=currentUser||{email:'local@kasbah.guard',name:'Kasbah User',role:'owner'};
-          localStorage.setItem('kasbah_user',JSON.stringify(currentUser));
-          enterApp();
+
+  function showLoginForm(){
+    document.getElementById('authScreen').style.display='flex';
+    document.getElementById('authSubtitle').textContent='Sign in to get started';
+    document.getElementById('loginForm').style.display='';
+  }
+
+  function tryLocalStorage(){
+    var saved=localStorage.getItem('kasbah_user');
+    if(saved){
+      try{
+        var user=JSON.parse(saved);
+        if(user&&user.email){
+          sessionRestored(user,localStorage.getItem('kasbah_guard_token')||null,'localStorage');
+          return true;
         }
-      }).catch(function(){
-        if(retries<5){
-          console.log('[Kasbah] Guard not ready, retrying in 1s...');
-          document.getElementById('authSubtitle').textContent='Starting guard... ('+(retries+2)+'/6)';
-          setTimeout(function(){guardAutoLogin(retries+1)},1000);
-        } else {
-          console.log('[Kasbah] Guard not reachable after retries, entering app anyway');
-          currentUser=currentUser||{email:'local@kasbah.guard',name:'Kasbah User',role:'owner'};
-          localStorage.setItem('kasbah_user',JSON.stringify(currentUser));
-          enterApp();
-        }
-      });
+      }catch(e){}
+    }
+    return false;
+  }
+
+  function tryHttpFallback(attempt){
+    fetch(GUARD+'/auth/session').then(function(r){return r.json()}).then(function(d){
+      if(d.ok&&d.user){sessionRestored(d.user,d.token||null,'http/session')}
+      else{showLoginForm()}
+    }).catch(function(){
+      if(attempt<3){setTimeout(function(){tryHttpFallback(attempt+1)},500)}
+      else{showLoginForm()}
+    });
+  }
+
+  // Layer 1: Tauri IPC (preferred — instant, no HTTP needed)
+  var tauriInvoke=null;
+  if(window.__TAURI__){
+    if(window.__TAURI__.core&&window.__TAURI__.core.invoke){tauriInvoke=window.__TAURI__.core.invoke}
+    else if(window.__TAURI__.invoke){tauriInvoke=window.__TAURI__.invoke}
+  }
+  if(tauriInvoke){
+    console.log('[Kasbah] Using Tauri IPC for session restore');
+    tauriInvoke('get_session').then(function(d){
+      if(d&&d.ok&&d.user){sessionRestored(d.user,d.token||null,'tauri_ipc')}
+      else if(!tryLocalStorage()){tryHttpFallback(0)}
+    }).catch(function(e){
+      console.warn('[Kasbah] Tauri IPC failed:',e);
+      if(!tryLocalStorage()){tryHttpFallback(0)}
+    });
+  }else{
+    console.log('[Kasbah] No Tauri IPC, using HTTP fallback');
+    if(!tryLocalStorage()){tryHttpFallback(0)}
   }
 });
 
@@ -1137,14 +1146,13 @@ function enterApp(){
   shell.className='shell';
   shell.style.display='flex';
 
-  // Restore local guard token — must be a real guard token, not the API token
+  // Restore local guard token
   guardToken=localStorage.getItem('kasbah_guard_token')||null;
-  if(!guardToken&&currentUser){
-    // No guard token yet — try to get one
-    var email=currentUser.email;
-    fetch(GUARD+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:'__session_restore__'})})
+  if(!guardToken){
+    // No guard token — get one via auto-login (no password needed)
+    fetch(GUARD+'/auth/auto-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
       .then(function(r){return r.json()}).then(function(d){
-        if(d.ok&&d.token){guardToken=d.token;localStorage.setItem('kasbah_guard_token',d.token);console.log('[Kasbah] Guard token restored via login')}
+        if(d.ok&&d.token){guardToken=d.token;localStorage.setItem('kasbah_guard_token',d.token);console.log('[Kasbah] Guard token restored via auto-login')}
       }).catch(function(){});
   }
 
@@ -1176,7 +1184,7 @@ function enterApp(){
 // ── Logout ──
 function doLogout(){
   fetch(API+'/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+authToken}}).catch(function(){});
-  fetch(GUARD+'/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+authToken}}).catch(function(){});
+  fetch(GUARD+'/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+(guardToken||authToken)}}).catch(function(){});
   localStorage.removeItem('kasbah_token');
   localStorage.removeItem('kasbah_user');
   localStorage.removeItem('kasbah_onboarded');
@@ -1501,23 +1509,13 @@ function doBindAuthority(token){
 
 function bindAuthority(){
   if(guardToken){return doBindAuthority(guardToken)}
-  // No guard token — try to get one first
-  if(currentUser&&currentUser.email){
-    showAuthFeedback('Getting guard session...',false);
-    var email=currentUser.email;
-    fetch(GUARD+'/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:email+'_kasbah',name:currentUser.name||email})})
-      .then(function(r){return r.json()}).then(function(d){
-        if(d.ok&&d.token){guardToken=d.token;localStorage.setItem('kasbah_guard_token',d.token);return doBindAuthority(guardToken)}
-        // Already registered — login
-        return fetch(GUARD+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:email+'_kasbah'})})
-          .then(function(r2){return r2.json()}).then(function(d2){
-            if(d2.ok&&d2.token){guardToken=d2.token;localStorage.setItem('kasbah_guard_token',d2.token);return doBindAuthority(guardToken)}
-            showAuthFeedback('Could not authenticate with guard. Please sign out and sign back in.',true);
-          });
-      }).catch(function(){showAuthFeedback('Guard is offline. Check Settings.',true)});
-  }else{
-    showAuthFeedback('No session. Please sign out and sign back in.',true);
-  }
+  // No guard token — get one via auto-login (no password needed)
+  showAuthFeedback('Getting guard session...',false);
+  fetch(GUARD+'/auth/auto-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.ok&&d.token){guardToken=d.token;localStorage.setItem('kasbah_guard_token',d.token);return doBindAuthority(guardToken)}
+      showAuthFeedback('Could not get guard session. Try restarting the app.',true);
+    }).catch(function(){showAuthFeedback('Guard is offline. Check Settings.',true)});
 }
 
 function reclaimAuthority(){if(!confirm('Reclaim all authority? This revokes all active bindings and resets control to you.'))return;
