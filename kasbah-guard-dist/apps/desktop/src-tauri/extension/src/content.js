@@ -1,59 +1,3 @@
-
-try { console.log("KASBAH_TRACE: content.js running on", location.href); } catch(e) {}
-
-try {
-  setInterval(function () {
-    try {
-      chrome.runtime.sendMessage({ type: "V2_HEALTH" }, function (res) {
-        try { console.log("KASBAH_TRACE: V2_HEALTH reply", res); } catch(e) {}
-      });
-    } catch (e) {
-      try { console.log("KASBAH_TRACE: sendMessage failed", String(e)); } catch(_) {}
-    }
-  }, 5000);
-} catch(e) {}
-
-
-try {
-  chrome.runtime.sendMessage({ type: "V2_HEALTH" }, function (res) {
-    try { console.log("KASBAH_PING_HEALTH", res); } catch(e) {}
-  });
-} catch (e) {
-  try { console.log("KASBAH_PING_FAIL", String(e)); } catch(_) {}
-}
-
-function postJson(url, body) {
-  return new Promise(function (resolve, reject) {
-    try {
-      if (url.indexOf("/v2/evaluate") !== -1) {
-        chrome.runtime.sendMessage({ type: "V2_EVALUATE", body: body }, function (res) {
-          if (!res || res.ok !== true) return reject(res && res.error ? res.error : "bridge_failed");
-          resolve(res.data);
-        });
-        return;
-      }
-      if (url.indexOf("/v2/consume") !== -1) {
-        chrome.runtime.sendMessage({ type: "V2_CONSUME", body: body }, function (res) {
-          if (!res || res.ok !== true) return reject(res && res.error ? res.error : "bridge_failed");
-          resolve(res.data);
-        });
-        return;
-      }
-      reject("unsupported_url");
-    } catch (e) { reject(String(e)); }
-  });
-}
-
-
-
-try { window.__KASBAH_LOADED = true; console.log("KASBAH_CONTENT_LOADED", location.href); } catch (e) {}
-
-try {
-  document.documentElement.setAttribute("data-kasbah-loaded", "1");
-  document.documentElement.setAttribute("data-kasbah-ver", "0.3.0");
-  console.log("KASBAH_DOM_MARKER_SET");
-} catch (e) {}
-
 /**
  * Kasbah Guard — Sovereign Intent Layer (Extension v0.3.0)
  * Intercepts 5 irreversible verbs before AI sees them:
@@ -70,54 +14,7 @@ try {
 (function () {
   "use strict";
 
-  try {
-    window.__kasbahDebug = {
-      health: function(cb){ try{ chrome.runtime.sendMessage({type:"V2_HEALTH"}, cb); } catch(e){ cb({ok:false,error:String(e)}); } },
-      eval: function(body, cb){ try{ chrome.runtime.sendMessage({type:"V2_EVALUATE", body: body}, cb); } catch(e){ cb({ok:false,error:String(e)}); } },
-      consume: function(body, cb){ try{ chrome.runtime.sendMessage({type:"V2_CONSUME", body: body}, cb); } catch(e){ cb({ok:false,error:String(e)}); } }
-    };
-    console.log("KASBAH_DEBUG_READY");
-  } catch(e) {}
-
-
-  var GUARD = "http://127.0.0.1:8789";
-
-
-function __kasbah_is_send(btn) {
-  if (!btn) return false;
-  try {
-    var t = (btn.textContent || "").trim().toLowerCase();
-    var al = (btn.getAttribute("aria-label") || "").trim().toLowerCase();
-    var dt = (btn.getAttribute("data-testid") || "").trim().toLowerCase();
-    var ty = (btn.getAttribute("type") || "").trim().toLowerCase();
-    if (ty === "submit") return true;
-    if (dt.indexOf("send") !== -1 || dt.indexOf("submit") !== -1) return true;
-    if (al.indexOf("send") !== -1 || al.indexOf("submit") !== -1) return true;
-    if (t === "send" || t === "submit") return true;
-  } catch (e) {}
-  return false;
-}
-
-
-function __kasbah_v2_fix(dp, fallbackVerb) {
-  dp = dp || {};
-  if (!dp.verb) dp.verb = (fallbackVerb || "paste");
-  if (!dp.scope) dp.scope = "llm";
-  if (!dp.mode) dp.mode = "strict";
-  if (typeof dp.text !== "string") dp.text = "";
-  return dp;
-}
-
-function v2Evaluate(verb, text, extra) {
-  var body = Object.assign({ verb: verb, text: text, scope: "llm", mode: "strict" }, (extra || {}));
-  return postJson(GUARD + "/v2/evaluate", body);
-}
-function v2Consume(ticket, payload_hash) {
-  var body = { ticket: ticket };
-  if (payload_hash) body.payload_hash = payload_hash;
-  return postJson(GUARD + "/v2/consume", body);
-}
-
+  var GUARD = "http://127.0.0.1:8788";
   var FLAG_KEY = "__kasbah_allow__";
   var PASTE_FLAG = "__kasbah_paste_ok__";
 
@@ -393,21 +290,15 @@ function v2Consume(ticket, payload_hash) {
       meta: meta,
     };
 
-    postJson(GUARD + "/v2/evaluate", (function() {
-  var dp = decidePayload || {};
-  if (!dp.verb) dp.verb = "paste";
-  if (!dp.scope) dp.scope = "llm";
-  if (!dp.mode) dp.mode = "strict";
-  return dp;
-})())
+    postJson(GUARD + "/decide", decidePayload)
       .then(function (res) {
         var ticket = res.ticket;
 
         // If low risk on non-sensitive verbs, auto-allow (less friction)
         if (risk === "low" && secrets.length === 0 && verb !== "send" && verb !== "upload") {
-          v2Consume(ticket)
+          postJson(GUARD + "/consume", { ticket: ticket, choice: "ALLOW" })
             .then(function (cr) {
-              if (cr && (cr.ok === true || cr.decision === "ALLOW")) {
+              if (cr && cr.decision === "ALLOW") {
                 if (onAllowCb) onAllowCb();
               } else {
                 // Consume returned DENY (replay/expired) — notify user
@@ -429,15 +320,15 @@ function v2Consume(ticket, payload_hash) {
           verb: verb,
           onAllow: function () {
             if (!ticket) return;
-            v2Consume(ticket)
+            postJson(GUARD + "/consume", { ticket: ticket, choice: "ALLOW" })
               .then(function (cr) {
-                if (cr && (cr.ok === true || cr.decision === "ALLOW") && onAllowCb) onAllowCb();
+                if (cr && cr.decision === "ALLOW" && onAllowCb) onAllowCb();
               })
               .catch(function () {});
           },
           onBlock: function () {
             if (!ticket) return;
-            v2Consume(ticket).catch(function () {});
+            postJson(GUARD + "/consume", { ticket: ticket, choice: "DENY" }).catch(function () {});
             if (onBlockCb) onBlockCb();
           },
         });
@@ -468,7 +359,7 @@ function v2Consume(ticket, payload_hash) {
       var target = ev.target;
       var btn = target && target.closest ? target.closest("button,[role='button']") : null;
       if (!btn) return;
-      if (!__kasbah_is_send(btn)) return;
+      if (!isSendButton(btn)) return;
 
       // Skip if we flagged this click as allowed
       if (btn[FLAG_KEY]) {
@@ -502,13 +393,7 @@ function v2Consume(ticket, payload_hash) {
         meta: meta,
       };
 
-      postJson(GUARD + "/v2/evaluate", (function() {
-  var dp = decidePayload || {};
-  if (!dp.verb) dp.verb = "paste";
-  if (!dp.scope) dp.scope = "llm";
-  if (!dp.mode) dp.mode = "strict";
-  return dp;
-})())
+      postJson(GUARD + "/decide", decidePayload)
         .then(function (res) {
           var ticket = res.ticket;
           createModal({
@@ -518,9 +403,9 @@ function v2Consume(ticket, payload_hash) {
             verb: "send",
             onAllow: function () {
               if (!ticket) return;
-              v2Consume(ticket)
+              postJson(GUARD + "/consume", { ticket: ticket, choice: "ALLOW" })
                 .then(function (cr) {
-                  if (cr && (cr.ok === true || cr.decision === "ALLOW")) {
+                  if (cr && cr.decision === "ALLOW") {
                     btn[FLAG_KEY] = true;
                     btn.click();
                   } else {
@@ -533,7 +418,7 @@ function v2Consume(ticket, payload_hash) {
             },
             onBlock: function () {
               if (!ticket) return;
-              v2Consume(ticket).catch(function () {});
+              postJson(GUARD + "/consume", { ticket: ticket, choice: "DENY" }).catch(function () {});
               showToast("Message blocked by your choice", false);
             },
           });
@@ -770,44 +655,3 @@ function v2Consume(ticket, payload_hash) {
   // ── Startup notification ──
   console.log("[Kasbah Guard] Extension v0.3.0 loaded — intercepting: send, paste, upload, browse, download");
 })();
-
-
-document.addEventListener(
-  "keydown",
-  function (ev) {
-    try {
-      if (ev.key !== "Enter") return;
-      if (ev.shiftKey || ev.altKey || ev.ctrlKey || ev.metaKey) return;
-      var el = ev.target;
-      if (!el) return;
-      var tag = (el.tagName || "").toLowerCase();
-      var isComposer = (tag === "textarea") || (el.getAttribute && el.getAttribute("contenteditable") === "true");
-      if (!isComposer) return;
-
-      var msg = findComposerText();
-      if (!msg) return;
-
-      ev.preventDefault();
-      ev.stopPropagation();
-      ev.stopImmediatePropagation();
-
-      console.log("KASBAH_KEYDOWN_SEND");
-
-      guardFlow(
-        "send",
-        msg,
-        null,
-        function () {
-          var btn = document.querySelector('button[type="submit"], button[data-testid*="send"], button[aria-label*="Send"], button[aria-label*="send"]');
-          if (btn) {
-            btn[FLAG_KEY] = true;
-            btn.click();
-          }
-        },
-        function () {}
-      );
-    } catch (e) {}
-  },
-  true
-);
-

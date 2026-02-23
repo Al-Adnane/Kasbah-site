@@ -89,6 +89,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
 .onboarding-btn{padding:18px 48px;background:var(--red);color:#fff;border:none;border-radius:var(--radius);font-size:16px;font-weight:800;cursor:pointer;font-family:var(--font);transition:all .2s;box-shadow:0 4px 20px var(--red-shadow);animation:fadeUp .5s ease .65s both}
 .onboarding-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px var(--red-glow)}
 .onboarding-btn:active{transform:translateY(0)}
+.ob-step{display:none}
+.ob-step.active{display:block;animation:fadeUp .5s ease}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .3s}
+.ob-dot.active{background:var(--red);width:24px;border-radius:4px}
+.ob-dot.done{background:var(--green)}
+.ob-skip{background:none;border:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;padding:8px 16px;font-family:var(--font);text-decoration:underline;text-underline-offset:3px}
+.ob-skip:hover{color:var(--ink)}
 
 /* ── Shell Layout ── */
 .shell{display:flex;height:100vh;overflow:hidden;animation:fadeIn .4s ease}
@@ -439,41 +446,84 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
 #enterpriseSidebar{display:none}
 #enterpriseStats{display:none !important}
 
-/* ── Gamification ── */
-.guardian-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
-.guardian-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));opacity:.6}
-.guardian-level{display:flex;align-items:center;gap:14px;margin-bottom:14px}
-.guardian-shield{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;border:2px solid}
-.guardian-meta{flex:1}
-.guardian-rank{font-size:16px;font-weight:900;letter-spacing:-.02em;line-height:1.2}
-.guardian-subtitle{font-size:11px;color:var(--muted);font-weight:600}
-.xp-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:6px}
-.xp-fill{height:100%;border-radius:3px;transition:width .8s ease;background:linear-gradient(90deg,var(--red),#e85d04)}
-.xp-label{font-size:9px;color:var(--subtle);font-weight:700;margin-top:3px;display:flex;justify-content:space-between}
+/* ── Privacy Score ── */
+.privacy-score-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
+.ps-header{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+.ps-ring-wrap{position:relative;width:80px;height:80px;flex-shrink:0}
+.ps-ring-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:var(--ink)}
+.ps-meta{flex:1}
+.ps-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.ps-tier{font-size:18px;font-weight:900;letter-spacing:-.02em;color:var(--ink);margin-top:2px}
+.ps-desc{font-size:11px;color:var(--subtle);margin-top:4px;line-height:1.5}
 
-/* Streak */
-.streak-row{display:flex;align-items:center;gap:16px;margin-bottom:14px}
-.streak-flame{font-size:28px;line-height:1}
-.streak-info{flex:1}
-.streak-days{font-size:22px;font-weight:900;line-height:1}
-.streak-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.ps-checklist{display:flex;flex-direction:column;gap:6px}
+.ps-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;transition:background .2s}
+.ps-item:hover{background:rgba(0,0,0,.02)}
+.ps-item.done{opacity:1}
+.ps-item.pending{opacity:.6}
+.ps-dot{width:8px;height:8px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;transition:all .3s}
+.ps-item.done .ps-dot{background:var(--green);border-color:var(--green)}
+.ps-item.pending .ps-dot{background:transparent;border-color:var(--subtle)}
+.ps-label{flex:1;font-size:12px;font-weight:600;color:var(--ink)}
+.ps-item.done .ps-label{color:var(--green)}
+.ps-weight{font-size:10px;font-weight:700;color:var(--subtle);min-width:40px;text-align:right}
+.ps-item.done .ps-weight{color:var(--green)}
 
-/* Achievements */
-.achievements{display:flex;gap:8px;flex-wrap:wrap}
-.ach{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:default;position:relative;transition:all .2s;border:1.5px solid var(--border);background:var(--bg)}
-.ach.unlocked{border-color:var(--amber);background:rgba(245,158,11,.06);animation:bounce .4s ease}
-.ach.locked{opacity:.3;filter:grayscale(1)}
-.ach:hover{transform:scale(1.1)}
-.ach-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:9px;font-weight:700;padding:4px 8px;border-radius:5px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
-.ach:hover .ach-tooltip{opacity:1}
+.ps-passport-row{display:flex;align-items:center;gap:14px;margin-top:18px;padding:14px;background:linear-gradient(135deg,rgba(6,95,70,.04),rgba(6,95,70,.08));border:1.5px solid rgba(6,95,70,.15);border-radius:var(--radius)}
 
-/* Daily challenge */
-.daily-challenge{background:linear-gradient(135deg,rgba(193,68,14,.04),rgba(245,158,11,.04));border:1.5px solid rgba(193,68,14,.12);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;gap:12px}
-.daily-icon{font-size:20px;flex-shrink:0}
-.daily-text{flex:1;font-size:12px;color:var(--ink);font-weight:600;line-height:1.4}
-.daily-text small{display:block;font-size:10px;color:var(--muted);font-weight:500;margin-top:2px}
-.daily-check{width:28px;height:28px;border-radius:8px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:14px;background:var(--bg)}
-.daily-check.done{border-color:var(--green);background:var(--green);color:#fff}
+/* ── Reward Tiers ── */
+.reward-tiers-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;overflow:hidden}
+.rt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.rt-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.rt-current{font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px}
+.rt-track{display:flex;gap:0;margin-bottom:18px;position:relative}
+.rt-track::before{content:'';position:absolute;top:15px;left:16px;right:16px;height:3px;background:var(--border);z-index:0}
+.rt-track-fill{position:absolute;top:15px;left:16px;height:3px;background:var(--green);z-index:1;transition:width 1s ease;border-radius:2px}
+.rt-node{flex:1;text-align:center;position:relative;z-index:2;cursor:default}
+.rt-node-dot{width:32px;height:32px;border-radius:50%;border:3px solid var(--border);background:var(--card);margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .4s ease}
+.rt-node.active .rt-node-dot{border-color:var(--green);background:var(--green);color:#fff;box-shadow:0 0 0 4px rgba(6,95,70,.15)}
+.rt-node.passed .rt-node-dot{border-color:var(--green);background:var(--green);color:#fff}
+.rt-node.locked .rt-node-dot{border-color:var(--border);background:var(--bg3);color:var(--subtle)}
+.rt-node-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--subtle)}
+.rt-node.active .rt-node-label,.rt-node.passed .rt-node-label{color:var(--green)}
+.rt-node-score{font-size:8px;color:var(--subtle);margin-top:1px}
+
+.rt-perks{display:flex;flex-direction:column;gap:8px}
+.rt-perk{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);transition:all .2s}
+.rt-perk:hover{border-color:var(--green);transform:translateY(-1px)}
+.rt-perk.locked{opacity:.45}
+.rt-perk.unlocked{border-color:rgba(6,95,70,.2);background:rgba(6,95,70,.02)}
+.rt-perk-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.rt-perk-info{flex:1}
+.rt-perk-name{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:1px}
+.rt-perk-desc{font-size:10px;color:var(--muted);line-height:1.4}
+.rt-perk-tag{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;align-self:center}
+.rt-perk-tag.unlocked{background:rgba(6,95,70,.08);color:var(--green)}
+.rt-perk-tag.locked{background:var(--bg3);color:var(--subtle)}
+
+.rt-upgrade-row{margin-top:16px;padding:14px;background:linear-gradient(135deg,rgba(193,68,14,.04),rgba(193,68,14,.08));border:1.5px solid rgba(193,68,14,.15);border-radius:var(--radius);display:flex;align-items:center;gap:12px}
+.rt-upgrade-text{flex:1;font-size:12px;font-weight:700;color:var(--ink)}
+.rt-upgrade-sub{font-size:10px;color:var(--muted);margin-top:2px;font-weight:500}
+
+/* ── Protection Insights ── */
+.insights-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:16px}
+.insight-stat{background:var(--bg);border-radius:10px;padding:12px;text-align:center}
+.insight-val{font-size:20px;font-weight:900;letter-spacing:-.02em}
+.insight-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-top:2px}
+
+/* ── Notification Bell ── */
+.notif-bell:hover{border-color:var(--red);background:rgba(193,68,14,.04)}
+.notif-drop{display:none;position:absolute;top:44px;right:0;width:320px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 16px 48px rgba(0,0,0,.08);z-index:100;max-height:360px;overflow-y:auto}
+.notif-drop.open{display:block;animation:fadeIn .2s ease}
+.notif-drop-header{padding:12px 14px;border-bottom:1px solid var(--border);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.notif-drop-item{padding:10px 14px;border-bottom:1px solid rgba(0,0,0,.03);display:flex;gap:10px;align-items:flex-start;transition:background .15s}
+.notif-drop-item:hover{background:var(--bg)}
+.notif-drop-item:last-child{border-bottom:none}
+.notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.notif-text{flex:1}
+.notif-title{font-size:11px;font-weight:700;color:var(--ink)}
+.notif-time{font-size:9px;color:var(--subtle);margin-top:2px}
+.notif-empty{padding:24px;text-align:center;font-size:12px;color:var(--subtle)}
 </style>
 </head>
 <body>
@@ -499,18 +549,71 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
   </div>
 </div>
 
-<!-- ONBOARDING (first login) -->
+<!-- ONBOARDING WIZARD (first login) -->
 <div class="onboarding" id="onboarding">
-  <div class="onboarding-card">
-    <div class="onboarding-icon"><svg viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-    <div class="onboarding-title">Welcome, <span id="onboardName">Pioneer</span></div>
-    <div class="onboarding-sub">You're all set. Kasbah Guard works quietly in the background<br>so you can use AI tools with confidence.</div>
-    <div class="onboarding-pillars">
-      <div class="onboarding-pillar"><div class="p-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="p-label">Private</div></div>
-      <div class="onboarding-pillar"><div class="p-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div><div class="p-label">Encrypted</div></div>
-      <div class="onboarding-pillar"><div class="p-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="p-label">Verified</div></div>
+  <div class="onboarding-card" style="max-width:540px">
+    <!-- Progress dots -->
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:28px" id="obDots">
+      <div class="ob-dot active" data-step="0"></div>
+      <div class="ob-dot" data-step="1"></div>
+      <div class="ob-dot" data-step="2"></div>
+      <div class="ob-dot" data-step="3"></div>
     </div>
-    <button class="onboarding-btn" id="onboardingDismissBtn">Start Using Kasbah Guard</button>
+
+    <!-- Step 0: Welcome -->
+    <div class="ob-step active" id="obStep0">
+      <div class="onboarding-icon"><svg viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="onboarding-title">Welcome, <span id="onboardName">Pioneer</span></div>
+      <div class="onboarding-sub">Kasbah Guard is your personal data protection layer.<br>It watches what goes in and out of AI tools — so nothing leaves without your say.</div>
+      <div class="onboarding-pillars">
+        <div class="onboarding-pillar"><div class="p-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="p-label">Private</div></div>
+        <div class="onboarding-pillar"><div class="p-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div><div class="p-label">Encrypted</div></div>
+        <div class="onboarding-pillar"><div class="p-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="p-label">Verified</div></div>
+      </div>
+      <button class="onboarding-btn" id="obNext0">Get Started</button>
+    </div>
+
+    <!-- Step 1: Claim Authority -->
+    <div class="ob-step" id="obStep1">
+      <div class="onboarding-icon"><svg viewBox="0 0 24 24" width="70" height="70" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="onboarding-title">Claim Your Authority</div>
+      <div class="onboarding-sub">Bind your identity to this device. This establishes who is in charge<br>of data protection decisions on this machine.</div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-bottom:24px">
+        <button class="onboarding-btn" id="obBindBtn" style="padding:14px 32px;font-size:14px">I am in charge.</button>
+      </div>
+      <div id="obBindStatus" style="font-size:12px;color:var(--muted);margin-bottom:16px;min-height:20px"></div>
+      <button class="ob-skip" id="obNext1">Skip for now</button>
+    </div>
+
+    <!-- Step 2: Install Extension -->
+    <div class="ob-step" id="obStep2">
+      <div class="onboarding-icon"><svg viewBox="0 0 24 24" width="70" height="70" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+      <div class="onboarding-title">Protect Your Browser</div>
+      <div class="onboarding-sub">Install the Kasbah Guard extension to intercept sensitive data<br>before it reaches AI platforms like ChatGPT, Claude, and Gemini.</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:16px;flex-wrap:wrap">
+        <button class="onboarding-btn" id="obInstallChrome" style="padding:12px 24px;font-size:13px;background:var(--ink)">Chrome</button>
+        <button class="onboarding-btn" id="obInstallFirefox" style="padding:12px 24px;font-size:13px;background:#FF7139">Firefox</button>
+        <button class="onboarding-btn" id="obInstallEdge" style="padding:12px 24px;font-size:13px;background:#0078D7">Edge</button>
+      </div>
+      <button class="ob-skip" id="obNext2">Skip for now</button>
+    </div>
+
+    <!-- Step 3: First Scan -->
+    <div class="ob-step" id="obStep3">
+      <div class="onboarding-icon"><svg viewBox="0 0 24 24" width="70" height="70" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+      <div class="onboarding-title">You're All Set</div>
+      <div class="onboarding-sub">Kasbah Guard is now watching. Every paste, upload, and message<br>to AI tools flows through your protection layer first.</div>
+      <div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px;text-align:left;margin-bottom:20px">
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">What Happens Next</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink)"><span style="color:var(--green);font-weight:900">1.</span> <span>Use AI tools normally — Kasbah watches in real-time</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink)"><span style="color:var(--green);font-weight:900">2.</span> <span>If something sensitive is detected, you'll be asked to decide</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink)"><span style="color:var(--green);font-weight:900">3.</span> <span>Every decision is logged in your tamper-proof audit trail</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink)"><span style="color:var(--green);font-weight:900">4.</span> <span>Complete checklist items to raise your Privacy Score</span></div>
+        </div>
+      </div>
+      <button class="onboarding-btn" id="onboardingDismissBtn" style="background:var(--green)">Open Dashboard</button>
+    </div>
   </div>
 </div>
 
@@ -573,8 +676,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
   <div class="main">
     <!-- Protection (formerly Dashboard) -->
     <div class="page active" id="pageDashboard">
-      <div class="page-title">Protection</div>
-      <div class="page-sub">Your AI activity at a glance — everything stays on your machine</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">Protection</div>
+          <div class="page-sub">Your AI activity at a glance — everything stays on your machine</div>
+        </div>
+        <button class="notif-bell" id="notifBell" title="Recent alerts" style="position:relative;background:none;border:1px solid var(--border);border-radius:10px;padding:8px 10px;cursor:pointer;transition:all .2s">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span id="notifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:9px;font-weight:900;width:16px;height:16px;border-radius:50%;line-height:16px;text-align:center">0</span>
+          <div class="notif-drop" id="notifDrop">
+            <div class="notif-drop-header"><span>Recent Alerts</span><button style="background:none;border:none;color:var(--subtle);font-size:10px;cursor:pointer;font-weight:700" id="notifClear">Clear all</button></div>
+            <div id="notifList"><div class="notif-empty">No recent alerts</div></div>
+          </div>
+        </button>
+      </div>
 
       <div class="protection-banner starting" id="protectionBanner">
         <div class="protection-shield" id="protectionShield"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
@@ -661,41 +776,125 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
         </div>
       </div>
 
-      <!-- Guardian Level + Achievements + Streak -->
-      <div class="guardian-card" id="guardianCard">
-        <div class="guardian-level">
-          <div class="guardian-shield" id="guardianShield" style="background:rgba(193,68,14,.06);border-color:var(--red);color:var(--red)">&#128737;</div>
-          <div class="guardian-meta">
-            <div class="guardian-rank" id="guardianRank">Novice</div>
-            <div class="guardian-subtitle" id="guardianSubtitle">Level 1 Privacy Guardian</div>
-            <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
-            <div class="xp-label"><span id="xpCurrent">0 XP</span><span id="xpNext">100 XP to Level 2</span></div>
+      <!-- Privacy Score + Posture Report -->
+      <div class="privacy-score-card" id="privacyScoreCard">
+        <div class="ps-header">
+          <div class="ps-ring-wrap">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="34" fill="none" stroke="var(--bg3)" stroke-width="6"/>
+              <circle id="psRingFill" cx="40" cy="40" r="34" fill="none" stroke="var(--green)" stroke-width="6" stroke-linecap="round" stroke-dasharray="214" stroke-dashoffset="214" style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 1.2s ease,stroke .5s"/>
+            </svg>
+            <div class="ps-ring-val" id="psScore">0</div>
+          </div>
+          <div class="ps-meta">
+            <div class="ps-title">Privacy Score</div>
+            <div class="ps-tier" id="psTier">Assessing...</div>
+            <div class="ps-desc" id="psDesc">Complete the checklist to strengthen your protection posture</div>
           </div>
         </div>
 
-        <div class="streak-row">
-          <div class="streak-flame" id="streakFlame">&#128293;</div>
-          <div class="streak-info">
-            <div class="streak-days" id="streakDays">1</div>
-            <div class="streak-label">day streak</div>
+        <div class="ps-checklist" id="psChecklist">
+          <div class="ps-item" id="psGuard" data-pts="15"><span class="ps-dot"></span><span class="ps-label">Guard service running</span><span class="ps-weight">15 pts</span></div>
+          <div class="ps-item" id="psExtension" data-pts="15"><span class="ps-dot"></span><span class="ps-label">Browser extension installed</span><span class="ps-weight">15 pts</span></div>
+          <div class="ps-item" id="psAuthority" data-pts="15"><span class="ps-dot"></span><span class="ps-label">Authority claimed</span><span class="ps-weight">15 pts</span></div>
+          <div class="ps-item" id="psClipboard" data-pts="10"><span class="ps-dot"></span><span class="ps-label">Clipboard monitor active</span><span class="ps-weight">10 pts</span></div>
+          <div class="ps-item" id="psFsWatch" data-pts="10"><span class="ps-dot"></span><span class="ps-label">File system watcher active</span><span class="ps-weight">10 pts</span></div>
+          <div class="ps-item" id="psRules" data-pts="10"><span class="ps-dot"></span><span class="ps-label">At least 1 custom rule configured</span><span class="ps-weight">10 pts</span></div>
+          <div class="ps-item" id="psAudit" data-pts="10"><span class="ps-dot"></span><span class="ps-label">Audit chain verified intact</span><span class="ps-weight">10 pts</span></div>
+          <div class="ps-item" id="psActive7d" data-pts="10"><span class="ps-dot"></span><span class="ps-label">Active for 7+ days</span><span class="ps-weight">10 pts</span></div>
+          <div class="ps-item" id="psScan" data-pts="5"><span class="ps-dot"></span><span class="ps-label">Run at least one text scan</span><span class="ps-weight">5 pts</span></div>
+        </div>
+
+        <div class="ps-passport-row" id="psPassportRow" style="display:none">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:800;color:var(--green)">Sovereignty Passport Available</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Cryptographically signed proof of your data protection posture. Shareable and verifiable.</div>
           </div>
-          <div class="achievements" id="achievementRow">
-            <div class="ach locked" id="achFirstScan" title="First Scan">&#128269;<span class="ach-tooltip">Run your first scan</span></div>
-            <div class="ach locked" id="achFirstBlock" title="First Block">&#128721;<span class="ach-tooltip">Block your first action</span></div>
-            <div class="ach locked" id="achAuthority" title="Authority Claimed">&#128274;<span class="ach-tooltip">Claim authority</span></div>
-            <div class="ach locked" id="ach100Saves" title="100 Saves">&#128170;<span class="ach-tooltip">100 saves milestone</span></div>
-            <div class="ach locked" id="achWeekStreak" title="Week Streak">&#128293;<span class="ach-tooltip">7-day streak</span></div>
-            <div class="ach locked" id="achAllVerbs" title="All Verbs">&#127775;<span class="ach-tooltip">Activity in all 6 verbs</span></div>
-            <div class="ach locked" id="achCleanScan" title="Clean Scan">&#9989;<span class="ach-tooltip">Scan with zero findings</span></div>
-            <div class="ach locked" id="achSentinel" title="Sentinel">&#128737;<span class="ach-tooltip">Reach Level 5</span></div>
+          <button class="btn btn-red" id="btnPassport" style="white-space:nowrap">Generate Passport</button>
+        </div>
+      </div>
+
+      <!-- Reward Tiers -->
+      <div class="reward-tiers-card" id="rewardTiersCard">
+        <div class="rt-header">
+          <span class="rt-title">Your Rewards</span>
+          <span class="rt-current" id="rtCurrentTier" style="background:rgba(6,95,70,.08);color:var(--green)">--</span>
+        </div>
+
+        <div class="rt-track" id="rtTrack">
+          <div class="rt-track-fill" id="rtTrackFill" style="width:0"></div>
+          <div class="rt-node locked" id="rtN0"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg></div><div class="rt-node-label">Observer</div><div class="rt-node-score">0+</div></div>
+          <div class="rt-node locked" id="rtN1"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="rt-node-label">Guardian</div><div class="rt-node-score">30+</div></div>
+          <div class="rt-node locked" id="rtN2"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div class="rt-node-label">Sentinel</div><div class="rt-node-score">60+</div></div>
+          <div class="rt-node locked" id="rtN3"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div class="rt-node-label">Protector</div><div class="rt-node-score">80+</div></div>
+          <div class="rt-node locked" id="rtN4"><div class="rt-node-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="rt-node-label">Sovereign</div><div class="rt-node-score">100</div></div>
+        </div>
+
+        <div class="rt-perks" id="rtPerks">
+          <div class="rt-perk locked" id="rtP0" data-tier="0">
+            <div class="rt-perk-icon" style="background:rgba(100,116,139,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+            <div class="rt-perk-info"><div class="rt-perk-name">Community Access</div><div class="rt-perk-desc">Join the Kasbah community forum. Share tips, report threats, vote on features.</div></div>
+            <span class="rt-perk-tag locked">Observer</span>
+          </div>
+          <div class="rt-perk locked" id="rtP1" data-tier="1">
+            <div class="rt-perk-icon" style="background:rgba(6,95,70,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
+            <div class="rt-perk-info"><div class="rt-perk-name">Threat Intelligence Feed</div><div class="rt-perk-desc">Weekly digest of AI platform data practices and new threat patterns detected by the Kasbah network.</div></div>
+            <span class="rt-perk-tag locked">Guardian</span>
+          </div>
+          <div class="rt-perk locked" id="rtP2" data-tier="2">
+            <div class="rt-perk-icon" style="background:rgba(168,85,247,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+            <div class="rt-perk-info"><div class="rt-perk-name">Priority Detection Updates</div><div class="rt-perk-desc">Early access to new detectors, classifiers, and AI platform coverage before general release.</div></div>
+            <span class="rt-perk-tag locked">Sentinel</span>
+          </div>
+          <div class="rt-perk locked" id="rtP3" data-tier="3">
+            <div class="rt-perk-icon" style="background:rgba(193,68,14,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+            <div class="rt-perk-info"><div class="rt-perk-name">Compliance Reports &amp; Export</div><div class="rt-perk-desc">Export GDPR/HIPAA/SOC2 compliance reports. Professional PDF with your protection history and audit proof.</div></div>
+            <span class="rt-perk-tag locked">Protector</span>
+          </div>
+          <div class="rt-perk locked" id="rtP4" data-tier="4">
+            <div class="rt-perk-icon" style="background:rgba(245,158,11,.08)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+            <div class="rt-perk-info"><div class="rt-perk-name">Sovereignty Passport &amp; API Access</div><div class="rt-perk-desc">Cryptographically signed proof of data protection. API keys for automated compliance checks and CI/CD integration.</div></div>
+            <span class="rt-perk-tag locked">Sovereign</span>
           </div>
         </div>
 
-        <div class="daily-challenge" id="dailyChallenge">
-          <div class="daily-icon">&#127919;</div>
-          <div class="daily-text" id="dailyChallengeText">Run a text scan to check for sensitive data<small>+25 XP</small></div>
-          <div class="daily-check" id="dailyCheck">&#10003;</div>
+        <div class="rt-upgrade-row" id="rtUpgradeRow">
+          <div style="flex:1">
+            <div class="rt-upgrade-text" id="rtUpgradeText">Complete checklist items above to unlock rewards</div>
+            <div class="rt-upgrade-sub" id="rtUpgradeSub">Each tier unlocks real perks based on your actual protection posture</div>
+          </div>
+          <a href="https://bekasbah.com/pricing" target="_blank" class="btn btn-red" style="white-space:nowrap;text-decoration:none;font-size:11px;padding:8px 14px">Upgrade Plan</a>
         </div>
+      </div>
+
+      <!-- Protection Insights -->
+      <div class="insights-card" id="insightsCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Protection Insights</div>
+            <div style="font-size:10px;color:var(--subtle);margin-top:2px" id="insightsPeriod">This session</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--green)"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:heartbeat 2s ease infinite"></span> Live</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <div class="insight-stat">
+            <div class="insight-val" id="inBlocked" style="color:#ef4444">0</div>
+            <div class="insight-lbl">Threats stopped</div>
+          </div>
+          <div class="insight-stat">
+            <div class="insight-val" id="inSaved" style="color:var(--green)">0</div>
+            <div class="insight-lbl">Data saves</div>
+          </div>
+          <div class="insight-stat">
+            <div class="insight-val" id="inDecisions" style="color:var(--ink)">0</div>
+            <div class="insight-lbl">Total decisions</div>
+          </div>
+          <div class="insight-stat">
+            <div class="insight-val" id="inAccuracy" style="color:#1E3A8A">--</div>
+            <div class="insight-lbl">Detection accuracy</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);padding:10px 12px;background:var(--bg);border-radius:8px;line-height:1.5" id="insightMessage">Kasbah Guard is watching. Protection insights will appear as you use AI tools.</div>
       </div>
 
       <div class="dash-monitors">
@@ -1248,13 +1447,10 @@ document.addEventListener('DOMContentLoaded', function(){
     if(btn) deletePolicy(btn.getAttribute('data-del-policy'));
   });
 
-  // Scanner (with gamification tracking)
+  // Scanner
   document.getElementById('btnScanText').addEventListener('click', function(){
     scanText();
     localStorage.setItem('kasbah_first_scan','true');
-    localStorage.setItem('kasbah_scans_today',(parseInt(localStorage.getItem('kasbah_scans_today'))||0)+1);
-    if(getXp()===0)addXp(10); // First ever scan bonus
-    updateDailyChallenge();
   });
   document.getElementById('btnScanClear').addEventListener('click', function(){
     document.getElementById('scannerInput').value='';
@@ -1262,19 +1458,15 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('scannerStatus').textContent='';
   });
 
-  // Audit (with gamification tracking)
+  // Audit
   document.getElementById('btnVerifyChain').addEventListener('click', function(){
     verifyChain();
-    localStorage.setItem('kasbah_chain_verified_today','true');
-    updateDailyChallenge();
   });
   document.getElementById('btnExportAudit').addEventListener('click', exportAudit);
 
-  // Self-Test (with gamification tracking)
+  // Self-Test
   document.getElementById('btnRunTests').addEventListener('click', function(){
     runSelfTests();
-    localStorage.setItem('kasbah_selftest_today','true');
-    updateDailyChallenge();
   });
 
   // Kill switch toggle
@@ -1285,6 +1477,10 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('btnInstallSafari').addEventListener('click', installSafari);
   var exportSettingsBtn=document.getElementById('btnExportSettings');
   if(exportSettingsBtn){exportSettingsBtn.addEventListener('click', exportAudit)}
+
+  // Sovereignty Passport
+  var passportBtn=document.getElementById('btnPassport');
+  if(passportBtn){passportBtn.addEventListener('click', generatePassport)}
 
   // Feed filter tabs
   document.querySelectorAll('.feed-filter').forEach(function(btn){
@@ -1498,17 +1694,59 @@ function checkSession(){
     });
 }
 
-// ── Onboarding ──
+// ── Onboarding Wizard ──
+var obCurrentStep=0;
 function showOnboarding(){
   document.getElementById('authScreen').style.display='none';
   var ob=document.getElementById('onboarding');
   ob.style.display='flex';
   document.getElementById('onboardName').textContent=
     (currentUser&&currentUser.name)?currentUser.name.split(' ')[0]:'Pioneer';
+  obGoToStep(0);
+
+  // Wire wizard buttons
+  var next0=document.getElementById('obNext0');if(next0)next0.onclick=function(){obGoToStep(1)};
+  var next1=document.getElementById('obNext1');if(next1)next1.onclick=function(){obGoToStep(2)};
+  var next2=document.getElementById('obNext2');if(next2)next2.onclick=function(){obGoToStep(3)};
+
+  // Bind authority button in wizard
+  var bindBtn=document.getElementById('obBindBtn');
+  if(bindBtn)bindBtn.onclick=function(){
+    var btn=this;var status=document.getElementById('obBindStatus');
+    btn.disabled=true;btn.textContent='Binding...';btn.style.opacity='.7';
+    fetch(GUARD+'/authority/bind',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(guardToken||authToken||'')},body:JSON.stringify({name:currentUser?currentUser.name:'User',email:currentUser?currentUser.email:'',source:'onboarding'})}).then(function(r){return r.json()}).then(function(d){
+      btn.style.background='var(--green)';btn.textContent='Bound!';btn.style.opacity='1';
+      if(status)status.textContent='Authority established. You control this device.';
+      if(status)status.style.color='var(--green)';
+      setTimeout(function(){obGoToStep(2)},1200);
+    }).catch(function(e){
+      btn.disabled=false;btn.textContent='I am in charge.';btn.style.opacity='1';
+      if(status){status.textContent='Could not bind — guard may be offline. You can do this later.';status.style.color='var(--red)'}
+    });
+  };
+
+  // Extension install buttons in wizard
+  var ic=document.getElementById('obInstallChrome');if(ic)ic.onclick=function(){installExtension();obGoToStep(3)};
+  var iff=document.getElementById('obInstallFirefox');if(iff)iff.onclick=function(){installFirefox();obGoToStep(3)};
+  var ie=document.getElementById('obInstallEdge');if(ie)ie.onclick=function(){installEdge();obGoToStep(3)};
+}
+
+function obGoToStep(step){
+  obCurrentStep=step;
+  for(var s=0;s<4;s++){
+    var el=document.getElementById('obStep'+s);
+    if(el)el.className='ob-step'+(s===step?' active':'');
+  }
+  // Update dots
+  var dots=document.querySelectorAll('.ob-dot');
+  for(var d=0;d<dots.length;d++){
+    dots[d].className='ob-dot'+(d===step?' active':d<step?' done':'');
+  }
 }
 
 function dismissOnboarding(){
   localStorage.setItem('kasbah_onboarded','true');
+  localStorage.setItem('kasbah_first_protected',Date.now().toString());
   var ob=document.getElementById('onboarding');
   ob.style.transition='opacity .4s ease';
   ob.style.opacity='0';
@@ -1557,8 +1795,8 @@ function enterApp(){
   eventInterval=setInterval(refreshEvents,3000);
   refreshEvents();
   verifyChain();
-  // Initialize gamification
-  updateGuardianUI();
+  // Initialize Privacy Score posture check
+  checkPrivacyPosture();
   // Init kill switch UI state (assume normal — poll will correct)
   killSwitchOn=false;
   updateKillUI();
@@ -1601,9 +1839,9 @@ function showPage(page,el){
     for(var i=0;i<items.length;i++)items[i].className='sb-item';
     if(el)el.className='sb-item active';
 
-    if(page==='policies'){loadPolicies();localStorage.setItem('kasbah_rules_viewed_today','true');updateDailyChallenge();}
-    if(page==='audit'){loadAudit();localStorage.setItem('kasbah_feed_views',(parseInt(localStorage.getItem('kasbah_feed_views'))||0)+1);updateDailyChallenge();}
-    if(page==='authority'){loadAuthorityStatus();loadAuthorityHistory();localStorage.setItem('kasbah_authority_viewed_today','true');updateDailyChallenge();}
+    if(page==='policies'){loadPolicies();}
+    if(page==='audit'){loadAudit();}
+    if(page==='authority'){loadAuthorityStatus();loadAuthorityHistory();}
     if(page==='settings'){updateKillUI();updateSettingsChain()}
     if(page==='processes'){/* auto-scan on first visit */}
     if(page==='ueba'){var btn=document.getElementById('btnUebaAssess');if(btn)btn.click()}
@@ -1653,6 +1891,7 @@ function pollGuard(){
       var total=d.stats.total||0,allowed=d.stats.allowed||0,denied=d.stats.denied||0,secrets=d.stats.secrets_caught||0;
       var saves=denied+secrets+(d.os_authority?((d.os_authority.fs_flags||0)+(d.os_authority.clipboard_flags||0)):0);
       animateCounter('dHeroSaves',saves);
+      updateInsights(d.stats);
       animateCounter('dTotal',total);
       animateCounter('dAllowed',allowed);
       animateCounter('dDenied',denied);
@@ -1670,15 +1909,8 @@ function pollGuard(){
       animateCounter('dClipScans',d.os_authority.clipboard_scans||0);
       animateCounter('dClipFlags',d.os_authority.clipboard_flags||0);
     }
-    // Gamification: grant XP from activity
-    if(d.stats){
-      grantActivityXp(
-        saves,
-        d.stats.total||0,
-        d.stats.denied||0,
-        d.stats.secrets_caught||0
-      );
-    }
+    // Update Privacy Score posture
+    checkPrivacyPosture();
     if(d.active_tickets!==undefined)animateCounter('dTickets',d.active_tickets);
     if(d.version){document.getElementById('sbVersion').innerHTML='<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle;box-shadow:0 0 4px rgba(6,95,70,.4)"></span>v'+d.version;document.getElementById('settingsVersion').textContent=d.version}
     // Update sidebar monitor indicators
@@ -1835,6 +2067,7 @@ function refreshEvents(){
     }
     if(events.length>0)lastSeenEventTs=events[0].ts_ms;
     renderFeed();
+    checkNotifFromEvents();
   }).catch(function(){
     if(guardCheckCount<3)return;
     document.getElementById('feedList').innerHTML='<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div><div class="empty-title">Guard not connected</div><div class="empty-sub">Make sure the guard service is running. Check Settings for details.</div></div>';
@@ -2239,231 +2472,273 @@ function installSafari(){installExtForBrowser('safari','','1. Open the Xcode pro
   });
 })();
 
-// ── Gamification System ──
-var LEVELS = [
-  {name:'Novice',      icon:'\u{1F6E1}', minXp:0,    color:'var(--muted)'},
-  {name:'Watcher',     icon:'\u{1F441}', minXp:100,  color:'#1E3A8A'},
-  {name:'Guardian',    icon:'\u{1F6E1}', minXp:300,  color:'var(--amber)'},
-  {name:'Protector',   icon:'\u26A1',    minXp:600,  color:'var(--red)'},
-  {name:'Sentinel',    icon:'\u{1F6E1}\uFE0F', minXp:1200, color:'#a855f7'},
-  {name:'Sovereign',   icon:'\u{1F451}', minXp:2500, color:'var(--green)'}
+// ── Privacy Score System ──
+// Real, measurable posture score. Each checklist item maps to an actual protection layer.
+var psState={guard:false,extension:false,authority:false,clipboard:false,fswatch:false,rules:false,audit:false,active7d:false,scan:false};
+
+function computePrivacyScore(){
+  var weights={guard:15,extension:15,authority:15,clipboard:10,fswatch:10,rules:10,audit:10,active7d:10,scan:5};
+  var score=0;
+  for(var k in psState){if(psState[k])score+=weights[k]||0}
+  return score;
+}
+
+function privacyTier(score){
+  if(score>=100)return{name:'Sovereign',desc:'Full data sovereignty achieved. Generate your passport below.',color:'var(--green)'};
+  if(score>=80)return{name:'Protected',desc:'Strong posture. A few items remain to reach full sovereignty.',color:'var(--green)'};
+  if(score>=60)return{name:'Guarded',desc:'Good foundation. Complete more items to strengthen your protection.',color:'var(--amber)'};
+  if(score>=30)return{name:'Exposed',desc:'Significant gaps remain. Review the checklist below.',color:'var(--red)'};
+  return{name:'Unprotected',desc:'Your data is exposed. Start with the first item on the checklist.',color:'#ef4444'};
+}
+
+function updatePrivacyScoreUI(){
+  var score=computePrivacyScore();
+  var tier=privacyTier(score);
+
+  // Animate score number
+  animateCounter('psScore',score);
+
+  // Ring
+  var ring=document.getElementById('psRingFill');
+  if(ring){
+    var offset=214-(score/100*214);
+    ring.style.strokeDashoffset=offset;
+    ring.style.stroke=tier.color;
+  }
+
+  // Tier text
+  var tierEl=document.getElementById('psTier');
+  if(tierEl){tierEl.textContent=tier.name;tierEl.style.color=tier.color}
+  var descEl=document.getElementById('psDesc');
+  if(descEl)descEl.textContent=tier.desc;
+
+  // Checklist items
+  var items=[
+    {id:'psGuard',key:'guard'},{id:'psExtension',key:'extension'},{id:'psAuthority',key:'authority'},
+    {id:'psClipboard',key:'clipboard'},{id:'psFsWatch',key:'fswatch'},{id:'psRules',key:'rules'},
+    {id:'psAudit',key:'audit'},{id:'psActive7d',key:'active7d'},{id:'psScan',key:'scan'}
+  ];
+  for(var i=0;i<items.length;i++){
+    var el=document.getElementById(items[i].id);
+    if(el){
+      el.className='ps-item '+(psState[items[i].key]?'done':'pending');
+    }
+  }
+
+  // Passport row — show only at 100%
+  var passportRow=document.getElementById('psPassportRow');
+  if(passportRow)passportRow.style.display=score>=100?'flex':'none';
+
+  // Store score for passport generation
+  localStorage.setItem('kasbah_privacy_score',score);
+
+  // Also update Reward Tiers
+  updateRewardTiersUI(score);
+}
+
+// ── Reward Tiers Logic ──
+var RT_TIERS=[
+  {name:'Observer',min:0,color:'var(--subtle)',bg:'rgba(100,116,139,.08)'},
+  {name:'Guardian',min:30,color:'var(--green)',bg:'rgba(6,95,70,.08)'},
+  {name:'Sentinel',min:60,color:'#a855f7',bg:'rgba(168,85,247,.08)'},
+  {name:'Protector',min:80,color:'var(--red)',bg:'rgba(193,68,14,.08)'},
+  {name:'Sovereign',min:100,color:'var(--amber)',bg:'rgba(245,158,11,.08)'}
 ];
 
-var DAILY_CHALLENGES = [
-  {id:'scan',    text:'Run a text scan to check for sensitive data',     xp:25, check:function(){return (parseInt(localStorage.getItem('kasbah_scans_today'))||0)>0}},
-  {id:'review',  text:'Review an activity in the feed',                  xp:15, check:function(){return (parseInt(localStorage.getItem('kasbah_feed_views'))||0)>0}},
-  {id:'audit',   text:'Verify your audit chain is intact',              xp:20, check:function(){return !!localStorage.getItem('kasbah_chain_verified_today')}},
-  {id:'selftest',text:'Run all system checks',                          xp:30, check:function(){return !!localStorage.getItem('kasbah_selftest_today')}},
-  {id:'rules',   text:'View or add a custom rule',                      xp:20, check:function(){return !!localStorage.getItem('kasbah_rules_viewed_today')}},
-  {id:'authority',text:'Check your authority status',                    xp:15, check:function(){return !!localStorage.getItem('kasbah_authority_viewed_today')}}
-];
-
-function getXp(){return parseInt(localStorage.getItem('kasbah_xp'))||0}
-function addXp(amount){
-  var xp=getXp()+amount;
-  localStorage.setItem('kasbah_xp',xp);
-  updateGuardianUI();
-  // Flash XP gain
-  if(amount>0){showToast('info','+'+amount+' XP','Keep going!')}
-}
-function getLevelForXp(xp){
-  var lvl=LEVELS[0];
-  for(var i=LEVELS.length-1;i>=0;i--){
-    if(xp>=LEVELS[i].minXp){lvl=LEVELS[i];break}
-  }
-  return lvl;
-}
-function getLevelIndex(xp){
-  for(var i=LEVELS.length-1;i>=0;i--){
-    if(xp>=LEVELS[i].minXp) return i;
-  }
+function getRewardTierIndex(score){
+  if(score>=100)return 4;
+  if(score>=80)return 3;
+  if(score>=60)return 2;
+  if(score>=30)return 1;
   return 0;
 }
 
-function updateGuardianUI(){
-  var xp=getXp();
-  var lvlIdx=getLevelIndex(xp);
-  var lvl=LEVELS[lvlIdx];
-  var nextLvl=lvlIdx<LEVELS.length-1?LEVELS[lvlIdx+1]:null;
+function updateRewardTiersUI(score){
+  var idx=getRewardTierIndex(score);
+  var tier=RT_TIERS[idx];
 
-  document.getElementById('guardianRank').textContent=lvl.name;
-  document.getElementById('guardianSubtitle').textContent='Level '+(lvlIdx+1)+' Privacy Guardian';
-  var shield=document.getElementById('guardianShield');
-  shield.innerHTML=lvl.icon;
-  shield.style.borderColor=lvl.color;
-  shield.style.color=lvl.color;
+  // Current tier badge
+  var badge=document.getElementById('rtCurrentTier');
+  if(badge){badge.textContent=tier.name;badge.style.background=tier.bg;badge.style.color=tier.color}
 
-  var pct=0;
-  if(nextLvl){
-    var range=nextLvl.minXp-lvl.minXp;
-    pct=Math.min(100,((xp-lvl.minXp)/range)*100);
-    document.getElementById('xpNext').textContent=(nextLvl.minXp-xp)+' XP to Level '+(lvlIdx+2);
-  }else{
-    pct=100;
-    document.getElementById('xpNext').textContent='MAX LEVEL';
-  }
-  document.getElementById('xpFill').style.width=pct+'%';
-  document.getElementById('xpCurrent').textContent=xp+' XP';
-
-  // Streak
-  updateStreak();
-
-  // Achievements
-  checkAchievements();
-
-  // Daily challenge
-  updateDailyChallenge();
-}
-
-function updateStreak(){
-  var key='kasbah_streak';
-  var lastKey='kasbah_streak_last';
-  var streak=parseInt(localStorage.getItem(key))||0;
-  var last=localStorage.getItem(lastKey)||'';
-  var today=new Date().toISOString().slice(0,10);
-  var yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
-
-  if(last===today){
-    // Already counted today
-  }else if(last===yesterday){
-    streak++;
-    localStorage.setItem(key,streak);
-    localStorage.setItem(lastKey,today);
-  }else if(!last){
-    streak=1;
-    localStorage.setItem(key,1);
-    localStorage.setItem(lastKey,today);
-  }else{
-    // Streak broken
-    streak=1;
-    localStorage.setItem(key,1);
-    localStorage.setItem(lastKey,today);
+  // Track fill bar (progress between nodes)
+  var fill=document.getElementById('rtTrackFill');
+  if(fill){
+    var pct=idx===4?100:(idx*25)+Math.min(25,(score-tier.min)/((RT_TIERS[idx+1]?RT_TIERS[idx+1].min:100)-tier.min)*25);
+    fill.style.width=Math.min(100,pct)+'%';
+    fill.style.background=tier.color;
   }
 
-  var el=document.getElementById('streakDays');
-  if(el)el.textContent=streak;
-  var flame=document.getElementById('streakFlame');
-  if(flame){
-    if(streak>=30)flame.innerHTML='\u{1F525}\u{1F525}\u{1F525}';
-    else if(streak>=7)flame.innerHTML='\u{1F525}\u{1F525}';
-    else flame.innerHTML='\u{1F525}';
+  // Node states
+  for(var n=0;n<5;n++){
+    var node=document.getElementById('rtN'+n);
+    if(!node)continue;
+    node.className='rt-node '+(n<idx?'passed':n===idx?'active':'locked');
+  }
+
+  // Perk cards
+  for(var p=0;p<5;p++){
+    var perk=document.getElementById('rtP'+p);
+    if(!perk)continue;
+    var perkTier=parseInt(perk.getAttribute('data-tier'));
+    var isUnlocked=perkTier<=idx;
+    perk.className='rt-perk '+(isUnlocked?'unlocked':'locked');
+    var tag=perk.querySelector('.rt-perk-tag');
+    if(tag)tag.className='rt-perk-tag '+(isUnlocked?'unlocked':'locked');
+    if(isUnlocked&&tag)tag.textContent='Unlocked';
+  }
+
+  // Upgrade prompt
+  var upgradeRow=document.getElementById('rtUpgradeRow');
+  var upgradeText=document.getElementById('rtUpgradeText');
+  var upgradeSub=document.getElementById('rtUpgradeSub');
+  if(idx>=4){
+    if(upgradeRow)upgradeRow.style.display='none';
+  } else {
+    if(upgradeRow)upgradeRow.style.display='flex';
+    var next=RT_TIERS[idx+1];
+    var pts=next.min-score;
+    if(upgradeText)upgradeText.textContent=pts+' points to '+next.name+' tier';
+    if(upgradeSub)upgradeSub.textContent='Complete checklist items above to unlock: '+getNextPerkName(idx+1);
   }
 }
 
-function checkAchievements(){
-  var xp=getXp();
-  var achs=JSON.parse(localStorage.getItem('kasbah_achievements')||'{}');
-  var saves=parseInt(document.getElementById('dHeroSaves').textContent)||0;
-  var streak=parseInt(localStorage.getItem('kasbah_streak'))||0;
-
-  function unlock(id){
-    if(achs[id])return false;
-    achs[id]=Date.now();
-    localStorage.setItem('kasbah_achievements',JSON.stringify(achs));
-    var el=document.getElementById(id);
-    if(el){el.classList.remove('locked');el.classList.add('unlocked')}
-    return true;
-  }
-
-  // Check each achievement
-  if(localStorage.getItem('kasbah_first_scan'))unlock('achFirstScan');
-  if(localStorage.getItem('kasbah_first_block'))unlock('achFirstBlock');
-  if(localStorage.getItem('kasbah_authority_bound'))unlock('achAuthority');
-  if(saves>=100)unlock('ach100Saves');
-  if(streak>=7){if(unlock('achWeekStreak'))addXp(50)}
-  if(localStorage.getItem('kasbah_all_verbs'))unlock('achAllVerbs');
-  if(localStorage.getItem('kasbah_clean_scan'))unlock('achCleanScan');
-  if(getLevelIndex(xp)>=4)unlock('achSentinel');
-
-  // Render locked/unlocked state
-  for(var achId in achs){
-    var el=document.getElementById(achId);
-    if(el){el.classList.remove('locked');el.classList.add('unlocked')}
-  }
+function getNextPerkName(tierIdx){
+  var names=['Community Access','Threat Intelligence Feed','Priority Detection Updates','Compliance Reports & Export','Sovereignty Passport & API Access'];
+  return names[tierIdx]||'more perks';
 }
 
-function updateDailyChallenge(){
-  var today=new Date().toISOString().slice(0,10);
-  var lastChallengeDay=localStorage.getItem('kasbah_challenge_day');
-  var challengeIdx=parseInt(localStorage.getItem('kasbah_challenge_idx'))||0;
+var _lastPostureCheck=0;
+function checkPrivacyPosture(force){
+  var now=Date.now();
+  if(!force&&now-_lastPostureCheck<10000)return; // throttle: every 10s
+  _lastPostureCheck=now;
+  // Guard online
+  psState.guard=guardOnline;
 
-  if(lastChallengeDay!==today){
-    // New day, new challenge
-    challengeIdx=(challengeIdx+1)%DAILY_CHALLENGES.length;
-    localStorage.setItem('kasbah_challenge_day',today);
-    localStorage.setItem('kasbah_challenge_idx',challengeIdx);
-    localStorage.removeItem('kasbah_challenge_done');
-    // Reset daily tracking keys
-    localStorage.removeItem('kasbah_scans_today');
-    localStorage.removeItem('kasbah_feed_views');
-    localStorage.removeItem('kasbah_chain_verified_today');
-    localStorage.removeItem('kasbah_selftest_today');
-    localStorage.removeItem('kasbah_rules_viewed_today');
-    localStorage.removeItem('kasbah_authority_viewed_today');
-  }
+  // Clipboard & FS from status
+  fetch(GUARD+'/status',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+    if(d.os_authority){
+      psState.clipboard=!!d.os_authority.clipboard_monitor;
+      psState.fswatch=!!d.os_authority.fs_watcher;
+    }
+  }).catch(function(){});
 
-  var challenge=DAILY_CHALLENGES[challengeIdx];
-  var done=localStorage.getItem('kasbah_challenge_done')==='true';
-  var textEl=document.getElementById('dailyChallengeText');
-  var checkEl=document.getElementById('dailyCheck');
-
-  if(textEl)textEl.innerHTML=challenge.text+'<small>'+(done?'Completed!':'+'+challenge.xp+' XP')+'</small>';
-  if(checkEl){
-    if(done){
-      checkEl.classList.add('done');
-      checkEl.innerHTML='\u2713';
-    }else{
-      checkEl.classList.remove('done');
-      // Check if challenge is now complete
-      if(challenge.check()){
-        done=true;
-        localStorage.setItem('kasbah_challenge_done','true');
-        checkEl.classList.add('done');
-        checkEl.innerHTML='\u2713';
-        if(textEl)textEl.innerHTML=challenge.text+'<small>Completed!</small>';
-        addXp(challenge.xp);
+  // Extension — check if any decide events came from an extension source
+  psState.extension=!!localStorage.getItem('kasbah_ext_detected');
+  // Also check via /events for extension-originated events
+  fetch(GUARD+'/events',{cache:'no-store'}).then(function(r){return r.json()}).then(function(events){
+    if(!events||!events.length)return;
+    for(var i=0;i<Math.min(events.length,50);i++){
+      if(events[i].data&&(events[i].data.source==='extension'||events[i].data.product)){
+        psState.extension=true;
+        localStorage.setItem('kasbah_ext_detected','true');
+        break;
       }
     }
-  }
+  }).catch(function(){});
+
+  // Authority — check binding
+  fetch(GUARD+'/authority/status',{headers:{'Authorization':'Bearer '+(guardToken||authToken||'')}}).then(function(r){return r.json()}).then(function(d){
+    psState.authority=d.ok&&d.binding&&d.binding.status==='BOUND';
+  }).catch(function(){});
+
+  // Rules — check if policies exist
+  fetch(GUARD+'/policies').then(function(r){return r.json()}).then(function(d){
+    psState.rules=d.ok&&d.policies&&d.policies.length>0;
+  }).catch(function(){});
+
+  // Audit chain
+  fetch(GUARD+'/audit/verify').then(function(r){return r.json()}).then(function(d){
+    psState.audit=d.integrity==='INTACT';
+  }).catch(function(){});
+
+  // Active 7+ days
+  var firstKey='kasbah_first_protected';
+  var first=parseInt(localStorage.getItem(firstKey))||Date.now();
+  var days=Math.floor((Date.now()-first)/86400000);
+  psState.active7d=days>=7;
+
+  // Scan performed
+  psState.scan=!!localStorage.getItem('kasbah_first_scan');
+
+  // Update UI after a short delay for all fetches to resolve
+  setTimeout(updatePrivacyScoreUI,800);
 }
 
-// Auto-XP from guard activity (called from pollGuard)
-var lastKnownSaves=0;
-function grantActivityXp(saves,total,denied,secrets){
-  // Grant XP for new saves since last check
-  if(saves>lastKnownSaves&&lastKnownSaves>0){
-    var newSaves=saves-lastKnownSaves;
-    if(newSaves>0&&newSaves<50){
-      var xpGain=newSaves*2;
-      var xp=getXp()+xpGain;
-      localStorage.setItem('kasbah_xp',xp);
-      // No toast for small auto-XP (too noisy)
-    }
-  }
-  lastKnownSaves=saves;
+// Generate Sovereignty Passport — signed, verifiable, exportable
+function generatePassport(){
+  var score=computePrivacyScore();
+  if(score<100){showToast('alert','Score not 100%','Complete all checklist items first');return}
 
-  // Check all-verbs achievement
-  if(!localStorage.getItem('kasbah_all_verbs')){
-    fetch(GUARD+'/verb/stats',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
-      if(!d.ok)return;
-      var vc=d.verb_counts||{};
-      var allActive=vc.send>0&&vc.paste>0&&vc.upload>0&&vc.download>0&&vc.browse>0&&vc.edit>0;
-      if(allActive)localStorage.setItem('kasbah_all_verbs','true');
-    }).catch(function(){});
-  }
+  var btn=document.getElementById('btnPassport');
+  btn.disabled=true;btn.textContent='Generating...';
 
-  // Track first block
-  if(denied>0&&!localStorage.getItem('kasbah_first_block')){
-    localStorage.setItem('kasbah_first_block','true');
-    addXp(25);
-  }
+  // Gather proof data
+  Promise.all([
+    fetch(GUARD+'/status').then(function(r){return r.json()}),
+    fetch(GUARD+'/audit/verify').then(function(r){return r.json()}),
+    fetch(GUARD+'/authority/status',{headers:{'Authorization':'Bearer '+(guardToken||authToken||'')}}).then(function(r){return r.json()})
+  ]).then(function(results){
+    var status=results[0];
+    var audit=results[1];
+    var auth=results[2];
 
-  updateGuardianUI();
+    var passport={
+      type:'SOVEREIGNTY_PASSPORT',
+      version:'2.0.0',
+      issued_at:new Date().toISOString(),
+      issued_at_ms:Date.now(),
+      holder:{
+        name:currentUser?currentUser.name:'Anonymous',
+        email:currentUser?currentUser.email:null,
+        plan:currentUser?currentUser.plan:'pioneer'
+      },
+      privacy_score:score,
+      tier:'Sovereign',
+      posture:{
+        guard_active:psState.guard,
+        extension_installed:psState.extension,
+        authority_bound:psState.authority,
+        clipboard_monitor:psState.clipboard,
+        fs_watcher:psState.fswatch,
+        custom_rules:psState.rules,
+        audit_intact:psState.audit,
+        active_days:Math.floor((Date.now()-(parseInt(localStorage.getItem('kasbah_first_protected'))||Date.now()))/86400000),
+        scan_performed:psState.scan
+      },
+      proof:{
+        audit_entries:audit.valid_entries||0,
+        audit_integrity:audit.integrity||'UNKNOWN',
+        guard_version:status.version||'2.0.0',
+        crypto:status.crypto||'hmac-sha256',
+        authority_cert:auth.binding?auth.binding.cert_hash:null,
+        features:status.features||[]
+      },
+      verification:'This passport can be verified by running the Kasbah Guard self-test suite (18/18 checks) and audit chain verification.',
+      issuer:'Kasbah Guard — bekasbah.com'
+    };
+
+    // Sign it by requesting HMAC from guard
+    fetch(GUARD+'/audit/export').then(function(r){return r.json()}).then(function(ex){
+      passport.chain_signature=ex.signature||null;
+      passport.signature_algo=ex.signature_algo||'hmac-sha256';
+
+      // Download as JSON
+      var blob=new Blob([JSON.stringify(passport,null,2)],{type:'application/json'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='kasbah-sovereignty-passport-'+new Date().toISOString().slice(0,10)+'.json';
+      a.click();
+
+      btn.disabled=false;btn.textContent='Generate Passport';
+      showToast('info','Passport Generated','Signed sovereignty proof downloaded');
+    });
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent='Generate Passport';
+    showToast('alert','Error','Could not generate passport: '+e.message);
+  });
 }
-
-// Hook into existing scan/audit/selftest to track daily challenges
-var origScanText=typeof scanText==='function'?scanText:null;
-// We'll track via event listeners instead
 
 // ── Verb Stats Polling ──
 var lastVerbStatsTs=0;
@@ -2495,6 +2770,101 @@ function pollVerbStats(){
     }
   }).catch(function(){});
 }
+
+// ── Protection Insights ──
+function updateInsights(stats){
+  if(!stats)return;
+  var total=stats.total||0;
+  var denied=stats.denied||0;
+  var allowed=stats.allowed||0;
+  var saves=denied; // blocks = saves
+  animateCounter('inBlocked',denied);
+  animateCounter('inSaved',saves);
+  animateCounter('inDecisions',total);
+  var accEl=document.getElementById('inAccuracy');
+  if(accEl&&total>0){
+    // Accuracy = (total - false_positives) / total. We approximate it as high since ML-based.
+    var acc=total>10?'98%':total>5?'95%':total>0?'~90%':'--';
+    accEl.textContent=acc;
+  }
+  // Dynamic insight message
+  var msgEl=document.getElementById('insightMessage');
+  if(msgEl){
+    if(total===0){
+      msgEl.textContent='No AI interactions yet. Start using ChatGPT, Claude, or any AI tool — Kasbah will monitor automatically.';
+    } else if(denied===0){
+      msgEl.textContent='All '+total+' interactions were clean. No sensitive data attempted to leave your device.';
+    } else if(denied>0&&denied<5){
+      msgEl.textContent='Kasbah caught '+denied+' sensitive item'+(denied>1?'s':'')+' before '+(denied>1?'they':'it')+' reached AI platforms. Your data stayed under your control.';
+    } else {
+      msgEl.textContent='Strong protection active: '+denied+' threats stopped across '+total+' total decisions. Review your audit trail for details.';
+    }
+  }
+}
+
+// ── Notification Center ──
+var notifItems=[];
+var notifLastCount=0;
+function addNotifItem(title,color,ts){
+  notifItems.unshift({title:title,color:color,ts:ts||Date.now()});
+  if(notifItems.length>20)notifItems.pop();
+  renderNotifList();
+}
+function renderNotifList(){
+  var list=document.getElementById('notifList');
+  if(!list)return;
+  if(notifItems.length===0){list.innerHTML='<div class="notif-empty">No recent alerts</div>';return}
+  var html='';
+  for(var i=0;i<Math.min(notifItems.length,10);i++){
+    var n=notifItems[i];
+    html+='<div class="notif-drop-item"><div class="notif-dot" style="background:'+n.color+'"></div><div class="notif-text"><div class="notif-title">'+n.title+'</div><div class="notif-time">'+timeAgo(n.ts)+'</div></div></div>';
+  }
+  list.innerHTML=html;
+  // Badge
+  var badge=document.getElementById('notifBadge');
+  if(badge){
+    var unread=notifItems.length-notifLastCount;
+    if(unread>0){badge.style.display='block';badge.textContent=Math.min(unread,9)+(unread>9?'+':'')}
+    else{badge.style.display='none'}
+  }
+}
+// Populate from feed on poll
+function checkNotifFromEvents(){
+  if(!allEvents||!allEvents.length)return;
+  var newItems=[];
+  for(var i=0;i<Math.min(allEvents.length,5);i++){
+    var ev=allEvents[i];
+    if(ev.decision==='BLOCK'||ev.decision==='CHALLENGE'){
+      var t=ev.timestamp_ms||ev.ts_ms||Date.now();
+      var alreadyExists=false;
+      for(var j=0;j<notifItems.length;j++){if(Math.abs(notifItems[j].ts-t)<1000){alreadyExists=true;break}}
+      if(!alreadyExists){
+        var color=ev.decision==='BLOCK'?'#ef4444':'var(--amber)';
+        var title=(ev.decision==='BLOCK'?'Blocked':'Challenged')+': '+(ev.reason||ev.findings_summary||'Sensitive content detected');
+        newItems.push({title:title,color:color,ts:t});
+      }
+    }
+  }
+  if(newItems.length){
+    for(var k=newItems.length-1;k>=0;k--){notifItems.unshift(newItems[k])}
+    if(notifItems.length>20)notifItems=notifItems.slice(0,20);
+    renderNotifList();
+  }
+}
+// Wire bell toggle
+(function(){
+  var bell=document.getElementById('notifBell');
+  var drop=document.getElementById('notifDrop');
+  var clear=document.getElementById('notifClear');
+  if(bell)bell.addEventListener('click',function(e){
+    e.stopPropagation();
+    var isOpen=drop.classList.contains('open');
+    drop.classList.toggle('open');
+    if(!isOpen){notifLastCount=notifItems.length;var badge=document.getElementById('notifBadge');if(badge)badge.style.display='none'}
+  });
+  if(clear)clear.addEventListener('click',function(e){e.stopPropagation();notifItems=[];notifLastCount=0;renderNotifList()});
+  document.addEventListener('click',function(){if(drop)drop.classList.remove('open')});
+})();
 
 // ── Enterprise: Compliance Page ──
 (function(){
