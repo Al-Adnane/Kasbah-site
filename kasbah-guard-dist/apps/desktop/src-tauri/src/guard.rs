@@ -3965,6 +3965,7 @@ struct State {
     keystroke_flags: u32,
     velocity: VelocityTracker,
     behavioral: BehavioralTracker,
+    last_fs_notify_ms: u64,
     // Enterprise v2.0 fields
     ueba: UebaEngine,
     compliance: ComplianceEngine,
@@ -5853,6 +5854,7 @@ pub fn spawn_guard_service() {
             keystroke_flags: 0,
             velocity: VelocityTracker::new(),
             behavioral: BehavioralTracker::new(),
+            last_fs_notify_ms: 0,
             ueba: UebaEngine::new(),
             compliance: ComplianceEngine::new(),
             rbac_fleet: RbacFleetManager::new(),
@@ -8234,24 +8236,92 @@ end tell"#
                                     total_flagged += 1;
                                     total_findings += findings.len();
                                     let finding_types: Vec<&str> = findings.iter().map(|f| f.ftype).collect();
+                                    let finding_summary = finding_types.join(", ");
                                     eprintln!("[Kasbah Guard] NOTIFY ALERT: {} — {} findings: {}",
-                                        fname, findings.len(), finding_types.join(", "));
-                                    // Use display alert (always visible) for critical findings
-                                    let alert_msg = format!("File {} — {} finding(s) detected.\\nReview before sharing.", fname.replace('"', "'"), findings.len());
-                                    spawn_detached("osascript", &["-e", &format!(
-                                        "display alert \"Kasbah Guard\" message \"{}\" as warning", alert_msg
-                                    )]);
+                                        fname, findings.len(), finding_summary);
+
+                                    // Interactive dialog for flagged files (like clipboard dialog)
+                                    let safe_fname = fname.replace('"', "'").replace('\\', "/");
+                                    let dialog_script = format!(
+                                        r#"tell application "System Events"
+  activate
+  set dlg to display dialog "File edited: {}" & return & return & "{} finding(s) detected: {}" & return & return & "Would you like to review or allow this change?" with title "Kasbah Guard — File Alert" buttons {{"Review", "Allow"}} default button "Review" giving up after 30 with icon caution
+  return button returned of dlg
+end tell"#,
+                                        safe_fname,
+                                        findings.len(),
+                                        finding_summary.replace('"', "'")
+                                    );
+                                    let dialog_result = run_command_with_timeout(
+                                        "osascript", &["-e", &dialog_script], None, 35000
+                                    );
+                                    let user_allowed = match dialog_result {
+                                        Ok(bytes) => {
+                                            let stdout = String::from_utf8_lossy(&bytes);
+                                            stdout.trim() == "Allow"
+                                        }
+                                        Err(_) => false, // timeout/error → default to review (cautious)
+                                    };
+
+                                    let file_hash = content_hash(&content);
+                                    let db_lock = db.lock().unwrap_or_else(|e| e.into_inner());
+                                    if user_allowed {
+                                        spawn_detached("osascript", &["-e",
+                                            "display notification \"File change allowed — logged.\" with title \"Kasbah Guard\""]);
+                                        append_audit(
+                                            &db_lock, "FS_NOTIFY_ALLOWED", None, Some("agent"), None,
+                                            Some("ALLOWED"), None,
+                                            Some(&format!("{} findings in {}: {} — user allowed", findings.len(), fname, finding_summary)),
+                                            Some(&file_hash),
+                                            Some(&serde_json::json!({
+                                                "path": file_path, "findings": findings.iter().map(|f| serde_json::json!({
+                                                    "type": f.ftype, "category": f.category, "severity": f.severity
+                                                })).collect::<Vec<_>>(), "size": metadata.len(), "action": "user_allowed"
+                                            }).to_string()),
+                                        );
+                                    } else {
+                                        spawn_detached("osascript", &["-e",
+                                            "display notification \"File flagged — review recommended.\" with title \"Kasbah Guard\" subtitle \"⚠️ Sensitive content detected\""]);
+                                        append_audit(
+                                            &db_lock, "FS_NOTIFY_FLAGGED", None, Some("agent"), None,
+                                            Some("FLAGGED"), None,
+                                            Some(&format!("{} findings in {}: {} — user reviewing", findings.len(), fname, finding_summary)),
+                                            Some(&file_hash),
+                                            Some(&serde_json::json!({
+                                                "path": file_path, "findings": findings.iter().map(|f| serde_json::json!({
+                                                    "type": f.ftype, "category": f.category, "severity": f.severity
+                                                })).collect::<Vec<_>>(), "size": metadata.len(), "action": "user_reviewing"
+                                            }).to_string()),
+                                        );
+                                    }
+                                } else {
+                                    // Clean file — show brief notification (rate-limited)
+                                    let now = now_ms();
+                                    let should_notify = {
+                                        let s = state.lock().unwrap_or_else(|e| e.into_inner());
+                                        now - s.last_fs_notify_ms > 3000
+                                    };
+                                    if should_notify {
+                                        {
+                                            let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
+                                            s.last_fs_notify_ms = now;
+                                        }
+                                        let safe_fname = fname.replace('"', "'");
+                                        spawn_detached("osascript", &["-e", &format!(
+                                            "display notification \"{}\" with title \"Kasbah Guard\" subtitle \"File OK — No sensitive data\"",
+                                            safe_fname
+                                        )]);
+                                    }
+                                    // Always log clean files to audit
                                     let file_hash = content_hash(&content);
                                     let db_lock = db.lock().unwrap_or_else(|e| e.into_inner());
                                     append_audit(
-                                        &db_lock, "FS_NOTIFY_ALERT", None, Some("agent"), None,
-                                        Some("FLAGGED"), None,
-                                        Some(&format!("{} findings in {}: {}", findings.len(), fname, finding_types.join(", "))),
+                                        &db_lock, "FS_NOTIFY_CLEAN", None, Some("agent"), None,
+                                        Some("CLEAN"), None,
+                                        Some(&format!("No findings in {}", fname)),
                                         Some(&file_hash),
                                         Some(&serde_json::json!({
-                                            "path": file_path, "findings": findings.iter().map(|f| serde_json::json!({
-                                                "type": f.ftype, "category": f.category, "severity": f.severity
-                                            })).collect::<Vec<_>>(), "size": metadata.len()
+                                            "path": file_path, "size": metadata.len()
                                         }).to_string()),
                                     );
                                 }

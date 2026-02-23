@@ -215,12 +215,12 @@
       <a class="n-brand" href="/"><img src="/logo-200.png" alt="Kasbah"><span>Kasbah</span></a>
       <div class="n-links">
         <a href="#how">How it works</a>
-        <a href="#demo">See it in action</a>
-        <a href="#signup">Verify</a>
-        <a href="#moats">13-MOAT</a>
-        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">Charter</a>
-        <a href="#signup">Access</a>
-        <a class="n-cta" href="#signup">Create Account</a>
+        <a href="#demo">Demo</a>
+        <a href="#moats">Security</a>
+        <a href="/changelog.html">Changelog</a>
+        <a href="/proof/benchmark.html">Benchmark</a>
+        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">GitHub</a>
+        <a class="n-cta" href="#signup">Get Access</a>
       </div>
     </div>
   </nav>
@@ -498,18 +498,58 @@
       </div>
     </section>
 
-    <!-- ENTERPRISE -->
+    <!-- v2.0 ENTERPRISE FEATURES -->
+    <section class="section" id="v2features" style="text-align:center">
+      <div class="section-label">v2.0 Enterprise</div>
+      <h2>Built for security teams.</h2>
+      <p style="max-width:560px;margin:0 auto 28px;color:var(--muted)">Everything you need for compliance, risk management, and fleet control — running locally on every device.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:780px;margin:0 auto 24px;text-align:left">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+          <div style="font-size:20px;margin-bottom:8px">📊</div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:4px">UEBA</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">Z-score anomaly detection, EMA risk scoring, 8 behavior metrics per user</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+          <div style="font-size:20px;margin-bottom:8px">🔍</div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:4px">100+ PII Patterns</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">Extended detection: tokens, secrets, health data, financial data, and platform-specific credentials</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+          <div style="font-size:20px;margin-bottom:8px">🧠</div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:4px">Ensemble ML</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">Multi-model scoring: pattern (0.4) + entropy (0.3) + semantic context (0.3)</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+          <div style="font-size:20px;margin-bottom:8px">📋</div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:4px">5 Compliance Frameworks</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">GDPR, HIPAA, PCI-DSS, SOC 2, ISO 27001 — violation detection with remediation guidance</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+          <div style="font-size:20px;margin-bottom:8px">🛡️</div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:4px">RBAC + Fleet</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">5 roles, device registry, per-user permissions — built for team deployments</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+          <div style="font-size:20px;margin-bottom:8px">⚙️</div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:4px">Process Monitor</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">AI process detection, network egress scanning, suspicious port flagging</div>
+        </div>
+      </div>
+      <a href="/proof/benchmark.html" style="color:var(--kasbah-red);font-weight:700;font-size:14px">See full capability report &rarr;</a>
+    </section>
+
+    <!-- ENTERPRISE CTA -->
     <section class="enterprise" id="enterprise">
       <div class="enterprise-inner">
         <div class="section-label">For organizations</div>
         <h3>Deploy Kasbah with your team.</h3>
-        <p>We're building enterprise deployment — centralized policies, team‑wide enforcement, and compliance‑ready audit trails. Pilot slots are limited.</p>
+        <p>Centralized policies, team-wide enforcement, compliance-ready audit trails, and RBAC — all running locally. Pilot slots are limited.</p>
         <a class="enterprise-btn" href="mailto:enterprise@bekasbah.com">Talk to us about a pilot &rarr;</a>
         <div class="enterprise-features">
-          <span>Centralized policies</span>
-          <span>Team deployment</span>
-          <span>Compliance audit</span>
-          <span>SSO integration</span>
+          <span>GDPR / HIPAA / PCI-DSS</span>
+          <span>UEBA Risk Scoring</span>
+          <span>RBAC + Fleet</span>
+          <span>Process Monitor</span>
         </div>
       </div>
     </section>
@@ -522,13 +562,11 @@
         <div class="f-ar">قصبة — Born in Morocco, trusted globally</div>
       </div>
       <div class="footer-links">
-        <a href="#signup">Verify</a>
-        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">Charter</a>
-        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">Privacy</a>
-        <a href="#signup">Access</a>
+        <a href="/changelog.html">Changelog</a>
+        <a href="/proof/benchmark.html">Benchmark</a>
         <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">GitHub</a>
-        <a href="#signup">Sign Up</a>
         <a href="#enterprise">Enterprise</a>
+        <a href="#signup">Get Access</a>
       </div>
     </div>
     <p class="human-line">Kasbah was built after too many “oh shit” moments with AI tools.</p>

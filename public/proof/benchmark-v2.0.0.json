@@ -592,27 +592,41 @@
     "python_test_suite": {
       "name": "KASBAH ULTIMATE v3.0",
       "score": "100.0/100",
-      "verdict": "12/10 CIVILIZATION-READY",
+      "verdict": "ALL TESTS PASSED",
       "tests_passed": 7,
       "tests_total": 7
     }
   },
-  "benchmark_score": {
-    "categories": {
-      "pii_detection": 10,
-      "secret_scanning": 10,
-      "ml_classification": 9,
-      "behavioral_ueba": 8,
-      "os_monitoring": 9,
-      "cryptographic_audit": 10,
-      "enterprise_rbac_fleet": 8,
-      "genai_protection": 8,
-      "compliance_engine": 9,
-      "local_privacy": 10
-    },
-    "total": 91,
-    "max": 100,
-    "percentage": 91.0
+  "capabilities": {
+    "pii_detection": "active",
+    "secret_scanning": "active",
+    "ml_classification": "active",
+    "behavioral_ueba": "active",
+    "os_monitoring": "active",
+    "cryptographic_audit": "active",
+    "enterprise_rbac_fleet": "beta",
+    "genai_protection": "active",
+    "compliance_engine": "active",
+    "local_privacy": "active",
+    "process_monitor": "active",
+    "entropy_detection": "active"
   },
+  "methodology": {
+    "self_tests": "Predefined text payloads through policy_findings() and preflight scoring engine",
+    "dataset_tests": "Raw API calls to /preflight and /ensemble/analyze with no pre-processing",
+    "scoring": "Risk 0-100 from pattern matching + ML classification + behavioral signals + entropy analysis",
+    "ensemble_weights": "pattern=0.4, entropy=0.3, semantic=0.3"
+  },
+  "known_limitations": [
+    "No OCR or image scanning",
+    "No network-level DLP (localhost service only)",
+    "No exact data matching or document fingerprinting",
+    "CPU-based TF-IDF ML (no GPU deep learning)",
+    "Single-device only (no cloud fleet sync)",
+    "Process monitor is macOS-only",
+    "No SAML/OIDC SSO integration",
+    "ai4privacy obfuscated samples not detected (by design)"
+  ],
+  "disclaimer": "This is a self-assessment. Not independently audited. Results are reproducible.",
   "content_hash": "1628c1322dd65665e04eee4ead325bc6400d135d79f6287ea0143f41842f9ce4"
 }

@@ -3,221 +3,205 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kasbah Guard v2.0.0 — Enterprise Benchmark Report</title>
+<title>Kasbah Guard v2.0.0 — Technical Capability Report</title>
+<link rel="icon" href="/logo-200.png">
 <link rel="stylesheet" href="/style.css">
 <style>
-.bench{max-width:900px;margin:40px auto;padding:0 18px}
-.bench h1{font-size:28px;font-weight:900;margin:0 0 6px}
-.bench .sub{color:rgba(10,12,16,.55);font-size:14px;margin-bottom:32px}
-.score-ring{display:inline-flex;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;background:conic-gradient(#C1440E 0deg,#C1440E calc(var(--pct)*3.6deg),#e8e3de calc(var(--pct)*3.6deg));font-weight:900;font-size:22px;color:#0a0c10;position:relative}
-.score-ring::after{content:'';position:absolute;inset:8px;border-radius:50%;background:#fff}
-.score-ring span{position:relative;z-index:1}
-.hero{display:flex;align-items:center;gap:24px;margin-bottom:36px;padding:24px;border-radius:16px;background:#fff;box-shadow:0 12px 30px rgba(15,23,42,.07);border:1px solid rgba(15,23,42,.08)}
-.hero-info{flex:1}
-.hero-info h2{margin:0 0 4px;font-size:18px;font-weight:800}
-.hero-info p{margin:0;font-size:13px;color:rgba(10,12,16,.55)}
-.badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.04em}
-.badge.pass{background:#d1fae5;color:#065f46}
-.badge.fail{background:#fee2e2;color:#991b1b}
-.badge.critical{background:#fee2e2;color:#991b1b}
-.badge.high{background:#fef3c7;color:#92400e}
-.badge.medium{background:#e0f2fe;color:#075985}
-.badge.low{background:#d1fae5;color:#065f46}
-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:28px}
+.report{max-width:860px;margin:40px auto;padding:0 18px}
+.report h1{font-size:28px;font-weight:900;margin:0 0 4px;letter-spacing:-.02em}
+.report .subtitle{color:rgba(10,12,16,.55);font-size:14px;margin-bottom:36px;line-height:1.7}
+.report h2{font-size:18px;font-weight:800;margin:36px 0 12px;padding-bottom:8px;border-bottom:2px solid rgba(15,23,42,.06)}
+.report h3{font-size:15px;font-weight:700;margin:20px 0 8px}
+.report p{font-size:14px;line-height:1.7;color:rgba(10,12,16,.72);margin:0 0 14px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}
 th{text-align:left;padding:10px 12px;background:#f8f7f5;border-bottom:2px solid rgba(15,23,42,.1);font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:rgba(10,12,16,.55)}
 td{padding:10px 12px;border-bottom:1px solid rgba(15,23,42,.06)}
 tr:hover td{background:rgba(193,68,14,.02)}
-.section{margin-bottom:36px}
-.section h3{font-size:16px;font-weight:800;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid rgba(15,23,42,.06)}
-.card{padding:18px;border-radius:12px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.05);border:1px solid rgba(15,23,42,.06);margin-bottom:16px}
+.badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700}
+.badge.active{background:#d1fae5;color:#065f46}
+.badge.beta{background:#fef3c7;color:#92400e}
+.badge.planned{background:#e0f2fe;color:#075985}
 .mono{font-family:'SF Mono',Monaco,Consolas,monospace;font-size:12px}
-.hash{color:rgba(10,12,16,.4);font-size:11px;word-break:break-all}
+.card{padding:16px;border-radius:12px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.05);border:1px solid rgba(15,23,42,.06);margin-bottom:14px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:600px){.grid2{grid-template-columns:1fr}.hero{flex-direction:column;text-align:center}}
-.verify-box{padding:16px;border-radius:12px;background:linear-gradient(135deg,#fef3c7 0%,#fff7ed 100%);border:1px solid rgba(245,158,11,.2);margin-top:28px;font-size:13px}
-.verify-box strong{font-size:14px}
-.dl-link{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;background:#0a0c10;color:#fff;font-size:12px;font-weight:700;margin-top:8px;text-decoration:none}
-.dl-link:hover{background:#1e293b}
+.limitations{list-style:none;padding:0;margin:0}
+.limitations li{padding:8px 0;border-bottom:1px solid rgba(15,23,42,.06);font-size:13px;color:rgba(10,12,16,.72);display:flex;align-items:flex-start;gap:8px}
+.limitations li::before{content:'⚬';color:rgba(10,12,16,.3);flex-shrink:0}
+.disclaimer{background:#f8f7f5;border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:18px;margin-top:32px;font-size:13px;color:rgba(10,12,16,.55);line-height:1.7}
+.reproduce{background:linear-gradient(135deg,#fef3c7 0%,#fff7ed 100%);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:18px;margin-top:20px}
+.reproduce code{background:#111114;color:#eaeaf0;padding:2px 8px;border-radius:4px;font-size:12px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
 <nav class="nav">
 <a href="/" class="brand">
-<img src="/kasbah-logo.png" alt="Kasbah" class="logo" width="38" height="38">
+<img src="/logo-200.png" alt="Kasbah" class="logo" width="38" height="38">
 <div class="brandText"><span class="brandName">KASBAH</span><span class="brandTag">Guard</span></div>
 </a>
 <div class="navLinks">
 <a href="/">Home</a>
 <a href="/changelog.html">Changelog</a>
-<a href="/proof/benchmark.html" style="font-weight:700;color:var(--red)">Benchmark</a>
+<a href="/proof/benchmark.html" style="font-weight:700;color:var(--red)">Capability Report</a>
+<a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">GitHub</a>
 </div>
 </nav>
 
-<div class="bench" id="report">
+<div class="report">
 
-<h1>Kasbah Guard v2.0.0 Enterprise Benchmark</h1>
-<p class="sub">Independently verifiable security benchmark report. All data is machine-generated and reproducible.<br>
-Published <span id="ts">2025-02-23</span> &mdash; <a href="benchmark-v2.0.0.json" class="mono" style="color:var(--red)">Raw JSON</a></p>
+<h1>Kasbah Guard v2.0.0 — Technical Capability Report</h1>
+<p class="subtitle">Self-assessed. Reproducible. We welcome independent validation.<br>
+Published 2026-02-23 &mdash; <a href="benchmark-v2.0.0.json" class="mono" style="color:var(--red)">Raw JSON artifact</a></p>
 
-<div class="hero">
-<div class="score-ring" style="--pct:91"><span>91</span></div>
-<div class="hero-info">
-<h2>91 / 100 &mdash; Enterprise Grade</h2>
-<p>Benchmark across 10 categories against CrowdStrike Falcon, Nightfall AI, Microsoft Purview, Zscaler, and Symantec DLP. Verified with Nightfall OCR, ai4privacy HuggingFace, and DLPTest synthetic datasets.</p>
-</div>
-</div>
+<!-- What Kasbah Does -->
+<h2>What Kasbah Guard Does</h2>
+<p>Kasbah Guard is a local-first data loss prevention (DLP) engine that runs on your machine. It intercepts, scans, and classifies data flowing through AI tools — clipboard content, file edits, and API calls — before anything sensitive leaves your device. It is not a cloud proxy. All processing happens locally on port 8788.</p>
 
-<!-- Benchmark Table -->
-<div class="section">
-<h3>Competitive Benchmark</h3>
+<!-- Capability Matrix -->
+<h2>Capability Matrix</h2>
+<p>Current capabilities as of v2.0.0. Status reflects what is implemented and testable today.</p>
 <table>
-<tr><th>Category</th><th>Kasbah 2.0</th><th>CrowdStrike</th><th>Nightfall</th><th>Purview</th><th>Zscaler</th><th>Symantec</th></tr>
-<tr><td>PII Detection (100+ types)</td><td><strong>10</strong></td><td>7</td><td>9</td><td>10</td><td>8</td><td>8</td></tr>
-<tr><td>Secret Scanning</td><td><strong>10</strong></td><td>8</td><td>9</td><td>6</td><td>6</td><td>5</td></tr>
-<tr><td>ML Classification (TF-IDF + Ensemble)</td><td><strong>9</strong></td><td>7</td><td>10</td><td>7</td><td>7</td><td>5</td></tr>
-<tr><td>Behavioral / UEBA</td><td><strong>8</strong></td><td>9</td><td>6</td><td>9</td><td>7</td><td>7</td></tr>
-<tr><td>OS Monitoring (Clipboard/FS/Keystroke)</td><td><strong>9</strong></td><td>10</td><td>5</td><td>6</td><td>4</td><td>7</td></tr>
-<tr><td>Cryptographic Audit (HMAC chain)</td><td><strong>10</strong></td><td>2</td><td>2</td><td>3</td><td>2</td><td>3</td></tr>
-<tr><td>Enterprise (RBAC/Fleet/SSO)</td><td><strong>8</strong></td><td>10</td><td>8</td><td>10</td><td>9</td><td>9</td></tr>
-<tr><td>GenAI Protection</td><td><strong>8</strong></td><td>8</td><td>9</td><td>7</td><td>7</td><td>3</td></tr>
-<tr><td>Compliance (GDPR/HIPAA/PCI/SOC2/ISO)</td><td><strong>9</strong></td><td>8</td><td>9</td><td>9</td><td>7</td><td>7</td></tr>
-<tr><td>Local-first / Privacy</td><td><strong>10</strong></td><td>4</td><td>3</td><td>3</td><td>2</td><td>4</td></tr>
-<tr style="font-weight:800;background:#f8f7f5"><td>TOTAL</td><td style="color:var(--red)">91/100</td><td>73</td><td>70</td><td>70</td><td>59</td><td>58</td></tr>
+<tr><th>Capability</th><th>Status</th><th>What It Does</th><th>Test Command</th></tr>
+<tr><td>PII Detection (100+ patterns)</td><td><span class="badge active">Active</span></td><td>Regex + context-aware detection of SSN, credit cards, emails, phones, passports, GitHub PATs, Slack tokens, database URLs, and 90+ more patterns</td><td><code class="mono">POST /classify</code></td></tr>
+<tr><td>Secret Scanning</td><td><span class="badge active">Active</span></td><td>Detects API keys, JWT tokens, private keys, AWS credentials, GCP keys, Stripe/SendGrid/Twilio tokens</td><td><code class="mono">POST /preflight</code></td></tr>
+<tr><td>ML Classification (TF-IDF)</td><td><span class="badge active">Active</span></td><td>CPU-based TF-IDF logistic regression classifier for injection, credential leak, PII leak, and code exfiltration</td><td><code class="mono">POST /classify</code></td></tr>
+<tr><td>Multi-Model Ensemble</td><td><span class="badge active">Active</span></td><td>Combines pattern matching (0.4), entropy analysis (0.3), and semantic context (0.3) for weighted confidence scoring</td><td><code class="mono">POST /ensemble/analyze</code></td></tr>
+<tr><td>UEBA (Behavior Analytics)</td><td><span class="badge active">Active</span></td><td>Z-score anomaly detection, EMA risk scoring, 8 behavior metrics, per-user risk profiles</td><td><code class="mono">POST /ueba/assess</code></td></tr>
+<tr><td>Compliance Frameworks</td><td><span class="badge active">Active</span></td><td>GDPR, HIPAA, PCI-DSS, SOC 2, ISO 27001 templates with violation detection</td><td><code class="mono">POST /compliance/check</code></td></tr>
+<tr><td>OS Monitoring</td><td><span class="badge active">Active</span></td><td>Clipboard monitor (30ms polling), filesystem watcher (API-driven), keystroke volume tracking</td><td><code class="mono">GET /guard/authority</code></td></tr>
+<tr><td>Cryptographic Audit Trail</td><td><span class="badge active">Active</span></td><td>HMAC-SHA256 hash-chained ledger with signed exports — tamper-proof record of every decision</td><td><code class="mono">GET /audit/verify</code></td></tr>
+<tr><td>Process Monitor</td><td><span class="badge active">Active</span></td><td>Detects running AI processes (ChatGPT, Cursor, Copilot, etc.), monitors network connections</td><td><code class="mono">GET /process/scan</code></td></tr>
+<tr><td>RBAC + Fleet</td><td><span class="badge beta">Beta</span></td><td>5 roles (admin → viewer), device registry. Currently single-device; fleet sync is planned</td><td><code class="mono">POST /rbac/check</code></td></tr>
+<tr><td>GenAI Protection</td><td><span class="badge active">Active</span></td><td>Ticket-based allow/deny decisions for AI actions, kill switch, velocity tracking, replay protection</td><td><code class="mono">POST /decide</code></td></tr>
+<tr><td>Shannon Entropy</td><td><span class="badge active">Active</span></td><td>Detects high-entropy strings (likely secrets/tokens) using information theory</td><td><code class="mono">POST /entropy</code></td></tr>
 </table>
-</div>
 
-<!-- Selftest -->
-<div class="section">
-<h3>Self-Test Suite: 18/18 Passed</h3>
+<!-- Self-Test Results -->
+<h2>Self-Test Results (18/18)</h2>
+<p>Built-in test suite exercising PII detection, secret scanning, ML classification, injection detection, and false-positive suppression. These tests run on every build.</p>
 <table>
-<tr><th>Test</th><th>Risk</th><th>Decision</th><th>Findings</th><th>Result</th></tr>
-<tr><td>harmless</td><td>0</td><td>ALLOW</td><td>0</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>fake_api_key</td><td>90</td><td>BLOCK</td><td>2</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>jwt</td><td>80</td><td>CHALLENGE</td><td>2</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>private_key</td><td>90</td><td>BLOCK</td><td>1</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>credit_card_pii</td><td>85</td><td>BLOCK</td><td>2</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>ssn_pii</td><td>90</td><td>BLOCK</td><td>2</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>harmless_numbers</td><td>0</td><td>ALLOW</td><td>0</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>binary_pattern</td><td>90</td><td>BLOCK</td><td>2</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>path_traversal</td><td>35</td><td>WARN</td><td>1</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>rot13_encoded</td><td>85</td><td>BLOCK</td><td>1</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>injection_semantic</td><td>63</td><td>CHALLENGE</td><td>1</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>unicode_tricks</td><td>55</td><td>WARN</td><td>1</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>github_pat</td><td>90</td><td>BLOCK</td><td>3</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>slack_token</td><td>90</td><td>BLOCK</td><td>2</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>database_url</td><td>85</td><td>BLOCK</td><td>2</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>gdpr_special</td><td>60</td><td>REVIEW</td><td>3</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>hipaa_phi</td><td>100</td><td>BLOCK</td><td>4</td><td><span class="badge pass">PASS</span></td></tr>
-<tr><td>high_entropy</td><td>35</td><td>WARN</td><td>1</td><td><span class="badge pass">PASS</span></td></tr>
+<tr><th>Test</th><th>Risk Score</th><th>Decision</th><th>Findings</th></tr>
+<tr><td>harmless (benign text)</td><td>0</td><td>ALLOW</td><td>0</td></tr>
+<tr><td>fake_api_key</td><td>90</td><td>BLOCK</td><td>2</td></tr>
+<tr><td>jwt_token</td><td>80</td><td>CHALLENGE</td><td>2</td></tr>
+<tr><td>private_key</td><td>90</td><td>BLOCK</td><td>1</td></tr>
+<tr><td>credit_card_pii</td><td>85</td><td>BLOCK</td><td>2</td></tr>
+<tr><td>ssn_pii</td><td>90</td><td>BLOCK</td><td>2</td></tr>
+<tr><td>harmless_numbers (false-positive check)</td><td>0</td><td>ALLOW</td><td>0</td></tr>
+<tr><td>binary_pattern</td><td>90</td><td>BLOCK</td><td>2</td></tr>
+<tr><td>path_traversal</td><td>35</td><td>WARN</td><td>1</td></tr>
+<tr><td>rot13_encoded</td><td>85</td><td>BLOCK</td><td>1</td></tr>
+<tr><td>injection_semantic</td><td>63</td><td>CHALLENGE</td><td>1</td></tr>
+<tr><td>unicode_tricks</td><td>55</td><td>WARN</td><td>1</td></tr>
+<tr><td>github_pat</td><td>90</td><td>BLOCK</td><td>3</td></tr>
+<tr><td>slack_token</td><td>90</td><td>BLOCK</td><td>2</td></tr>
+<tr><td>database_url</td><td>85</td><td>BLOCK</td><td>2</td></tr>
+<tr><td>gdpr_special_categories</td><td>60</td><td>REVIEW</td><td>3</td></tr>
+<tr><td>hipaa_phi</td><td>100</td><td>BLOCK</td><td>4</td></tr>
+<tr><td>high_entropy</td><td>35</td><td>WARN</td><td>1</td></tr>
 </table>
-</div>
 
-<!-- Dataset Benchmark -->
-<div class="section">
-<h3>Real-World Dataset Results</h3>
-<p style="font-size:13px;color:rgba(10,12,16,.55);margin-bottom:12px">Tested against: <strong>Nightfall DLP OCR samples</strong>, <strong>ai4privacy/ai4privacy (HuggingFace)</strong>, <strong>DLPTest.com synthetic PII</strong></p>
+<!-- Dataset Results -->
+<h2>Dataset Results</h2>
+<p>Tested against publicly available datasets. We show all results including misses, because transparency matters more than a perfect score.</p>
 <table>
-<tr><th>Dataset</th><th>Sample</th><th>Risk</th><th>Decision</th><th>Ensemble Detections</th></tr>
-<tr><td>Nightfall OCR</td><td>SSN + Credit Card</td><td>100</td><td>BLOCK</td><td>3</td></tr>
+<tr><th>Dataset</th><th>Sample</th><th>Risk</th><th>Decision</th><th>Detections</th></tr>
+<tr><td>Nightfall OCR</td><td>SSN + Credit Card in image text</td><td>100</td><td>BLOCK</td><td>3</td></tr>
 <tr><td>ai4privacy</td><td>IMEI identifier</td><td>15</td><td>ALLOW</td><td>0</td></tr>
-<tr><td>ai4privacy</td><td>License number</td><td>0</td><td>ALLOW</td><td>0</td></tr>
-<tr><td>ai4privacy</td><td>Health data (edge)</td><td>0</td><td>ALLOW</td><td>0</td></tr>
-<tr><td>ai4privacy</td><td>Credit card (obfuscated)</td><td>15</td><td>ALLOW</td><td>0</td></tr>
-<tr><td>ai4privacy</td><td>Password disclosure</td><td>0</td><td>ALLOW</td><td>0</td></tr>
-<tr><td>DLPTest Synthetic</td><td>SSN + CC combo</td><td>100</td><td>BLOCK</td><td>2</td></tr>
+<tr><td>ai4privacy</td><td>License number (obfuscated)</td><td>0</td><td>ALLOW</td><td>0</td></tr>
+<tr><td>ai4privacy</td><td>Health data (edge case)</td><td>0</td><td>ALLOW</td><td>0</td></tr>
+<tr><td>ai4privacy</td><td>Credit card (obfuscated format)</td><td>15</td><td>ALLOW</td><td>0</td></tr>
+<tr><td>ai4privacy</td><td>Password disclosure (obfuscated)</td><td>0</td><td>ALLOW</td><td>0</td></tr>
+<tr><td>DLPTest Synthetic</td><td>SSN + CC combination</td><td>100</td><td>BLOCK</td><td>2</td></tr>
 <tr><td>DLPTest Synthetic</td><td>Email + Phone + Address</td><td>65</td><td>CHALLENGE</td><td>2</td></tr>
 <tr><td>DLPTest Synthetic</td><td>AWS credentials</td><td>75</td><td>CHALLENGE</td><td>2</td></tr>
 <tr><td>DLPTest Synthetic</td><td>RSA private key</td><td>100</td><td>BLOCK</td><td>1</td></tr>
 </table>
-<p style="font-size:12px;color:rgba(10,12,16,.4)">ai4privacy samples are intentionally obfuscated edge cases designed to test false-positive suppression. High-confidence PII (SSN, CC, keys) is detected with 100% accuracy.</p>
-</div>
+<p style="font-size:12px;color:rgba(10,12,16,.45)"><strong>Note on ai4privacy results:</strong> The ai4privacy dataset samples use intentionally obfuscated formats (e.g., "[CREDITCARD_1]" instead of real numbers). Kasbah correctly does <em>not</em> flag these as PII — they contain no actual sensitive data. We include these results to be transparent, not to hide misses. When real PII formats are present (as in Nightfall and DLPTest samples), detection is reliable.</p>
 
-<!-- Enterprise Features -->
-<div class="section">
-<h3>Enterprise Features Verification</h3>
+<!-- Methodology -->
+<h2>Methodology</h2>
+<h3>How Self-Tests Work</h3>
+<p>Each test sends a predefined text payload through <code class="mono">policy_findings()</code> and the preflight scoring engine. The engine checks regex patterns, ML classification, and behavioral signals. A risk score (0-100) determines the decision: ALLOW (&lt;30), WARN (30-49), CHALLENGE (50-69), REVIEW (60-69 with compliance triggers), or BLOCK (70+).</p>
+
+<h3>How Dataset Tests Work</h3>
+<p>Sample text is sent via <code class="mono">POST /preflight</code> or <code class="mono">POST /ensemble/analyze</code>. The response includes risk score, decision, and individual finding details. No pre-processing or cherry-picking is applied — the raw API response is recorded.</p>
+
+<h3>Scoring</h3>
+<p>Risk scores range from 0 to 100. They are computed from a combination of pattern match confidence, ML classification probability, behavioral signals (velocity, volume, time-of-day), and entropy analysis. The ensemble model weights these: pattern (0.4) + entropy (0.3) + semantic context (0.3).</p>
+
+<!-- Enterprise Feature Details -->
+<h2>Enterprise Features</h2>
 <div class="grid2">
 <div class="card">
 <strong>UEBA Engine</strong>
-<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">z-score anomaly detection, EMA risk scoring, 8 behavior metrics, data movement tracking</p>
-<table style="margin-top:8px">
-<tr><td>Normal user</td><td><span class="badge low">LOW</span></td></tr>
-<tr><td>Anomalous user</td><td><span class="badge high">HIGH</span></td></tr>
-</table>
+<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">Z-score anomaly detection, EMA risk scoring, per-user profiles, 8 behavior metrics, data movement tracking.</p>
 </div>
 <div class="card">
 <strong>Compliance Engine</strong>
-<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">GDPR, HIPAA, PCI-DSS, SOC 2, ISO 27001</p>
-<table style="margin-top:8px">
-<tr><td>Templates active</td><td>5/5</td></tr>
-<tr><td>Violation detection</td><td><span class="badge pass">PASS</span></td></tr>
-</table>
+<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">5 frameworks: GDPR, HIPAA, PCI-DSS, SOC 2, ISO 27001. Template activation, violation detection, remediation guidance.</p>
 </div>
 <div class="card">
 <strong>RBAC + Fleet</strong>
-<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">5 roles, device registry, permission enforcement</p>
-<table style="margin-top:8px">
-<tr><td>Admin write access</td><td><span class="badge pass">TRUE</span></td></tr>
-<tr><td>Viewer write denied</td><td><span class="badge pass">TRUE</span></td></tr>
-</table>
+<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">5 roles from admin to viewer. Device registry. Currently single-device; fleet sync and cloud-based policy distribution are planned.</p>
 </div>
 <div class="card">
 <strong>Process Monitor</strong>
-<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">AI process detection, network egress scanning</p>
-<table style="margin-top:8px">
-<tr><td>Processes scanned</td><td>580+</td></tr>
-<tr><td>Network connections</td><td>90+</td></tr>
-</table>
+<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">Detects 15+ AI tools by process name. Monitors network egress. Flags suspicious ports. macOS only.</p>
 </div>
-</div>
-</div>
-
-<!-- Audit Chain -->
-<div class="section">
-<h3>Cryptographic Audit Chain</h3>
 <div class="card">
-<table>
-<tr><td>Chain integrity</td><td><span class="badge pass">INTACT</span></td></tr>
-<tr><td>Total entries</td><td><strong>5,275+</strong></td></tr>
-<tr><td>Chain start</td><td class="mono">GENESIS</td></tr>
-<tr><td>Hash algorithm</td><td>SHA-256 (hash-chained)</td></tr>
-<tr><td>Signing</td><td>HMAC-SHA256</td></tr>
-<tr><td>ZT Trust Score</td><td><strong>75</strong> / HIGH</td></tr>
-</table>
+<strong>Cryptographic Audit</strong>
+<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">HMAC-SHA256 hash-chained ledger. Every decision is signed. Exports are signed. Tamper detection via chain verification.</p>
 </div>
-</div>
-
-<!-- Python Suite -->
-<div class="section">
-<h3>Python Test Suite (v3.0 Ultimate)</h3>
 <div class="card">
-<table>
-<tr><td>Score</td><td><strong>100.0 / 100</strong></td></tr>
-<tr><td>Verdict</td><td>12/10 CIVILIZATION-READY</td></tr>
-<tr><td>Tests passed</td><td>7/7</td></tr>
-<tr><td>Layers tested</td><td>UEBA, PII, Ensemble, Compliance, RBAC, Process Monitor, Audit Ledger</td></tr>
-</table>
+<strong>Authority System</strong>
+<p style="font-size:12px;color:rgba(10,12,16,.5);margin:6px 0 0">Cryptographic binding that proves YOU control what AI does on your machine. HMAC certificate tied to identity.</p>
 </div>
 </div>
 
-<!-- Verification -->
-<div class="verify-box">
-<strong>How to verify these results</strong>
-<ol style="font-size:12px;margin:8px 0;padding-left:20px;line-height:1.8">
-<li>Download the raw JSON report: <a href="benchmark-v2.0.0.json" style="color:var(--red);font-weight:700">benchmark-v2.0.0.json</a></li>
-<li>Install Kasbah Guard v2.0.0 and run <code class="mono">curl http://127.0.0.1:8788/selftest/run</code></li>
-<li>Test any endpoint: <code class="mono">curl -X POST http://127.0.0.1:8788/ensemble/analyze -d '{"text":"SSN 123-45-6789"}'</code></li>
-<li>Verify audit chain: <code class="mono">curl http://127.0.0.1:8788/audit/verify</code></li>
-<li>Run the Python test suite: <code class="mono">python3 kasbah_ultimate_v3.py</code></li>
-<li>All source code is available at <a href="https://github.com/Al-Adnane/Kasbah-site" style="color:var(--red);font-weight:700">github.com/Al-Adnane/Kasbah-site</a></li>
+<!-- Known Limitations -->
+<h2>Known Limitations</h2>
+<p>We believe in honest assessment. Here is what Kasbah Guard does <strong>not</strong> do today:</p>
+<ul class="limitations">
+<li>No OCR or image scanning — Kasbah works on text content only</li>
+<li>No network-level DLP — operates as a localhost service, not an inline proxy</li>
+<li>No exact data matching (EDM) or document fingerprinting</li>
+<li>No GPU-accelerated ML — uses CPU-based TF-IDF (fast but less powerful than deep learning models)</li>
+<li>Single-device only — no cloud fleet synchronization yet (RBAC/Fleet is local)</li>
+<li>Process monitor is macOS-only (uses <code class="mono">ps aux</code> and <code class="mono">lsof</code>)</li>
+<li>No SAML/OIDC SSO integration</li>
+<li>No DLP for email, Slack messages, or other SaaS channels</li>
+<li>Clipboard monitor requires macOS accessibility permissions</li>
+<li>ai4privacy obfuscated samples are not detected (by design — they contain no real PII)</li>
+</ul>
+
+<!-- How to Reproduce -->
+<h2>How to Reproduce These Results</h2>
+<div class="reproduce">
+<strong style="font-size:14px">Every claim on this page is testable.</strong>
+<ol style="font-size:13px;margin:10px 0;padding-left:20px;line-height:2">
+<li>Download the raw report: <a href="benchmark-v2.0.0.json" style="color:var(--red);font-weight:700">benchmark-v2.0.0.json</a></li>
+<li>Install Kasbah Guard v2.0.0 and run: <code>curl http://127.0.0.1:8788/selftest/run</code></li>
+<li>Test PII detection: <code>curl -X POST http://127.0.0.1:8788/classify -d '{"text":"SSN 284-37-5192"}'</code></li>
+<li>Test ensemble analysis: <code>curl -X POST http://127.0.0.1:8788/ensemble/analyze -d '{"text":"SSN 123-45-6789"}'</code></li>
+<li>Verify audit chain: <code>curl http://127.0.0.1:8788/audit/verify</code></li>
+<li>Test compliance: <code>curl -X POST http://127.0.0.1:8788/compliance/check -d '{"text":"Patient SSN 284-37-5192"}'</code></li>
+<li>Source code: <a href="https://github.com/Al-Adnane/Kasbah-site" style="color:var(--red);font-weight:700">github.com/Al-Adnane/Kasbah-site</a></li>
 </ol>
 <p style="font-size:11px;color:rgba(10,12,16,.4);margin:8px 0 0">
-Report content hash (SHA-256 of JSON): verify with <code class="mono">shasum -a 256 benchmark-v2.0.0.json</code>
+JSON SHA-256: verify with <code class="mono">shasum -a 256 benchmark-v2.0.0.json</code>
 </p>
 </div>
 
+<!-- Disclaimer -->
+<div class="disclaimer">
+<strong>Disclaimer</strong><br>
+This is a self-assessment by the Kasbah team. We have not been independently audited or certified by any third party. The test results above are reproducible by anyone with access to the software. We welcome independent validation and will publish the results of any third-party assessment. If you are a security researcher interested in evaluating Kasbah Guard, please contact us at <a href="mailto:security@bekasbah.com" style="color:var(--red)">security@bekasbah.com</a>.
+</div>
+
 <p style="text-align:center;font-size:12px;color:rgba(10,12,16,.3);margin:40px 0 20px">
-Kasbah Guard v2.0.0 &mdash; bekasbah.com &mdash; All data machine-generated and independently verifiable
+Kasbah Guard v2.0.0 &mdash; <a href="/" style="color:rgba(10,12,16,.4)">bekasbah.com</a>
 </p>
 
 </div>
