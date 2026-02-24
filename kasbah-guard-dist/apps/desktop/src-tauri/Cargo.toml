@@ -30,3 +30,15 @@ tauri-plugin-clipboard-manager = "2"
 tauri-plugin-global-shortcut = "2"
 
 tauri-plugin-dialog = "2"
+
+[dependencies.rusqlite]
+version = "0.31"
+features = ["bundled"]
+
+[dependencies.uuid]
+version = "1"
+features = ["v4"]
+
+[dependencies.chrono]
+version = "0.4"
+features = ["serde"]

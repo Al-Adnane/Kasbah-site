@@ -1,0 +1,629 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		04D702492F4A620900258D78 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D702482F4A620900258D78 /* AppDelegate.swift */; };
+		04D7024D2F4A620900258D78 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 04D7024B2F4A620900258D78 /* Main.html */; };
+		04D7024F2F4A620900258D78 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 04D7024E2F4A620900258D78 /* Icon.png */; };
+		04D702512F4A620900258D78 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 04D702502F4A620900258D78 /* Style.css */; };
+		04D702532F4A620900258D78 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 04D702522F4A620900258D78 /* Script.js */; };
+		04D702552F4A620900258D78 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D702542F4A620900258D78 /* ViewController.swift */; };
+		04D702582F4A620900258D78 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 04D702562F4A620900258D78 /* Main.storyboard */; };
+		04D7025A2F4A620A00258D78 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 04D702592F4A620A00258D78 /* Assets.xcassets */; };
+		04D702612F4A620A00258D78 /* Kasbah Guard Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 04D702602F4A620A00258D78 /* Kasbah Guard Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		04D702662F4A620A00258D78 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D702652F4A620A00258D78 /* SafariWebExtensionHandler.swift */; };
+		04D702792F4A620B00258D78 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 04D702722F4A620B00258D78 /* background.js */; };
+		04D7027A2F4A620B00258D78 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 04D702732F4A620B00258D78 /* popup.html */; };
+		04D7027B2F4A620B00258D78 /* icon48.png in Resources */ = {isa = PBXBuildFile; fileRef = 04D702742F4A620B00258D78 /* icon48.png */; };
+		04D7027C2F4A620B00258D78 /* icon128.png in Resources */ = {isa = PBXBuildFile; fileRef = 04D702752F4A620B00258D78 /* icon128.png */; };
+		04D7027D2F4A620B00258D78 /* manifest.json.bak_20260221_041138 in Resources */ = {isa = PBXBuildFile; fileRef = 04D702762F4A620B00258D78 /* manifest.json.bak_20260221_041138 */; };
+		04D7027E2F4A620B00258D78 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 04D702772F4A620B00258D78 /* manifest.json */; };
+		04D7027F2F4A620B00258D78 /* src in Resources */ = {isa = PBXBuildFile; fileRef = 04D702782F4A620B00258D78 /* src */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		04D702622F4A620A00258D78 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 04D7023D2F4A620900258D78 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 04D7025F2F4A620A00258D78;
+			remoteInfo = "Kasbah Guard Extension";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		04D7026D2F4A620A00258D78 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				04D702612F4A620A00258D78 /* Kasbah Guard Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		04D702452F4A620900258D78 /* Kasbah Guard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kasbah Guard.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		04D702482F4A620900258D78 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		04D7024C2F4A620900258D78 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
+		04D7024E2F4A620900258D78 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		04D702502F4A620900258D78 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		04D702522F4A620900258D78 /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
+		04D702542F4A620900258D78 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		04D702572F4A620900258D78 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		04D702592F4A620A00258D78 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		04D7025B2F4A620A00258D78 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		04D702602F4A620A00258D78 /* Kasbah Guard Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Kasbah Guard Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		04D702652F4A620A00258D78 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		04D702672F4A620A00258D78 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		04D702722F4A620B00258D78 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = Resources/background.js; sourceTree = "<group>"; };
+		04D702732F4A620B00258D78 /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = popup.html; path = Resources/popup.html; sourceTree = "<group>"; };
+		04D702742F4A620B00258D78 /* icon48.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = icon48.png; path = Resources/icon48.png; sourceTree = "<group>"; };
+		04D702752F4A620B00258D78 /* icon128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = icon128.png; path = Resources/icon128.png; sourceTree = "<group>"; };
+		04D702762F4A620B00258D78 /* manifest.json.bak_20260221_041138 */ = {isa = PBXFileReference; lastKnownFileType = text; name = manifest.json.bak_20260221_041138; path = Resources/manifest.json.bak_20260221_041138; sourceTree = "<group>"; };
+		04D702772F4A620B00258D78 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
+		04D702782F4A620B00258D78 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = Resources/src; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		04D702422F4A620900258D78 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		04D7025D2F4A620A00258D78 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		04D7023C2F4A620900258D78 = {
+			isa = PBXGroup;
+			children = (
+				04D702472F4A620900258D78 /* Kasbah Guard */,
+				04D702642F4A620A00258D78 /* Kasbah Guard Extension */,
+				04D702462F4A620900258D78 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		04D702462F4A620900258D78 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				04D702452F4A620900258D78 /* Kasbah Guard.app */,
+				04D702602F4A620A00258D78 /* Kasbah Guard Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		04D702472F4A620900258D78 /* Kasbah Guard */ = {
+			isa = PBXGroup;
+			children = (
+				04D702482F4A620900258D78 /* AppDelegate.swift */,
+				04D702542F4A620900258D78 /* ViewController.swift */,
+				04D702562F4A620900258D78 /* Main.storyboard */,
+				04D702592F4A620A00258D78 /* Assets.xcassets */,
+				04D7025B2F4A620A00258D78 /* Info.plist */,
+				04D7024A2F4A620900258D78 /* Resources */,
+			);
+			path = "Kasbah Guard";
+			sourceTree = "<group>";
+		};
+		04D7024A2F4A620900258D78 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				04D7024B2F4A620900258D78 /* Main.html */,
+				04D7024E2F4A620900258D78 /* Icon.png */,
+				04D702502F4A620900258D78 /* Style.css */,
+				04D702522F4A620900258D78 /* Script.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		04D702642F4A620A00258D78 /* Kasbah Guard Extension */ = {
+			isa = PBXGroup;
+			children = (
+				04D702712F4A620B00258D78 /* Resources */,
+				04D702652F4A620A00258D78 /* SafariWebExtensionHandler.swift */,
+				04D702672F4A620A00258D78 /* Info.plist */,
+			);
+			path = "Kasbah Guard Extension";
+			sourceTree = "<group>";
+		};
+		04D702712F4A620B00258D78 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				04D702722F4A620B00258D78 /* background.js */,
+				04D702732F4A620B00258D78 /* popup.html */,
+				04D702742F4A620B00258D78 /* icon48.png */,
+				04D702752F4A620B00258D78 /* icon128.png */,
+				04D702762F4A620B00258D78 /* manifest.json.bak_20260221_041138 */,
+				04D702772F4A620B00258D78 /* manifest.json */,
+				04D702782F4A620B00258D78 /* src */,
+			);
+			name = Resources;
+			path = "Kasbah Guard Extension";
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		04D702442F4A620900258D78 /* Kasbah Guard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 04D7026E2F4A620A00258D78 /* Build configuration list for PBXNativeTarget "Kasbah Guard" */;
+			buildPhases = (
+				04D702412F4A620900258D78 /* Sources */,
+				04D702422F4A620900258D78 /* Frameworks */,
+				04D702432F4A620900258D78 /* Resources */,
+				04D7026D2F4A620A00258D78 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				04D702632F4A620A00258D78 /* PBXTargetDependency */,
+			);
+			name = "Kasbah Guard";
+			packageProductDependencies = (
+			);
+			productName = "Kasbah Guard";
+			productReference = 04D702452F4A620900258D78 /* Kasbah Guard.app */;
+			productType = "com.apple.product-type.application";
+		};
+		04D7025F2F4A620A00258D78 /* Kasbah Guard Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 04D7026A2F4A620A00258D78 /* Build configuration list for PBXNativeTarget "Kasbah Guard Extension" */;
+			buildPhases = (
+				04D7025C2F4A620A00258D78 /* Sources */,
+				04D7025D2F4A620A00258D78 /* Frameworks */,
+				04D7025E2F4A620A00258D78 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Kasbah Guard Extension";
+			packageProductDependencies = (
+			);
+			productName = "Kasbah Guard Extension";
+			productReference = 04D702602F4A620A00258D78 /* Kasbah Guard Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		04D7023D2F4A620900258D78 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					04D702442F4A620900258D78 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					04D7025F2F4A620A00258D78 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+				};
+			};
+			buildConfigurationList = 04D702402F4A620900258D78 /* Build configuration list for PBXProject "Kasbah Guard" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 04D7023C2F4A620900258D78;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 04D702462F4A620900258D78 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				04D702442F4A620900258D78 /* Kasbah Guard */,
+				04D7025F2F4A620A00258D78 /* Kasbah Guard Extension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		04D702432F4A620900258D78 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				04D7024F2F4A620900258D78 /* Icon.png in Resources */,
+				04D702582F4A620900258D78 /* Main.storyboard in Resources */,
+				04D702532F4A620900258D78 /* Script.js in Resources */,
+				04D7024D2F4A620900258D78 /* Main.html in Resources */,
+				04D7025A2F4A620A00258D78 /* Assets.xcassets in Resources */,
+				04D702512F4A620900258D78 /* Style.css in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		04D7025E2F4A620A00258D78 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				04D702792F4A620B00258D78 /* background.js in Resources */,
+				04D7027A2F4A620B00258D78 /* popup.html in Resources */,
+				04D7027D2F4A620B00258D78 /* manifest.json.bak_20260221_041138 in Resources */,
+				04D7027C2F4A620B00258D78 /* icon128.png in Resources */,
+				04D7027E2F4A620B00258D78 /* manifest.json in Resources */,
+				04D7027F2F4A620B00258D78 /* src in Resources */,
+				04D7027B2F4A620B00258D78 /* icon48.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		04D702412F4A620900258D78 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				04D702552F4A620900258D78 /* ViewController.swift in Sources */,
+				04D702492F4A620900258D78 /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		04D7025C2F4A620A00258D78 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				04D702662F4A620A00258D78 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		04D702632F4A620A00258D78 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 04D7025F2F4A620A00258D78 /* Kasbah Guard Extension */;
+			targetProxy = 04D702622F4A620A00258D78 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		04D7024B2F4A620900258D78 /* Main.html */ = {
+			isa = PBXVariantGroup;
+			children = (
+				04D7024C2F4A620900258D78 /* Base */,
+			);
+			name = Main.html;
+			sourceTree = "<group>";
+		};
+		04D702562F4A620900258D78 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				04D702572F4A620900258D78 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		04D702682F4A620A00258D78 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		04D702692F4A620A00258D78 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		04D7026B2F4A620A00258D78 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AQPMR37BC8;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Kasbah Guard Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Kasbah Guard Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kasbah.guard.Kasbah-Guard.Extension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		04D7026C2F4A620A00258D78 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AQPMR37BC8;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Kasbah Guard Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Kasbah Guard Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kasbah.guard.Kasbah-Guard.Extension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		04D7026F2F4A620A00258D78 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AQPMR37BC8;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Kasbah Guard/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Kasbah Guard";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Kasbah. All rights reserved.";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kasbah.guard.Kasbah-Guard";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		04D702702F4A620A00258D78 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AQPMR37BC8;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Kasbah Guard/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Kasbah Guard";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Kasbah. All rights reserved.";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kasbah.guard.Kasbah-Guard";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		04D702402F4A620900258D78 /* Build configuration list for PBXProject "Kasbah Guard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				04D702682F4A620A00258D78 /* Debug */,
+				04D702692F4A620A00258D78 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		04D7026A2F4A620A00258D78 /* Build configuration list for PBXNativeTarget "Kasbah Guard Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				04D7026B2F4A620A00258D78 /* Debug */,
+				04D7026C2F4A620A00258D78 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		04D7026E2F4A620A00258D78 /* Build configuration list for PBXNativeTarget "Kasbah Guard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				04D7026F2F4A620A00258D78 /* Debug */,
+				04D702702F4A620A00258D78 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 04D7023D2F4A620900258D78 /* Project object */;
+}

@@ -1,0 +1,202 @@
+/* Kasbah Guard — Content Script Styles v1.1.0 */
+
+/* ── Modal Container ── */
+#kasbah-guard-modal {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+#kasbah-guard-modal * {
+  box-sizing: border-box;
+}
+
+/* ── Modal Animations ── */
+@keyframes kasbah-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes kasbah-fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes kasbah-scaleIn {
+  from { transform: scale(0.92) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes kasbah-scaleOut {
+  from { transform: scale(1) translateY(0); opacity: 1; }
+  to { transform: scale(0.92) translateY(8px); opacity: 0; }
+}
+@keyframes kasbah-slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes kasbah-slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+@keyframes kasbah-slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes kasbah-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+@keyframes kasbah-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes kasbah-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Overlay (behind modal) ── */
+.kasbah-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+  animation: kasbah-fadeIn 0.2s ease-out;
+}
+.kasbah-overlay.closing {
+  animation: kasbah-fadeOut 0.15s ease-in forwards;
+}
+
+/* ── Modal Card ── */
+.kasbah-card {
+  width: min(480px, 94vw);
+  background: #fafaf9;
+  border: 1px solid #e4e4e7;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  animation: kasbah-scaleIn 0.25s ease-out;
+}
+.kasbah-card.closing {
+  animation: kasbah-scaleOut 0.15s ease-in forwards;
+}
+
+/* ── Toast Notifications ── */
+.kasbah-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2147483646;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font: 13px/1.4 system-ui, -apple-system, sans-serif;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  max-width: 380px;
+  background: #18181b;
+  color: #fff;
+  animation: kasbah-slideUp 0.3s ease-out;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.kasbah-toast.error {
+  background: #dc2626;
+  color: #fff;
+}
+.kasbah-toast.info {
+  background: #18181b;
+  color: #fff;
+}
+.kasbah-toast.warning {
+  background: #d97706;
+  color: #fff;
+}
+.kasbah-toast.success {
+  background: #059669;
+  color: #fff;
+}
+.kasbah-toast.closing {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* ── Guard Status Dot ── */
+.kasbah-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #dc2626;
+  transition: background 0.3s;
+}
+.kasbah-status-dot.active {
+  background: #16a34a;
+  box-shadow: 0 0 6px rgba(22, 163, 106, 0.5);
+  animation: kasbah-pulse 2s ease-in-out infinite;
+}
+.kasbah-status-dot.inactive {
+  background: #dc2626;
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.4);
+}
+.kasbah-status-dot.warning {
+  background: #d97706;
+  animation: kasbah-pulse 1s ease-in-out infinite;
+}
+
+/* ── Risk Badges ── */
+.kasbah-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #fff;
+  text-transform: capitalize;
+}
+.kasbah-badge.high {
+  background: #dc2626;
+}
+.kasbah-badge.medium {
+  background: #d97706;
+}
+.kasbah-badge.low {
+  background: #16a34a;
+}
+.kasbah-badge.critical {
+  background: #7c2d12;
+  animation: kasbah-pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Buttons ── */
+#kasbah-guard-modal button {
+  transition: transform 0.05s, opacity 0.15s;
+}
+#kasbah-guard-modal button:hover {
+  opacity: 0.9;
+}
+#kasbah-guard-modal button:active {
+  transform: scale(0.98);
+}
+
+/* ── Verb Tags ── */
+.kasbah-verb-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  color: #52525b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ── Scrollbar styling for preview areas ── */
+#kasbah-guard-modal ::-webkit-scrollbar {
+  width: 4px;
+}
+#kasbah-guard-modal ::-webkit-scrollbar-track {
+  background: transparent;
+}
+#kasbah-guard-modal ::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 2px;
+}

@@ -1,0 +1,103 @@
+{
+  "manifest_version": 3,
+  "name": "Kasbah Guard",
+  "version": "1.1.0",
+  "description": "Local-first guard that intercepts prompts and actions on AI chat services to prevent leaks and enforce user control.",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*",
+    "https://gemini.google.com/*",
+    "https://grok.x.ai/*",
+    "https://grok.com/*",
+    "http://127.0.0.1:8788/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://aistudio.google.com/*",
+        "https://perplexity.ai/*",
+        "https://www.perplexity.ai/*",
+        "https://poe.com/*",
+        "https://chat.deepseek.com/*",
+        "https://grok.x.ai/*",
+        "https://grok.com/*",
+        "https://copilot.microsoft.com/*",
+        "https://github.com/copilot/*",
+        "https://huggingface.co/chat/*",
+        "https://you.com/*",
+        "https://pi.ai/*",
+        "https://chat.mistral.ai/*",
+        "https://manus.im/*",
+        "https://app.manus.im/*",
+        "https://cursor.sh/*",
+        "https://www.cursor.com/*",
+        "https://windsurf.ai/*",
+        "https://codeium.com/*",
+        "https://labs.google/*",
+        "https://notebooklm.google.com/*",
+        "https://meta.ai/*",
+        "https://www.meta.ai/*",
+        "https://coral.cohere.com/*",
+        "https://chat.lmsys.org/*",
+        "https://open-assistant.io/*"
+      ],
+      "js": [
+        "src/content.js"
+      ],
+      "css": [
+        "src/styles.css"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "optional_host_permissions": [
+    "https://aistudio.google.com/*",
+    "https://app.manus.im/*",
+    "https://chat.deepseek.com/*",
+    "https://chat.lmsys.org/*",
+    "https://chat.mistral.ai/*",
+    "https://codeium.com/*",
+    "https://copilot.microsoft.com/*",
+    "https://coral.cohere.com/*",
+    "https://cursor.sh/*",
+    "https://github.com/copilot/*",
+    "https://huggingface.co/chat/*",
+    "https://labs.google/*",
+    "https://manus.im/*",
+    "https://meta.ai/*",
+    "https://notebooklm.google.com/*",
+    "https://open-assistant.io/*",
+    "https://perplexity.ai/*",
+    "https://pi.ai/*",
+    "https://poe.com/*",
+    "https://windsurf.ai/*",
+    "https://www.cursor.com/*",
+    "https://www.meta.ai/*",
+    "https://www.perplexity.ai/*",
+    "https://you.com/*"
+  ]
+}

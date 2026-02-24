@@ -124,7 +124,8 @@ async function verifyToken(env, token) {
 }
 
 async function getSigningKey(env) {
-  const secret = env.JWT_SECRET || 'kasbah-guard-default-secret-change-in-production';
+  const secret = env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET environment variable is required');
   const encoder = new TextEncoder();
   return crypto.subtle.importKey(
     'raw',
