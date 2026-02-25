@@ -1,858 +1,999 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kasbah — Your data, your call. The local AI firewall.</title>
-  <link rel="canonical" href="https://bekasbah.com/">
-  <meta name="description" content="Kasbah is a local-first AI firewall. It sits between you and AI tools, asking before anything sensitive leaves your machine.">
-  <meta property="og:title" content="Kasbah — The last wall between your data and AI">
-  <meta property="og:description" content="A local fortress on your machine. Nothing leaves without your permission. 100% local. Cryptographically verified.">
-  <meta property="og:image" content="/og.png">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="/logo-200.png"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    :root{
-      --kasbah-red:#C1440E;--kasbah-red-light:rgba(193,68,14,.12);--kasbah-red-glow:rgba(193,68,14,.2);
-      --fortress-stone:#D4C5B9;--fortress-stone-light:#EDE8E3;
-      --desert-sky:#1E3A8A;--desert-sky-light:rgba(30,58,138,.08);
-      --atlas-green:#065F46;--atlas-green-bg:rgba(6,95,70,.08);--atlas-green-border:rgba(6,95,70,.2);
-      --saffron-gold:#F59E0B;--saffron-bg:rgba(245,158,11,.08);
-      --midnight:#0F172A;
-      --bg:#FEFCFA;--bg2:#F8F5F1;--card:#FFFFFF;--card-hover:#FEFCFA;
-      --ink:#0F172A;--muted:#64748B;--subtle:#94A3B8;
-      --border:#E2DDD7;--border-light:#EDE8E3;
-      --terminal:#0F172A;
-      --radius:12px;--radius-lg:16px
-    }
-    html{scroll-behavior:smooth}
-    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased}
-    ::selection{background:var(--kasbah-red);color:#fff}
-    nav{border-bottom:1px solid var(--border);padding:14px 0;background:rgba(254,252,250,.92);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100}
-    .nav-in{max-width:1080px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
-    .n-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
-    .n-brand img{width:32px;height:32px;border-radius:8px}
-    .n-brand span{font-weight:900;font-size:15px;letter-spacing:-.02em}
-    .n-links{display:flex;gap:20px;align-items:center}
-    .n-links a{color:var(--muted);text-decoration:none;font-size:12px;font-weight:600;transition:color .15s}
-    .n-links a:hover{color:var(--ink)}
-    .n-links a.n-cta{background:var(--kasbah-red);color:#fff;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:800;text-decoration:none;transition:all .2s}
-    .n-links a.n-cta:hover{color:#fff;opacity:.9;box-shadow:0 4px 16px var(--kasbah-red-glow)}
-    .page{max-width:1080px;margin:0 auto;padding:0 28px}
-    .hero{padding:100px 0 80px;text-align:center;position:relative}
-    .hero::before{content:'';position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse,var(--kasbah-red-light) 0%,transparent 70%);pointer-events:none;z-index:0}
-    .hero>*{position:relative;z-index:1}
-    .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;background:var(--kasbah-red-light);border:1px solid var(--kasbah-red-glow);font-size:12px;font-weight:700;color:var(--kasbah-red);margin-bottom:28px;letter-spacing:.02em}
-    .hero-eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--kasbah-red);animation:pulse 2s ease infinite}
-    .hero h1{font-size:clamp(36px,7vw,64px);font-weight:900;letter-spacing:-.05em;line-height:1.0;margin-bottom:12px;color:var(--midnight)}
-    .hero h1 em{font-style:normal;color:var(--kasbah-red)}
-    .hero .tagline{font-size:20px;font-weight:800;color:var(--desert-sky);margin-bottom:8px;letter-spacing:-.02em}
-    .hero .tagline-ar{font-size:16px;color:var(--muted);font-weight:500;margin-bottom:24px;direction:rtl}
-    .hero .sub{font-size:17px;color:var(--muted);max-width:560px;margin:0 auto 36px;line-height:1.7;font-weight:400}
-    .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-    .btn-hero{display:inline-flex;align-items:center;gap:8px;padding:16px 36px;font-size:16px;font-weight:800;border:none;border-radius:var(--radius);cursor:pointer;font-family:inherit;text-decoration:none;transition:all .2s}
-    .btn-primary{background:var(--kasbah-red);color:#fff;box-shadow:0 4px 20px var(--kasbah-red-glow)}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(193,68,14,.25)}
-    .btn-secondary{background:var(--card);color:var(--ink);border:1.5px solid var(--border)}
-    .btn-secondary:hover{border-color:var(--kasbah-red);color:var(--kasbah-red)}
-    .hero-proof{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:32px;flex-wrap:wrap}
-    .proof-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700}
-    .badge-live{background:var(--atlas-green-bg);border:1px solid var(--atlas-green-border);color:var(--atlas-green)}
-    .badge-saves{background:var(--kasbah-red-light);border:1px solid var(--kasbah-red-glow);color:var(--kasbah-red);font-weight:800}
-    .badge-gh{background:var(--card);border:1px solid var(--border);color:var(--muted);text-decoration:none;transition:border-color .2s}
-    .badge-gh:hover{border-color:var(--kasbah-red);color:var(--ink)}
-    .badge-gh svg{width:14px;height:14px;fill:currentColor}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-    .section{padding:80px 0;border-top:1px solid var(--border)}
-    .section-label{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--kasbah-red);margin-bottom:16px}
-    .section h2{font-size:clamp(24px,4vw,36px);font-weight:900;letter-spacing:-.04em;margin-bottom:16px;line-height:1.1;color:var(--midnight)}
-    .section p{font-size:15px;color:var(--muted);margin-bottom:14px;line-height:1.7}
-    .terminal{background:var(--terminal);border-radius:var(--radius-lg);overflow:hidden;margin:28px 0;font-family:'SF Mono',ui-monospace,'Cascadia Code','JetBrains Mono',monospace;font-size:12.5px;line-height:1.9;border:1px solid #1e293b}
-    .terminal-bar{background:#1e293b;padding:10px 16px;display:flex;align-items:center;gap:7px}
-    .td{width:11px;height:11px;border-radius:50%}
-    .td.r{background:#C1440E}.td.y{background:#F59E0B}.td.g{background:#065F46}
-    .terminal-title{flex:1;text-align:center;font-size:11px;color:#64748b;font-family:'SF Mono',ui-monospace,monospace}
-    .terminal-body{padding:20px 22px;color:#e2e8f0;min-height:180px}
-    .tl{margin-bottom:3px;opacity:0;transform:translateY(4px);transition:all .3s ease}
-    .tl.visible{opacity:1;transform:translateY(0)}
-    .tp{color:#065F46}.tw{color:#F59E0B}.tr{color:#C1440E}.tok{color:#065F46}.tm{color:#475569}
-    .tag-block{display:inline-block;background:#C1440E;color:#fff;padding:1px 8px;border-radius:4px;font-weight:700;font-size:11px;margin-left:6px}
-    .tag-allow{display:inline-block;background:#065F46;color:#fff;padding:1px 8px;border-radius:4px;font-weight:700;font-size:11px;margin-left:6px}
-    .sim-controls{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
-    .sim-btn{padding:10px 20px;background:var(--card);border:1px solid var(--border);color:var(--ink);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
-    .sim-btn:hover{border-color:var(--kasbah-red);color:var(--kasbah-red);background:var(--kasbah-red-light)}
-    .sim-btn.active{border-color:var(--kasbah-red);color:var(--kasbah-red);background:var(--kasbah-red-light)}
-    .sim-share{display:none;margin-top:12px;padding:10px 16px;background:var(--atlas-green-bg);border:1px solid var(--atlas-green-border);border-radius:8px;font-size:12px;font-weight:600;color:var(--atlas-green);align-items:center;gap:8px}
-    .sim-share a{color:var(--atlas-green);font-weight:800;text-decoration:none;margin-left:4px}
-    .sim-share a:hover{text-decoration:underline}
-    .pillars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:28px 0}
-    .pillar{padding:28px;border:1px solid var(--border);background:var(--card);border-radius:var(--radius-lg);transition:all .25s}
-    .pillar:hover{border-color:var(--kasbah-red);transform:translateY(-2px);box-shadow:0 8px 24px rgba(193,68,14,.06)}
-    .pillar-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;background:var(--kasbah-red-light)}
-    .pillar h3{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--midnight)}
-    .pillar p{font-size:13px;color:var(--muted);line-height:1.6;margin:0}
-    .steps{list-style:none;padding:0;margin:24px 0}
-    .step{display:flex;align-items:flex-start;gap:18px;padding:24px 0;border-bottom:1px solid var(--border-light)}
-    .step:last-child{border:0}
-    .step-n{width:40px;height:40px;border-radius:50%;background:var(--kasbah-red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;flex-shrink:0}
-    .step-body{flex:1}
-    .step-body strong{font-weight:800;font-size:16px;display:block;margin-bottom:4px;color:var(--midnight)}
-    .step-body span{color:var(--muted);font-size:14px}
-    /* Step connectors */
-    .step{position:relative}
-    .step:not(:last-child) .step-n::after{content:'';position:absolute;top:40px;left:48px;width:2px;height:calc(100% - 16px);background:linear-gradient(to bottom,var(--kasbah-red),var(--border-light));opacity:.3}
-    /* MOAT category groups */
-    .moat-group{margin-bottom:20px}
-    .moat-group-title{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--kasbah-red);margin-bottom:10px;padding-left:4px}
-    .moat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
-    .signup{padding:80px 0;border-top:1px solid var(--border);text-align:center;position:relative}
-    .signup::before{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,var(--kasbah-red-light) 0%,transparent 70%);pointer-events:none}
-    .signup>*{position:relative;z-index:1}
-    .signup-inner{max-width:520px;margin:0 auto}
-    .signup h2{font-size:32px;font-weight:900;letter-spacing:-.03em;margin-bottom:8px;color:var(--midnight)}
-    .signup .su-sub{font-size:15px;color:var(--muted);margin-bottom:28px;line-height:1.6}
-    .su-urgency{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;background:var(--saffron-bg);border:1px solid rgba(245,158,11,.2);font-size:12px;font-weight:700;color:var(--saffron-gold);margin-bottom:20px}
-    .su-form{display:flex;gap:10px;margin-bottom:12px}
-    .su-input{flex:1;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:inherit;font-weight:500;background:var(--card);color:var(--ink);transition:border-color .2s;outline:none}
-    .su-input::placeholder{color:var(--subtle)}
-    .su-input:focus{border-color:var(--kasbah-red)}
-    .su-btn{padding:14px 28px;background:var(--kasbah-red);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .2s}
-    .su-btn:hover{box-shadow:0 4px 20px var(--kasbah-red-glow);transform:translateY(-1px)}
-    .su-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-    .su-note{font-size:11px;color:var(--subtle);margin-top:4px}
-    .su-result{display:none;padding:16px;background:var(--atlas-green-bg);border:1px solid var(--atlas-green-border);border-radius:var(--radius);margin-top:12px;font-size:14px;font-weight:600;color:var(--atlas-green)}
-    .su-count{margin-top:24px;font-size:13px;color:var(--subtle)}
-    .su-count strong{color:var(--kasbah-red);font-size:24px;font-weight:900}
-    .safe-features{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:20px}
-    .safe-feat{padding:20px;background:var(--bg2);border:1px solid var(--border-light);border-radius:var(--radius);text-align:center}
-    .safe-feat .sf-icon{font-size:24px;margin-bottom:8px}
-    .safe-feat strong{font-size:12px;display:block;margin-bottom:4px;color:var(--midnight)}
-    .safe-feat span{color:var(--muted);font-size:11px}
-    .download{padding:64px 0;border-top:1px solid var(--border)}
-    .download h3{font-size:24px;font-weight:900;margin-bottom:8px;color:var(--midnight)}
-    .download .dl-sub{font-size:14px;color:var(--muted);margin-bottom:24px}
-    .dl-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-    .dl-card{padding:24px;border:1px solid var(--border);background:var(--card);border-radius:var(--radius-lg);transition:all .25s}
-    .dl-card:hover{border-color:var(--kasbah-red);transform:translateY(-2px)}
-    .dl-card h4{font-size:15px;font-weight:800;margin-bottom:6px;color:var(--midnight)}
-    .dl-card p{font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6}
-    .dl-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--kasbah-red);text-decoration:none;transition:opacity .15s}
-    .dl-link:hover{opacity:.8}
-    .dl-note{font-size:11px;color:var(--subtle);margin-top:14px;line-height:1.8}
-    .dl-note code{background:var(--bg2);padding:2px 6px;font-size:11px;border-radius:4px;border:1px solid var(--border-light)}
-    .enterprise{padding:64px 0;border-top:1px solid var(--border);text-align:center}
-    .enterprise-inner{max-width:560px;margin:0 auto}
-    .enterprise h3{font-size:24px;font-weight:900;margin-bottom:8px;color:var(--midnight)}
-    .enterprise p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:24px}
-    .enterprise-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:var(--desert-sky);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;text-decoration:none;transition:all .2s}
-    .enterprise-btn:hover{opacity:.9;transform:translateY(-1px)}
-    .enterprise-features{display:flex;gap:24px;justify-content:center;margin-top:20px;flex-wrap:wrap}
-    .enterprise-features span{font-size:12px;color:var(--subtle);font-weight:600}
-    footer{padding:48px 0;border-top:1px solid var(--border);background:var(--bg2)}
-    .footer-in{max-width:1080px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
-    .footer-left{font-size:12px;color:var(--subtle)}
-    .footer-left a{color:var(--muted);text-decoration:none;font-weight:600}
-    .footer-left a:hover{color:var(--kasbah-red)}
-    .footer-left .f-ar{direction:rtl;color:var(--subtle);font-size:11px;margin-top:2px}
-    .footer-links{display:flex;gap:20px}
-    .footer-links a{font-size:12px;color:var(--subtle);text-decoration:none;font-weight:600;transition:color .15s}
-    .footer-links a:hover{color:var(--kasbah-red)}
-    /* Mobile polish */
-    @media(max-width:700px){
-      .pillars{grid-template-columns:1fr}
-      .dl-row{grid-template-columns:1fr}
-      .safe-features{grid-template-columns:1fr}
-      .moat-grid{grid-template-columns:1fr}
-      .hero{padding:60px 0 50px}
-      .hero h1{font-size:clamp(32px,8vw,40px);} /* smaller on mobile */
-      .hero .tagline{font-size:16px}
-      .hero .sub{font-size:15px}
-      .pillar{padding:20px}
-      .section{padding:60px 0}
-      .su-form{flex-direction:column}
-      .hero-actions{flex-direction:column;align-items:center}
-      .n-links a:not(.n-cta){display:none}
-      .footer-in{flex-direction:column;text-align:center}
-      .enterprise-features{flex-direction:column;align-items:center}
-      .step{padding:16px 0;gap:12px}
-      .step-n{width:32px;height:32px;font-size:13px}
-      .step-body strong{font-size:15px}
-      .step-body span{font-size:13px}
-    }
-    .section { scroll-margin-top: 90px; }
-    a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid rgba(220,38,38,.35); outline-offset: 2px; }
-    .demo-note { margin-top: 10px; color: var(--muted); font-size: 13px; }
-    .demo-foot { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
-    .demo-disclaimer { color: var(--muted); font-size: 13px; }
-    .demo-cta { display: inline-flex; align-self: flex-start; font-weight: 800; text-decoration: none; }
-    .demo-cta:hover { text-decoration: underline; }
-    .trust ul { margin: 12px 0 0; padding-left: 18px; }
-    .trust li { margin: 6px 0; }
-    .install-steps { margin-top: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: rgba(254,252,250,.6); }
-    .install-steps h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .01em; }
-    .install-steps ol { margin: 0; padding-left: 18px; }
-    .install-steps li { margin: 6px 0; }
-    .install-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
-    .signup-micro { margin-top: 10px; font-size: 13px; color: var(--muted); }
-    .hero-example { display:block; margin-top:8px; font-size:14px; color:var(--muted); }
-    .sim-outcome { margin-top:12px; padding:10px 14px; border-radius:999px; font-weight:800; width:fit-content; }
-    .sim-outcome.ok { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
-    .sim-outcome.blocked { background:#fef2f2; color:#7f1d1d; border:1px solid #fecaca; }
-    .sim-outcome.hidden { display:none; }
-    .who-for ul { margin-top:10px; padding-left:18px; }
-    .who-for li { margin:6px 0; }
-    .human-line { margin-top:24px; font-size:14px; color:var(--muted); text-align:center; }
-    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); transition:all .2s; }
-    .card:hover { border-color:var(--kasbah-red); transform:translateY(-1px); box-shadow:0 4px 16px rgba(193,68,14,.06); }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kasbah - Detect and block risky data uploads to AI. Local detection. Zero cloud. $0 forever.">
+    <meta name="theme-color" content="#C1440E">
+    <meta property="og:title" content="Kasbah - Stop Leaking Your Data to AI">
+    <meta property="og:description" content="Kasbah detects risky data uploads before you send them. Local. Private. Free.">
+    <title>Kasbah - Stop Leaking Your Data to AI</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Design System - Original Kasbah Brand */
+        :root {
+            --color-primary: #C1440E;
+            --color-primary-dark: #A63609;
+            --color-dark: #1a1a2e;
+            --color-light: #FEFCFA;
+            --color-danger: #FF3B30;
+            --color-gray: #6B7280;
+            --color-border: #e5e7eb;
+            --color-white: #ffffff;
+
+            --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --spacing-base: 8px;
+            --transition: 0.2s ease-out;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            color: var(--color-dark);
+            background: var(--color-white);
+            line-height: 1.6;
+        }
+
+        /* Typography */
+        h1 { font-size: 56px; font-weight: 700; line-height: 1.2; letter-spacing: -0.5px; }
+        h2 { font-size: 44px; font-weight: 700; line-height: 1.2; letter-spacing: -0.5px; }
+        h3 { font-size: 28px; font-weight: 700; line-height: 1.3; }
+        h4 { font-size: 18px; font-weight: 600; }
+        p { font-size: 16px; line-height: 1.8; }
+
+        .section-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            font-size: 18px;
+            color: var(--color-gray);
+            line-height: 1.8;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 48px;
+        }
+
+        .section {
+            padding: 96px 0;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--color-white);
+            border-bottom: 1px solid transparent;
+            height: 64px;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar.scrolled {
+            border-bottom-color: var(--color-border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 48px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--color-dark);
+        }
+
+        .nav-center {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-link {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-dark);
+            text-decoration: none;
+            transition: color var(--transition);
+        }
+
+        .nav-link:hover {
+            color: var(--color-primary);
+        }
+
+        .nav-right {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-align: center;
+            font-family: var(--font-primary);
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: var(--color-white);
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 208, 132, 0.1);
+        }
+
+        .btn-small {
+            padding: 10px 20px;
+            font-size: 12px;
+        }
+
+        .btn-lg {
+            padding: 16px 32px;
+            font-size: 16px;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: calc(100vh - 64px);
+            display: flex;
+            align-items: center;
+            padding: 96px 0;
+        }
+
+        .hero .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        .hero-title {
+            margin-bottom: 24px;
+        }
+
+        .hero-subtitle {
+            margin-bottom: 48px;
+            color: var(--color-gray);
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 24px;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: var(--color-light);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Problem Section */
+        .problem {
+            background: var(--color-white);
+        }
+
+        .problem-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin: 48px 0;
+        }
+
+        .problem-card {
+            background: var(--color-light);
+            padding: 32px;
+            border-radius: 12px;
+            transition: all var(--transition);
+        }
+
+        .problem-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+        }
+
+        .problem-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .problem-card h3 {
+            margin-bottom: 16px;
+        }
+
+        .problem-card p {
+            font-size: 15px;
+            color: var(--color-gray);
+            margin-bottom: 16px;
+        }
+
+        .card-link {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-primary);
+            text-decoration: none;
+            transition: all var(--transition);
+        }
+
+        .card-link:hover {
+            color: var(--color-primary-dark);
+            transform: translateX(4px);
+        }
+
+        .danger-text {
+            color: var(--color-danger);
+        }
+
+        .problem-cta-text {
+            text-align: center;
+            color: var(--color-gray);
+            margin: 48px 0 32px;
+        }
+
+        .problem-cta {
+            text-align: center;
+        }
+
+        /* Steps Section */
+        .how-it-works {
+            background: var(--color-light);
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            margin: 64px 0;
+            position: relative;
+        }
+
+        .step-card {
+            background: var(--color-white);
+            padding: 32px;
+            border-radius: 12px;
+            border: 1px solid var(--color-border);
+            position: relative;
+            z-index: 2;
+        }
+
+        .step-number {
+            font-size: 44px;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 8px;
+        }
+
+        .step-card h3 {
+            margin-bottom: 16px;
+        }
+
+        .step-card p {
+            color: var(--color-gray);
+            margin-bottom: 24px;
+        }
+
+        .step-icon {
+            font-size: 32px;
+        }
+
+        .step-connector {
+            position: absolute;
+            width: 2px;
+            height: 40px;
+            background: var(--color-border);
+            top: -40px;
+            left: 50%;
+            transform: translateX(-1px);
+        }
+
+        .how-cta {
+            text-align: center;
+            margin-top: 64px;
+        }
+
+        /* Personas Section */
+        .personas {
+            background: var(--color-white);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 32px;
+            margin: 48px 0;
+            border-bottom: 1px solid var(--color-border);
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 16px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-gray);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all var(--transition);
+            font-family: var(--font-primary);
+        }
+
+        .tab-button.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+            background: var(--color-white);
+            padding: 48px;
+            border: 1px solid var(--color-border);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .tab-content h3 {
+            margin-bottom: 16px;
+        }
+
+        .tab-content > p {
+            margin-bottom: 16px;
+            color: var(--color-gray);
+        }
+
+        .use-cases {
+            margin: 32px 0;
+            padding: 24px;
+            background: var(--color-light);
+            border-radius: 8px;
+        }
+
+        .use-cases p {
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: var(--color-gray);
+        }
+
+        .persona-pricing {
+            margin: 32px 0;
+            padding: 24px;
+            background: rgba(0, 208, 132, 0.05);
+            border-radius: 8px;
+        }
+
+        .persona-pricing p {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .pricing-note {
+            color: var(--color-gray);
+            font-size: 13px !important;
+        }
+
+        /* Pricing Intro */
+        .pricing-intro {
+            background: var(--color-light);
+        }
+
+        .pricing-explainer {
+            background: var(--color-white);
+            padding: 48px;
+            border-radius: 12px;
+            margin: 48px 0;
+            border: 1px solid var(--color-border);
+        }
+
+        .pricing-explainer h4 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            color: var(--color-dark);
+        }
+
+        .pricing-explainer ul {
+            list-style: none;
+            margin-bottom: 16px;
+        }
+
+        .pricing-explainer li {
+            padding-left: 24px;
+            position: relative;
+            margin-bottom: 8px;
+            color: var(--color-gray);
+        }
+
+        .pricing-explainer li:before {
+            content: '•';
+            position: absolute;
+            left: 8px;
+            color: var(--color-primary);
+            font-weight: bold;
+        }
+
+        .pricing-explainer hr {
+            border: none;
+            border-top: 1px solid var(--color-border);
+            margin: 24px 0;
+        }
+
+        .pricing-cta {
+            text-align: center;
+            margin-top: 48px;
+        }
+
+        /* Trust Section */
+        .trust {
+            background: var(--color-white);
+        }
+
+        .trust-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin: 48px 0;
+        }
+
+        .trust-card {
+            background: var(--color-white);
+            padding: 32px;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .trust-icon {
+            font-size: 40px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .trust-card h3 {
+            margin-bottom: 12px;
+        }
+
+        .trust-card p {
+            color: var(--color-gray);
+            font-size: 14px;
+        }
+
+        .trust-links {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            margin-top: 48px;
+        }
+
+        .trust-links a {
+            font-size: 14px;
+            color: var(--color-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .trust-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* CTA Final */
+        .cta-final {
+            background: var(--color-dark);
+            color: var(--color-white);
+            text-align: center;
+        }
+
+        .cta-final h2 {
+            color: var(--color-white);
+            margin-bottom: 16px;
+        }
+
+        .cta-final p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 32px;
+            font-size: 18px;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--color-dark);
+            color: var(--color-white);
+            padding: 64px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 48px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            margin-bottom: 48px;
+        }
+
+        .footer-logo {
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+
+        .footer-left p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 16px;
+        }
+
+        .footer-social a {
+            color: var(--color-white);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color var(--transition);
+        }
+
+        .footer-social a:hover {
+            color: var(--color-primary);
+        }
+
+        .footer-right {
+            text-align: right;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: var(--color-white);
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 48px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 32px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 1024px) {
+            h1 { font-size: 36px; }
+            h2 { font-size: 28px; }
+            h3 { font-size: 20px; }
+            p { font-size: 15px; }
+
+            .container {
+                padding: 0 24px;
+            }
+
+            .hero .container {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+
+            .hero-cta {
+                flex-direction: column;
+            }
+
+            .problem-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .steps {
+                grid-template-columns: 1fr;
+            }
+
+            .step-connector {
+                display: none;
+            }
+
+            .personas {
+                padding: 48px 0;
+            }
+
+            .tabs {
+                flex-direction: column;
+                border-bottom: none;
+                gap: 0;
+                margin: 24px 0;
+            }
+
+            .tab-button {
+                border-bottom: 1px solid var(--color-border);
+                padding: 12px 0;
+                border-right: 3px solid transparent;
+            }
+
+            .tab-button.active {
+                border-bottom-color: var(--color-primary);
+                border-right: 3px solid var(--color-primary);
+            }
+
+            .trust-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-center {
+                display: none;
+            }
+
+            .nav-container {
+                padding: 0 24px;
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+                gap: 32px;
+                padding: 0 24px;
+            }
+
+            .footer-right {
+                text-align: left;
+            }
+        }
+
+        @media (max-width: 640px) {
+            h1 { font-size: 28px; }
+            h2 { font-size: 24px; }
+            h3 { font-size: 18px; }
+            p { font-size: 14px; }
+
+            .section {
+                padding: 48px 0;
+            }
+
+            .container {
+                padding: 0 16px;
+            }
+
+            .nav-right {
+                gap: 12px;
+            }
+
+            .hero-cta {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .trust-links {
+                flex-direction: column;
+            }
+
+            .footer-links {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
 </head>
 <body>
-  <nav>
-    <div class="nav-in">
-      <a class="n-brand" href="/"><img src="/logo-200.png" alt="Kasbah"><span>Kasbah</span></a>
-      <div class="n-links">
-        <a href="#how">How it works</a>
-        <a href="#demo">Demo</a>
-        <a href="#moats">Security</a>
-        <a href="/changelog.html">Changelog</a>
-        <a href="/proof/benchmark.html">Benchmark</a>
-        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">GitHub</a>
-        <a class="n-cta" href="#signup">Get Access</a>
-      </div>
-    </div>
-  </nav>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="/" class="logo">Kasbah</a>
+            </div>
+            <div class="nav-center">
+                <a href="/" class="nav-link active">Product</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="#security" class="nav-link">Security</a>
+            </div>
+            <div class="nav-right">
+                <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-small">Install Free</a>
+            </div>
+        </div>
+    </nav>
 
-  <div class="page">
-    <!-- HERO -->
-    <header class="hero">
-      <div class="hero-eyebrow"><span class="dot"></span> Local-first AI firewall</div>
-      <h1>You are the last wall<br>between your data and AI.</h1>
-      <p class="tagline">Controlling what AI agents do — before it's too late.</p>
-      <p class="sub">Not a cloud. Not a proxy. A local fortress on your machine that asks <em>you</em> before anything sensitive leaves — or gets changed. Passwords, API keys, personal data, and <strong>file edits by AI agents</strong> — caught in real time, on your device, before it's too late.</p>
-      <div class="hero-actions">
-        <a class="btn-hero btn-primary" href="#signup">Get started — it's free</a>
-        <a class="btn-hero btn-secondary" href="#demo">See it in action</a>
-      </div>
-      <div class="hero-proof">
-        <span class="proof-badge badge-saves" id="heroBadge">Guard active</span>
-        <a class="proof-badge badge-gh" href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">
-          <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-          <span id="ghStars">Star on GitHub</span>
-        </a>
-      </div>
-    </header>
-
-    <!-- PROBLEM -->
-    <section class="section" id="problem">
-      <div class="section-label">The problem</div>
-      <h2>AI acts first. You find out later.</h2>
-      <p>Every day, AI tools paste credentials, exfiltrate API keys, and send sensitive data to external servers. By the time you notice, it's already been sent. Kasbah stops it at the source — like a fortress wall stops invaders before they breach the gate.</p>
+    <!-- Hero -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Stop leaking your identity to AI.</h1>
+                <p class="hero-subtitle">Kasbah detects risky uploads before you send them. Local. Private. Zero cloud.</p>
+                <div class="hero-cta">
+                    <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-lg">Get Free Extension</a>
+                    <a href="#how-it-works" class="btn btn-secondary btn-lg">How it Works</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="video-placeholder">
+                    <svg width="100%" height="100%" viewBox="0 0 400 300" fill="none" style="max-width: 100%;">
+                        <rect width="400" height="300" fill="#FEFCFA" rx="12"/>
+                        <circle cx="200" cy="150" r="40" fill="#C1440E" opacity="0.1"/>
+                        <path d="M180 135L180 165L220 150L180 135Z" fill="#C1440E"/>
+                        <text x="200" y="220" text-anchor="middle" font-size="14" fill="#6B7280">Upload → Block</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
     </section>
 
-    <!-- INTERACTIVE DEMO -->
-    <section class="section" id="demo">
-      <div class="section-label">Try it yourself</div>
-      <h2>See how Kasbah works.</h2>
-      <p>This is a simulation of what happens when Kasbah intercepts an unauthorized action. Click a scenario below.</p>
+    <!-- Problem -->
+    <section class="section problem">
+        <div class="container">
+            <p class="section-label">The Problem Is Real</p>
+            <h2 class="section-title">Your data isn't as safe as you think.</h2>
+            
+            <div class="problem-cards">
+                <div class="problem-card">
+                    <h3>Freelancers</h3>
+                    <p>One accidental paste to ChatGPT = client fires you. Not anymore. Protect your clients' data and your reputation.</p>
+                    <a href="/for/freelancers.html" class="card-link">Learn more →</a>
+                </div>
 
-      <div style="margin:20px 0 20px;padding:16px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)">
-        <div style="font-weight:800; margin-bottom:8px;">See it in 60 seconds</div>
-        <div style="opacity:.9;">1. Choose a scenario. 2. Watch Kasbah decide. 3. See what gets blocked — and why.</div>
-      </div>
+                <div class="problem-card">
+                    <h3>Knowledge Workers</h3>
+                    <p>You paste customer data into ChatGPT every day. What if it's leaked? Get protected automatically, invisibly.</p>
+                    <a href="/for/knowledge-workers.html" class="card-link">Learn more →</a>
+                </div>
 
-      <div class="sim-controls">
-        <button class="sim-btn active" data-sim="credentials">Accidental password paste</button>
-        <button class="sim-btn" data-sim="apikey">API key in a chat</button>
-        <button class="sim-btn" data-sim="pii">Personal info leak</button>
-        <button class="sim-btn" data-sim="fileedit">AI edits your code</button>
-        <button class="sim-btn" data-sim="clean">Safe query</button>
-      </div>
-      <p class="demo-note">Click a scenario. Watch what Kasbah would do. Nothing you type is sent anywhere.</p>
-
-      <div class="terminal">
-        <div class="terminal-bar">
-          <div class="td r"></div><div class="td y"></div><div class="td g"></div>
-          <div class="terminal-title">Kasbah Guard — Enforcement Log</div>
+                <div class="problem-card">
+                    <h3>Small Business Owners</h3>
+                    <p>You're using ChatGPT for everything. Your business plan is everything. Keep them both safe.</p>
+                    <a href="/for/small-business-owners.html" class="card-link">Learn more →</a>
+                </div>
+            </div>
+            
+            <p class="problem-cta-text">This happens thousands of times per day. To people like you. It shouldn't have to.</p>
+            <div class="problem-cta">
+                <a href="#how-it-works" class="btn btn-secondary">Learn How to Stop</a>
+            </div>
         </div>
-        <div class="terminal-body" id="simBody">
-          <div class="tl visible"><span class="tm">Click a scenario above to start the simulation...</span></div>
-          <div id="simOutcome" class="sim-outcome hidden"></div>
-          <div class="demo-foot">
-            <div class="demo-disclaimer">This is a simulation. The real app runs locally on your Mac.</div>
-            <a class="demo-cta" href="#signup">See how to get access →</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="sim-share" id="simShare">
-        The fortress held.
-        <a href="#" id="shareX" target="_blank" rel="noopener">Share on X</a> &middot;
-        <a href="#" id="shareLI" target="_blank" rel="noopener">Share on LinkedIn</a>
-      </div>
     </section>
 
-    <!-- THREE PILLARS -->
-    <section class="section" id="difference">
-      <div class="section-label">The Kasbah difference</div>
-      <h2>Guard‑grade protection. Beautiful inside.</h2>
-      <div class="pillars">
-        <div class="pillar">
-          <div class="pillar-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-          <h3>Unbreakable walls</h3>
-          <p>Real‑time interception at the point of action. No workarounds, no bypasses.</p>
+    <!-- How It Works -->
+    <section class="section how-it-works" id="how-it-works">
+        <div class="container">
+            <p class="section-label">How It Works</p>
+            <h2 class="section-title">Three things between you and disaster.</h2>
+            
+            <div class="steps">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3>Detect</h3>
+                    <p>Kasbah scans every upload. 60+ patterns. 30ms. Silent. Completely local. Zero cloud.</p>
+                    <div class="step-icon">👁️</div>
+                </div>
+                
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3>Block</h3>
+                    <p>Risky uploads get a modal. You decide: Block or Allow. One click. Your choice.</p>
+                    <div class="step-icon">🛡️</div>
+                </div>
+                
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3>Proof</h3>
+                    <p>Every block is logged. Signed. Exportable. Your proof. Your evidence. Your protection.</p>
+                    <div class="step-icon">✓</div>
+                </div>
+            </div>
+            
+            <div class="how-cta">
+                <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-lg">Install Free Now</a>
+            </div>
         </div>
-        <div class="pillar">
-          <div class="pillar-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
-          <h3>Beautiful inside, secure outside</h3>
-          <p>Security that doesn't get in your way. Developer‑friendly by design.</p>
-        </div>
-        <div class="pillar">
-          <div class="pillar-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
-          <h3>Built to last</h3>
-          <p>Open‑source core, cryptographic audit trails, and a constitution that can't be changed.</p>
-        </div>
-      </div>
     </section>
 
-    <!-- HOW IT WORKS -->
-    <section class="section" id="how">
-      <div class="section-label">How it works</div>
-      <h2>Four steps. Thirty seconds.</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step-n">1</div>
-          <div class="step-body"><strong>Detect</strong><span>Kasbah sees what the AI is attempting — send, paste, upload, download, browse, and <strong>edit your files</strong>. Six verbs intercepted at the gate.</span></div>
+    <!-- Pricing Intro -->
+    <section class="section pricing-intro" id="pricing">
+        <div class="container">
+            <p class="section-label">How We Price</p>
+            <h2 class="section-title">We price by what we prevent. Not what you use.</h2>
+            <p class="section-subtitle">Block $50K in leaks. Pay $1K (2%). That's 50:1 ROI.</p>
+            
+            <div class="pricing-explainer">
+                <h4>What you're protecting:</h4>
+                <ul>
+                    <li>Customer lists ($100 each)</li>
+                    <li>Credit cards ($5K each)</li>
+                    <li>Tax returns ($150K each)</li>
+                    <li>Passwords ($5K each)</li>
+                </ul>
+                
+                <hr>
+                
+                <h4>What Kasbah prevents:</h4>
+                <p>You upload risky data. Kasbah detects it. Blocks it. Saves you.</p>
+                
+                <hr>
+                
+                <h4>What you pay:</h4>
+                <p>You prevented $50K in leaks. You pay 2% = $1K. That's not expensive. That's a bargain.</p>
+            </div>
+            
+            <div class="pricing-cta">
+                <a href="#" class="btn btn-primary btn-lg">See Full Pricing</a>
+            </div>
         </div>
-        <div class="step">
-          <div class="step-n">2</div>
-          <div class="step-body"><strong>Bind</strong><span>"Who is in charge of this session?" You are. Authority is claimed locally on your device via HMAC‑signed tickets.</span></div>
-        </div>
-        <div class="step">
-          <div class="step-n">3</div>
-          <div class="step-body"><strong>Enforce</strong><span>Every action checked against your delegation. Secrets detected, risk scored, unauthorized actions blocked at the wall.</span></div>
-        </div>
-        <div class="step">
-          <div class="step-n">4</div>
-          <div class="step-body"><strong>Reclaim</strong><span>One click freezes all agentic processes. Authority reclaimed. Hash‑chained audit trail preserved. The fortress holds.</span></div>
-        </div>
-      </div>
     </section>
 
-    <!-- 13-MOAT SECURITY MODEL -->
-    <section class="section" id="moats">
-      <div class="section-label">Security architecture</div>
-      <h2>13-MOAT Defense Model</h2>
-      <p style="color:var(--muted);max-width:640px;margin:0 auto 32px;font-size:14px;line-height:1.7">Every layer is a moat around your data. Thirteen independent defenses &mdash; each one a wall an attacker must breach. Real security is depth.</p>
-
-      <div class="moat-group">
-        <div class="moat-group-title">Input Control</div>
-        <div class="moat-grid">
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M1</strong> 6-verb gate &mdash; send, paste, upload, download, browse, edit</div>
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M9</strong> Clipboard audit &mdash; real-time data channel monitoring</div>
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M10</strong> Default-DENY &mdash; fail-closed, nothing passes unchecked</div>
+    <!-- Trust -->
+    <section class="section trust" id="security">
+        <div class="container">
+            <p class="section-label">You Can Trust Kasbah</p>
+            <h2 class="section-title">Built for protection.</h2>
+            
+            <div class="trust-cards">
+                <div class="trust-card">
+                    <div class="trust-icon">🔒</div>
+                    <h3>No Cloud</h3>
+                    <p>Local detection. Zero data egress. Your data stays your data.</p>
+                </div>
+                
+                <div class="trust-card">
+                    <div class="trust-icon">✓</div>
+                    <h3>Transparent</h3>
+                    <p>Signed receipts. Audit logs. Proof that we protected you.</p>
+                </div>
+                
+                <div class="trust-card">
+                    <div class="trust-icon">🛡️</div>
+                    <h3>Certified</h3>
+                    <p>Open-source core. Privacy certified. Browser native.</p>
+                </div>
+            </div>
+            
+            <div class="trust-links">
+                <a href="https://github.com/Al-Adnane/Kasbah-Core">View on GitHub</a>
+                <span style="color: var(--color-gray);">•</span>
+                <a href="#">Read Security Report</a>
+            </div>
         </div>
-      </div>
-
-      <div class="moat-group">
-        <div class="moat-group-title">Data Analysis</div>
-        <div class="moat-grid">
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M2</strong> PII detection &mdash; SSN, credit card, IBAN, passport</div>
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M3</strong> Secret scanning &mdash; API keys, private keys, JWTs</div>
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M4</strong> ML classification &mdash; TF-IDF with 4-class detection</div>
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M5</strong> Prompt injection defense &mdash; pattern + ML detection</div>
-        </div>
-      </div>
-
-      <div class="moat-group">
-        <div class="moat-group-title">Cryptographic</div>
-        <div class="moat-grid">
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M6</strong> HMAC-SHA256 tickets &mdash; cryptographic authority proof</div>
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M7</strong> Replay protection &mdash; single-use, SQLite-persisted</div>
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M8</strong> Hash-chained audit &mdash; tamper-evident logging</div>
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M12</strong> Signed export &mdash; HMAC-verified audit bundles</div>
-        </div>
-      </div>
-
-      <div class="moat-group">
-        <div class="moat-group-title">Operational</div>
-        <div class="moat-grid">
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M11</strong> Kill switch &mdash; instant authority reclaim</div>
-          <div class="card" style="padding:16px"><strong style="color:var(--kasbah-red)">M13</strong> Posture enforcement &mdash; firewall, encryption, updates</div>
-        </div>
-      </div>
     </section>
 
-  </div>
-
-
-  <div class="page">
-    <!-- WHAT KASBAH IS -->
-    <section class="section" id="safe">
-      <div class="section-label">What Kasbah is</div>
-      <h2>AI Agent Trust Infrastructure.</h2>
-      <p><strong style="color:var(--midnight)">Kasbah doesn't judge content</strong> or rewrite prompts. It doesn't monitor conversations. It doesn't phone home. It enforces human authority — locally, cryptographically, before AI acts. The foundational layer that makes AI agents trustworthy.</p>
-      <div class="safe-features">
-        <div class="safe-feat">
-          <div class="sf-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-          <strong>100% Local</strong>
-          <span>Nothing leaves your machine. Ever.</span>
+    <!-- CTA Final -->
+    <section class="section cta-final">
+        <div class="container">
+            <h2>Ready to stop leaking?</h2>
+            <p>Install Kasbah free. Protect your data. Sleep better.</p>
+            <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-lg">Get Free Extension</a>
         </div>
-        <div class="safe-feat">
-          <div class="sf-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
-          <strong>Cryptographic</strong>
-          <span>HMAC‑SHA256 signed tickets</span>
-        </div>
-        <div class="safe-feat">
-          <div class="sf-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
-          <strong>Open Source</strong>
-          <span>Fully auditable on GitHub</span>
-        </div>
-      </div>
     </section>
 
-    <!-- SIGNUP (REAL REGISTRATION + EMAIL VERIFICATION) -->
-    <section class="signup" id="signup">
-      <div class="signup-inner">
-        <h2>Create your account.</h2>
-        <p class="su-sub">Sign up, download the app, and take control of what AI sees. Takes 30 seconds.</p>
-        <div class="su-urgency">Free during early access. No credit card needed.</div>
-        <!-- Phase 1: Registration form -->
-        <div id="signupPhase1">
-          <div class="su-form" style="flex-direction:column;gap:12px">
-            <input class="su-input" type="text" id="suName" placeholder="Your name" autocomplete="name">
-            <input class="su-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email">
-            <input class="su-input" type="password" id="suPass" placeholder="Password (min 6 chars)" autocomplete="new-password" minlength="6">
-            <button class="su-btn" id="suBtn" disabled style="width:100%">Create Account</button>
-          </div>
-          <div class="su-note">100% local enforcement. Your data never leaves your machine.</div>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-left">
+                <a href="/" class="footer-logo">Kasbah</a>
+                <p>Protect your data from leaking to AI.</p>
+                <div class="footer-social">
+                    <a href="https://twitter.com/bekasbah">𝕏 Twitter</a>
+                    <a href="https://github.com/Al-Adnane/Kasbah-Core">GitHub</a>
+                </div>
+            </div>
+            
+            <div class="footer-right">
+                <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-small">Install Free</a>
+                <div class="footer-links">
+                    <a href="#pricing">Pricing</a>
+                    <a href="#security">Security</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Blog</a>
+                </div>
+            </div>
         </div>
-        <!-- Phase 2: Verification code input (hidden by default) -->
-        <div id="signupPhase2" style="display:none">
-          <div style="font-size:48px;margin-bottom:16px">&#9993;</div>
-          <h3 style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:8px">Check your email</h3>
-          <p style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6">
-            We sent a 6-digit verification code to <strong id="verifyEmailDisplay"></strong>
-          </p>
-          <input class="su-input" type="text" id="verifyCode" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" style="text-align:center;font-size:24px;font-weight:800;letter-spacing:0.3em;margin-bottom:12px" autofocus>
-          <button class="su-btn" id="verifyBtn" disabled style="width:100%">Verify Account</button>
-          <div style="margin-top:14px">
-            <button id="resendBtn" style="background:none;border:none;color:var(--kasbah-red);font-weight:700;cursor:pointer;font-family:inherit;font-size:13px">Didn't get the code? Resend</button>
-          </div>
+        
+        <div class="footer-bottom">
+            <p>Made by people who care about privacy. © 2026 Kasbah. All rights reserved.</p>
         </div>
-        <!-- Phase 3: Success (hidden by default) -->
-        <div id="signupPhase3" style="display:none">
-          <div style="font-size:48px;margin-bottom:16px">&#10004;</div>
-          <h3 style="font-size:18px;font-weight:800;color:var(--atlas-green);margin-bottom:8px">Account verified!</h3>
-          <p style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6">
-            Your account is active. Download the app and sign in with your credentials.
-          </p>
-          <a class="su-btn" href="#download" style="display:inline-block;text-decoration:none;text-align:center">Download Kasbah Guard</a>
-        </div>
-        <div class="su-result" id="suResult"></div>
-        <div class="su-count" id="suCount" style="display:none"><strong id="savesCounter">0</strong> users have claimed authority</div>
-      </div>
-    </section>
+    </footer>
 
-    <!-- DOWNLOAD -->
-    <section class="download" id="download">
-      <h3>Download Kasbah Guard</h3>
-      <p class="dl-sub">Available for macOS. Install the app, sign in, and take control.</p>
-      <div class="dl-row">
-        <div class="dl-card">
-          <h4>macOS (Apple Silicon &amp; Intel)</h4>
-          <p>Desktop app with menu-bar integration. Runs locally, enforces in real time.</p>
-          <a class="dl-link" href="#signup">Sign up to get access &rarr;</a>
-        </div>
-        <div class="dl-card">
-          <h4>Browser Extensions</h4>
-          <p>Chrome, Edge, Firefox &amp; Safari. 6-verb interception across 30+ AI platforms.</p>
-          <a class="dl-link" href="#signup">Sign up to get access &rarr;</a>
-        </div>
-      </div>
-      <p class="dl-note">Access is gated during early release. Create an account above to get started.</p>
-    </section>
-
-    <!-- WHO IT'S FOR -->
-    <section class="section who-for">
-      <div class="section-label">Who it's for</div>
-      <h2>Built for people who use AI every day.</h2>
-      <div class="pillars" style="margin-top:24px">
-        <div class="pillar" style="text-align:center">
-          <div class="pillar-icon" style="margin:0 auto 14px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-          <h3>AI power users</h3>
-          <p>ChatGPT, Claude, Copilot, Gemini — use them all without worry.</p>
-        </div>
-        <div class="pillar" style="text-align:center">
-          <div class="pillar-icon" style="margin:0 auto 14px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-          <h3>Code & doc sharers</h3>
-          <p>Paste configs, docs, and code without leaking secrets.</p>
-        </div>
-        <div class="pillar" style="text-align:center">
-          <div class="pillar-icon" style="margin:0 auto 14px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--kasbah-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-          <h3>Non-security people</h3>
-          <p>Protection that works automatically — no security degree needed.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- v2.0 ENTERPRISE FEATURES -->
-    <section class="section" id="v2features" style="text-align:center">
-      <div class="section-label">v2.0 Enterprise</div>
-      <h2>Built for security teams.</h2>
-      <p style="max-width:560px;margin:0 auto 28px;color:var(--muted)">Everything you need for compliance, risk management, and fleet control — running locally on every device.</p>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:780px;margin:0 auto 24px;text-align:left">
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-          <div style="font-size:20px;margin-bottom:8px">📊</div>
-          <div style="font-size:14px;font-weight:800;margin-bottom:4px">UEBA</div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.6">Z-score anomaly detection, EMA risk scoring, 8 behavior metrics per user</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-          <div style="font-size:20px;margin-bottom:8px">🔍</div>
-          <div style="font-size:14px;font-weight:800;margin-bottom:4px">100+ PII Patterns</div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.6">Extended detection: tokens, secrets, health data, financial data, and platform-specific credentials</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-          <div style="font-size:20px;margin-bottom:8px">🧠</div>
-          <div style="font-size:14px;font-weight:800;margin-bottom:4px">Ensemble ML</div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.6">Multi-model scoring: pattern (0.4) + entropy (0.3) + semantic context (0.3)</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-          <div style="font-size:20px;margin-bottom:8px">📋</div>
-          <div style="font-size:14px;font-weight:800;margin-bottom:4px">5 Compliance Frameworks</div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.6">GDPR, HIPAA, PCI-DSS, SOC 2, ISO 27001 — violation detection with remediation guidance</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-          <div style="font-size:20px;margin-bottom:8px">🛡️</div>
-          <div style="font-size:14px;font-weight:800;margin-bottom:4px">RBAC + Fleet</div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.6">5 roles, device registry, per-user permissions — built for team deployments</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s" onmouseover="this.style.borderColor='var(--kasbah-red)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-          <div style="font-size:20px;margin-bottom:8px">⚙️</div>
-          <div style="font-size:14px;font-weight:800;margin-bottom:4px">Process Monitor</div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.6">AI process detection, network egress scanning, suspicious port flagging</div>
-        </div>
-      </div>
-      <a href="/proof/benchmark.html" style="color:var(--kasbah-red);font-weight:700;font-size:14px">See full capability report &rarr;</a>
-    </section>
-
-    <!-- ENTERPRISE CTA -->
-    <section class="enterprise" id="enterprise">
-      <div class="enterprise-inner">
-        <div class="section-label">For organizations</div>
-        <h3>Deploy Kasbah with your team.</h3>
-        <p>Centralized policies, team-wide enforcement, compliance-ready audit trails, and RBAC — all running locally. Pilot slots are limited.</p>
-        <a class="enterprise-btn" href="mailto:enterprise@bekasbah.com">Talk to us about a pilot &rarr;</a>
-        <div class="enterprise-features">
-          <span>GDPR / HIPAA / PCI-DSS</span>
-          <span>UEBA Risk Scoring</span>
-          <span>RBAC + Fleet</span>
-          <span>Process Monitor</span>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <footer>
-    <div class="footer-in">
-      <div class="footer-left">
-        &copy; 2026 <a href="/">Kasbah</a> — Kasbah Guard · <span style="color:var(--kasbah-red);">Constitutional</span>
-        <div class="f-ar">قصبة — Born in Morocco, trusted globally</div>
-      </div>
-      <div class="footer-links">
-        <a href="/changelog.html">Changelog</a>
-        <a href="/proof/benchmark.html">Benchmark</a>
-        <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank" rel="noopener">GitHub</a>
-        <a href="#enterprise">Enterprise</a>
-        <a href="#signup">Get Access</a>
-      </div>
-    </div>
-    <p class="human-line">Kasbah was built after too many “oh shit” moments with AI tools.</p>
-  </footer>
-
-  <script>
-    // Leak Simulator
-    const scenarios = {
-      credentials: [
-        {text:'<span class="tp">$</span> ai-agent paste .env to ChatGPT', delay:0},
-        {text:'<span class="tm">&gt; Guard scanning clipboard content...</span>', delay:400},
-        {text:'<span class="tw">! DETECTED:</span> DATABASE_URL=postgres://admin:s3cret@prod:5432', delay:800},
-        {text:'<span class="tw">! DETECTED:</span> STRIPE_SECRET=sk_live_FAKE_DEMO_ONLY_not_real_key', delay:1100},
-        {text:'<span class="tr">KASBAH:</span> 2 secrets found. Risk: <strong>97/100</strong><span class="tag-block">BLOCKED</span>', delay:1500},
-        {text:'<span class="tm">&gt; The fortress held. Credentials never left your device.</span>', delay:1900}
-      ],
-      apikey: [
-        {text:'<span class="tp">$</span> cursor‑agent send code snippet to Claude', delay:0},
-        {text:'<span class="tm">&gt; Guard scanning outbound payload...</span>', delay:400},
-        {text:'<span class="tw">! DETECTED:</span> OPENAI_API_KEY=sk_demo_roj‑abc123def456ghi789jkl012', delay:800},
-        {text:'<span class="tw">! DETECTED:</span> AWS_SECRET_ACCESS_KEY=AWS_SECRET_DEMO_REDACTED', delay:1100},
-        {text:'<span class="tr">KASBAH:</span> 2 API keys found. Risk: <strong>94/100</strong><span class="tag-block">BLOCKED</span>', delay:1500},
-        {text:'<span class="tm">&gt; Keys quarantined at the wall. Consider rotating credentials.</span>', delay:1900}
-      ],
-      pii: [
-        {text:'<span class="tp">$</span> ai‑assistant upload customer_data.csv to analysis', delay:0},
-        {text:'<span class="tm">&gt; Guard scanning file content...</span>', delay:400},
-        {text:'<span class="tw">! DETECTED:</span> SSN: 123‑45‑6789 (row 1 of 2,340)', delay:800},
-        {text:'<span class="tw">! DETECTED:</span> Credit Card: 4532‑XXXX‑XXXX‑7890 (row 47)', delay:1100},
-        {text:'<span class="tw">! DETECTED:</span> 847 rows contain PII (names, emails, phone numbers)', delay:1400},
-        {text:'<span class="tr">KASBAH:</span> PII exposure risk. Risk: <strong>99/100</strong><span class="tag-block">BLOCKED</span>', delay:1800},
-        {text:'<span class="tm">&gt; Upload denied at the gate. Customer data stays in the fortress.</span>', delay:2200}
-      ],
-      fileedit: [
-        {text:'<span class="tp">$</span> claude‑code apply edit to config/database.yml', delay:0},
-        {text:'<span class="tm">&gt; Guard intercepting file edit via /fs/gate...</span>', delay:400},
-        {text:'<span class="tw">! DETECTED:</span> File: config/database.yml (sensitive config)', delay:800},
-        {text:'<span class="tw">! DETECTED:</span> password: "s3cret_prod_db_password" in new content', delay:1100},
-        {text:'<span class="tw">! DETECTED:</span> AI agent writing credentials to tracked file', delay:1400},
-        {text:'<span class="tr">KASBAH:</span> File edit blocked. Risk: <strong>95/100</strong><span class="tag-block">BLOCKED</span>', delay:1800},
-        {text:'<span class="tm">&gt; Your files stay unchanged. AI edits require your approval.</span>', delay:2200}
-      ],
-      clean: [
-        {text:'<span class="tp">$</span> ai‑agent send "refactor this sorting function" to Claude', delay:0},
-        {text:'<span class="tm">&gt; Guard scanning message content...</span>', delay:400},
-        {text:'<span class="tm">&gt; No secrets, PII, or credentials detected.</span>', delay:800},
-        {text:'<span class="tok">KASBAH:</span> Clean. Risk: <strong>3/100</strong><span class="tag-allow">ALLOWED</span>', delay:1200},
-        {text:'<span class="tm">&gt; Message passed through the gate. Authority preserved.</span>', delay:1600}
-      ]
-    };
-
-    let simRunning = false;
-    function setOutcome(type) {
-      const el = document.getElementById('simOutcome');
-      if (!el) return;
-      el.className = 'sim-outcome';
-      if (type === 'clean') {
-        el.textContent = '✔ Allowed — nothing sensitive detected';
-        el.classList.add('ok');
-      } else {
-        el.textContent = '⛔ Blocked — sensitive data detected';
-        el.classList.add('blocked');
-      }
-      el.classList.remove('hidden');
-    }
-
-    function runSim(type, ev) {
-      if (ev && ev.preventDefault) ev.preventDefault();
-      if (simRunning) return;
-      simRunning = true;
-
-      document.querySelectorAll('.sim-btn').forEach(b => b.classList.remove('active'));
-      if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
-      else document.querySelector('.sim-btn[data-sim="' + type + '"]')?.classList.add('active');
-
-      const body = document.getElementById('simBody');
-      const share = document.getElementById('simShare');
-      if (share) share.style.display = 'none';
-      if (body) body.innerHTML = '';
-
-      const lines = scenarios[type];
-      if (!lines || !body) { simRunning = false; setOutcome(type); return; }
-
-      lines.forEach((line, i) => {
-        setTimeout(() => {
-          const div = document.createElement('div');
-          div.className = 'tl';
-          div.innerHTML = line.text;
-          body.appendChild(div);
-          div.offsetHeight;
-          div.classList.add('visible');
-
-          if (i === lines.length - 1) {
-            simRunning = false;
-            setOutcome(type);
-            if (share && type !== 'clean') {
-              setTimeout(() => {
-                share.style.display = 'flex';
-                const msg = encodeURIComponent('Just watched Kasbah block a simulated data leak in real‑time. The fortress held. Try the simulator:');
-                const url = encodeURIComponent(location.origin + '/#demo');
-                document.getElementById('shareX').href = 'https://x.com/intent/tweet?text=' + msg + '&url=' + url;
-                document.getElementById('shareLI').href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url;
-              }, 400);
+    <script>
+        // Sticky navbar
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
             }
-          }
-        }, line.delay);
-      });
-    }
-
-    document.querySelectorAll('.sim-btn[data-sim]').forEach(btn => {
-      btn.addEventListener('click', e => runSim(btn.getAttribute('data-sim'), e));
-    });
-
-    // Auto-run credentials demo on page load
-    setTimeout(() => runSim('credentials'), 800);
-
-    // Registration + Email Verification
-    const API_URL = 'https://api.bekasbah.com';
-    const nameIn = document.getElementById('suName');
-    const emailIn = document.getElementById('suEmail');
-    const passIn = document.getElementById('suPass');
-    const suBtn = document.getElementById('suBtn');
-    const suResult = document.getElementById('suResult');
-    let pendingEmail = '';
-
-    function showResult(msg, isError) {
-      suResult.textContent = msg;
-      suResult.style.display = 'block';
-      suResult.style.background = isError ? '#fef2f2' : '#ecfdf5';
-      suResult.style.color = isError ? '#dc2626' : '#065f46';
-      suResult.style.borderColor = isError ? '#fecaca' : '#a7f3d0';
-    }
-
-    function validateForm() {
-      const email = emailIn.value.trim();
-      const pass = passIn.value;
-      const validEmail = email.length > 4 && email.includes('@') && email.includes('.') && email.indexOf('.') > email.indexOf('@');
-      suBtn.disabled = !(validEmail && pass.length >= 6);
-    }
-    nameIn.addEventListener('input', validateForm);
-    emailIn.addEventListener('input', validateForm);
-    passIn.addEventListener('input', validateForm);
-
-    // Phase 1: Create Account
-    suBtn.addEventListener('click', () => {
-      suBtn.disabled = true;
-      suBtn.textContent = 'Creating account...';
-      suResult.style.display = 'none';
-      const name = nameIn.value.trim();
-      const email = emailIn.value.trim();
-      const password = passIn.value;
-
-      fetch(API_URL + '/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-      })
-        .then(r => r.json())
-        .then(d => {
-          if (d.ok && d.needsVerification) {
-            // Show verification phase
-            pendingEmail = d.email || email;
-            document.getElementById('signupPhase1').style.display = 'none';
-            document.getElementById('signupPhase2').style.display = 'block';
-            document.getElementById('verifyEmailDisplay').textContent = pendingEmail;
-            suResult.style.display = 'none';
-            document.getElementById('verifyCode').focus();
-          } else if (d.ok) {
-            showResult('Account created! Download the app and sign in.', false);
-            suBtn.textContent = 'Account created';
-          } else {
-            showResult(d.error || 'Registration failed. Please try again.', true);
-            suBtn.disabled = false;
-            suBtn.textContent = 'Create Account';
-          }
-        })
-        .catch(() => {
-          showResult('Connection error. Please try again.', true);
-          suBtn.disabled = false;
-          suBtn.textContent = 'Create Account';
         });
-    });
 
-    // Phase 2: Verify code
-    const verifyCodeIn = document.getElementById('verifyCode');
-    const verifyBtn = document.getElementById('verifyBtn');
-
-    verifyCodeIn.addEventListener('input', () => {
-      const v = verifyCodeIn.value.replace(/\D/g, '').slice(0, 6);
-      verifyCodeIn.value = v;
-      verifyBtn.disabled = v.length !== 6;
-    });
-    verifyCodeIn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !verifyBtn.disabled) verifyBtn.click();
-    });
-
-    verifyBtn.addEventListener('click', () => {
-      verifyBtn.disabled = true;
-      verifyBtn.textContent = 'Verifying...';
-      suResult.style.display = 'none';
-
-      fetch(API_URL + '/auth/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: pendingEmail, code: verifyCodeIn.value })
-      })
-        .then(r => r.json())
-        .then(d => {
-          if (d.ok && d.verified) {
-            // Show success phase
-            document.getElementById('signupPhase2').style.display = 'none';
-            document.getElementById('signupPhase3').style.display = 'block';
-            suResult.style.display = 'none';
-          } else {
-            showResult(d.error || 'Verification failed. Please try again.', true);
-            verifyBtn.disabled = false;
-            verifyBtn.textContent = 'Verify Account';
-          }
-        })
-        .catch(() => {
-          showResult('Connection error. Please try again.', true);
-          verifyBtn.disabled = false;
-          verifyBtn.textContent = 'Verify Account';
+        // Smooth scroll offset for sticky navbar
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href !== '#') {
+                    e.preventDefault();
+                    const element = document.querySelector(href);
+                    if (element) {
+                        const offset = 64; // navbar height
+                        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+                        window.scrollTo({
+                            top: elementPosition - offset,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
         });
-    });
-
-    // Resend code
-    document.getElementById('resendBtn').addEventListener('click', () => {
-      const rBtn = document.getElementById('resendBtn');
-      rBtn.textContent = 'Sending...';
-      rBtn.disabled = true;
-
-      fetch(API_URL + '/auth/resend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: pendingEmail })
-      })
-        .then(r => r.json())
-        .then(d => {
-          if (d.ok) {
-            rBtn.textContent = 'Code sent!';
-          } else {
-            rBtn.textContent = d.error || 'Failed to send';
-          }
-          setTimeout(() => { rBtn.textContent = "Didn't get the code? Resend"; rBtn.disabled = false; }, 4000);
-        })
-        .catch(() => {
-          rBtn.textContent = 'Failed — try again';
-          setTimeout(() => { rBtn.textContent = "Didn't get the code? Resend"; rBtn.disabled = false; }, 3000);
-        });
-    });
-
-    // GitHub stars
-    fetch('https://api.github.com/repos/Al-Adnane/Kasbah-site', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => {
-        if (d.stargazers_count !== undefined) {
-          const el = document.getElementById('ghStars');
-          if (el) el.textContent = d.stargazers_count > 0 ? '★ ' + d.stargazers_count + ' Stars' : 'Star on GitHub';
-        }
-      })
-      .catch(() => {});
-
-    // Live user count from API
-    fetch(API_URL + '/auth/stats')
-      .then(r => r.json())
-      .then(d => {
-        if (d.ok && d.users > 0) {
-          const counterEl = document.getElementById('savesCounter');
-          const suCount = document.getElementById('suCount');
-          if (counterEl) counterEl.textContent = d.users.toLocaleString();
-          if (suCount) suCount.style.display = 'block';
-        }
-      })
-      .catch(() => {});
-
-    // Smooth scroll
-    document.querySelectorAll('a[href^="#"]').forEach(a => {
-      a.addEventListener('click', e => {
-        const target = document.querySelector(a.getAttribute('href'));
-        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-      });
-    });
-
-    // Update year in footer
-    document.querySelector('.footer-left').innerHTML = document.querySelector('.footer-left').innerHTML.replace('2026', new Date().getFullYear());
-  </script>
+    </script>
 </body>
 </html>

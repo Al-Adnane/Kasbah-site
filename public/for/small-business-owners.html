@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Protect your business data with Kasbah Guard. Use AI safely without risking your company's secrets.">
+  <meta name="theme-color" content="#C1440E">
+  <title>Kasbah Guard for Small Business Owners — Protect Your Business Data</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-primary: #C1440E;
+      --color-primary-hover: #A63609;
+      --color-dark: #0F172A;
+      --color-body: #64748B;
+      --color-light: #FEFCFA;
+      --color-border: #E2DDD7;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--color-light);
+      color: var(--color-dark);
+      line-height: 1.6;
+    }
+
+    /* Navigation */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      background: var(--color-light);
+      z-index: 100;
+    }
+
+    .nav-logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-dark);
+      text-decoration: none;
+    }
+
+    .nav-back {
+      font-size: 14px;
+      color: var(--color-primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-back:hover {
+      color: var(--color-primary-hover);
+    }
+
+    /* Container */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 80px 40px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      color: var(--color-dark);
+    }
+
+    .hero .tagline {
+      font-size: 20px;
+      color: var(--color-body);
+      margin-bottom: 32px;
+      font-weight: 500;
+    }
+
+    /* Sections */
+    section {
+      padding: 60px 40px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    section h2 {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 24px;
+      color: var(--color-dark);
+    }
+
+    section p {
+      font-size: 16px;
+      color: var(--color-body);
+      margin-bottom: 16px;
+      line-height: 1.8;
+    }
+
+    section p:last-of-type {
+      margin-bottom: 0;
+    }
+
+    /* Benefits List */
+    .benefits-list {
+      list-style: none;
+      margin-top: 32px;
+    }
+
+    .benefits-list li {
+      font-size: 16px;
+      color: var(--color-body);
+      padding: 16px 0;
+      border-bottom: 1px solid var(--color-border);
+      line-height: 1.8;
+    }
+
+    .benefits-list li:last-child {
+      border-bottom: none;
+    }
+
+    .benefits-list li strong {
+      color: var(--color-dark);
+      font-weight: 600;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      text-align: center;
+      padding: 80px 40px;
+    }
+
+    .cta-section h2 {
+      margin-bottom: 32px;
+    }
+
+    /* Button */
+    .btn {
+      display: inline-block;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease-out;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .btn-primary {
+      background-color: var(--color-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-primary-hover);
+      transform: translateY(-2px);
+    }
+
+    /* Footer */
+    footer {
+      background-color: var(--color-dark);
+      color: white;
+      padding: 40px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    footer a {
+      color: var(--color-primary);
+      text-decoration: none;
+      margin: 0 16px;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav {
+        padding: 16px 20px;
+      }
+
+      .container {
+        padding: 0 20px;
+      }
+
+      .hero {
+        padding: 40px 20px;
+      }
+
+      .hero h1 {
+        font-size: 32px;
+      }
+
+      .hero .tagline {
+        font-size: 18px;
+      }
+
+      section {
+        padding: 40px 20px;
+      }
+
+      section h2 {
+        font-size: 24px;
+      }
+
+      .cta-section {
+        padding: 40px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="nav-logo">Kasbah Guard</a>
+    <a href="/" class="nav-back">← Back to Home</a>
+  </nav>
+
+  <section class="hero">
+    <h1>Protect your business data</h1>
+    <p class="tagline">You're using ChatGPT for everything. What if it all ends up in training data?</p>
+    <a href="#cta" class="btn btn-primary">Get Protected Free</a>
+  </section>
+
+  <section class="container">
+    <h2>The Problem</h2>
+    <p>You wear all the hats. You use ChatGPT to write contracts, analyze financial data, brainstorm product strategies, respond to customer emails. It's become essential to how you run your business.</p>
+    <p>But every time you paste information into ChatGPT—your business plan, customer list, financial projections, deal terms—there's a risk. That data could end up in OpenAI's training data. Competitors could access it. Your secrets could become public.</p>
+    <p>You can't afford a data breach. Your entire business IS your data. One leak could end everything.</p>
+  </section>
+
+  <section class="container">
+    <h2>How Kasbah Helps</h2>
+    <ul class="benefits-list">
+      <li><strong>Comprehensive Protection:</strong> Monitor everything you do. Browser extensions, clipboard, file operations. Protect your business across all the places where secrets leak.</li>
+      <li><strong>Audit Trail:</strong> Know exactly what Kasbah blocked. Download reports. Sleep better knowing your secrets stayed secret. Prove compliance if your business requires it.</li>
+      <li><strong>Team Management:</strong> As you grow, extend protection to your whole team. One pricing tier covers everyone. No per-seat fees crushing your margins.</li>
+    </ul>
+  </section>
+
+  <section class="cta-section" id="cta">
+    <h2>Your business is too valuable to risk.</h2>
+    <a href="https://chrome.google.com/webstore" class="btn btn-primary">Get Protected Free</a>
+  </section>
+
+  <footer>
+    <a href="/">Home</a>
+    <a href="/for/freelancers.html">For Freelancers</a>
+    <a href="/for/knowledge-workers.html">For Knowledge Workers</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/security.html">Security</a>
+  </footer>
+</body>
+</html>
