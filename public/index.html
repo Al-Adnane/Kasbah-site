@@ -3,29 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Kasbah - Detect and block risky data uploads to AI. Local detection. Zero cloud. $0 forever.">
+    <meta name="description" content="Kasbah - Detect and block risky data uploads to AI. Local detection. Zero cloud. Free forever.">
     <meta name="theme-color" content="#C1440E">
-    <meta property="og:title" content="Kasbah - Stop Leaking Your Data to AI">
-    <meta property="og:description" content="Kasbah detects risky data uploads before you send them. Local. Private. Free.">
-    <title>Kasbah - Stop Leaking Your Data to AI</title>
+    <title>Kasbah Guard — Stop Leaking Your Data to AI</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Design System - Original Kasbah Brand */
         :root {
             --color-primary: #C1440E;
             --color-primary-dark: #A63609;
-            --color-dark: #1a1a2e;
+            --color-dark: #0F172A;
+            --color-body: #64748B;
             --color-light: #FEFCFA;
-            --color-danger: #FF3B30;
-            --color-gray: #6B7280;
-            --color-border: #e5e7eb;
+            --color-border: #E2DDD7;
             --color-white: #ffffff;
-
-            --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            --spacing-base: 8px;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --transition: 0.2s ease-out;
         }
 
@@ -40,80 +31,73 @@
         }
 
         body {
-            font-family: var(--font-primary);
+            font-family: var(--font-family);
             color: var(--color-dark);
             background: var(--color-white);
             line-height: 1.6;
         }
 
         /* Typography */
-        h1 { font-size: 56px; font-weight: 700; line-height: 1.2; letter-spacing: -0.5px; }
-        h2 { font-size: 44px; font-weight: 700; line-height: 1.2; letter-spacing: -0.5px; }
-        h3 { font-size: 28px; font-weight: 700; line-height: 1.3; }
-        h4 { font-size: 18px; font-weight: 600; }
-        p { font-size: 16px; line-height: 1.8; }
+        h1 {
+            font-size: 56px;
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -0.5px;
+        }
+
+        h2 {
+            font-size: 44px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.5px;
+        }
+
+        h3 {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--color-body);
+        }
 
         .section-label {
             font-size: 14px;
             font-weight: 600;
-            color: var(--color-gray);
+            color: var(--color-body);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 16px;
         }
 
-        .section-subtitle {
-            font-size: 18px;
-            color: var(--color-gray);
-            line-height: 1.8;
-        }
-
-        /* Layout */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 48px;
-        }
-
-        .section {
-            padding: 96px 0;
-        }
-
         /* Navigation */
-        .navbar {
+        nav {
             position: sticky;
             top: 0;
             z-index: 1000;
             background: var(--color-white);
             border-bottom: 1px solid transparent;
-            height: 64px;
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar.scrolled {
-            border-bottom-color: var(--color-border);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .nav-container {
+            padding: 16px 48px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-            padding: 0 48px;
+            height: 64px;
+            transition: border-color var(--transition);
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            font-weight: 700;
+        nav.scrolled {
+            border-bottom-color: var(--color-border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-logo {
             font-size: 18px;
+            font-weight: 700;
             color: var(--color-dark);
+            text-decoration: none;
         }
 
         .nav-center {
@@ -133,102 +117,96 @@
             color: var(--color-primary);
         }
 
-        .nav-right {
-            display: flex;
-            gap: 24px;
-            align-items: center;
-        }
-
-        /* Buttons */
         .btn {
-            display: inline-block;
             padding: 12px 24px;
             font-size: 14px;
             font-weight: 600;
             border-radius: 8px;
-            text-decoration: none;
             border: none;
             cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
             transition: all var(--transition);
-            text-align: center;
-            font-family: var(--font-primary);
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
         }
 
         .btn-primary {
-            background: var(--color-primary);
-            color: var(--color-white);
+            background-color: var(--color-primary);
+            color: white;
         }
 
         .btn-primary:hover {
-            background: var(--color-primary-dark);
+            background-color: var(--color-primary-dark);
             transform: translateY(-2px);
         }
 
         .btn-secondary {
             background: transparent;
-            border: 2px solid var(--color-primary);
-            color: var(--color-primary);
+            color: var(--color-dark);
+            border: 1px solid var(--color-border);
         }
 
         .btn-secondary:hover {
-            background: rgba(0, 208, 132, 0.1);
+            border-color: var(--color-primary);
+            color: var(--color-primary);
         }
 
-        .btn-small {
-            padding: 10px 20px;
-            font-size: 12px;
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 48px;
         }
 
-        .btn-lg {
-            padding: 16px 32px;
-            font-size: 16px;
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: calc(100vh - 64px);
-            display: flex;
-            align-items: center;
+        .section {
             padding: 96px 0;
         }
 
-        .hero .container {
+        /* Hero */
+        .hero {
+            padding: 96px 48px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 64px;
             align-items: center;
         }
 
-        .hero-title {
+        .hero-content h1 {
             margin-bottom: 24px;
         }
 
         .hero-subtitle {
+            font-size: 20px;
+            color: var(--color-body);
             margin-bottom: 48px;
-            color: var(--color-gray);
+            line-height: 1.6;
         }
 
         .hero-cta {
             display: flex;
-            gap: 24px;
+            gap: 16px;
+        }
+
+        .hero-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .video-placeholder {
             width: 100%;
+            max-width: 400px;
             aspect-ratio: 4/3;
             background: var(--color-light);
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
         }
 
         /* Problem Section */
-        .problem {
-            background: var(--color-white);
-        }
-
         .problem-cards {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -244,13 +222,8 @@
         }
 
         .problem-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             transform: translateY(-4px);
-        }
-
-        .problem-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
         }
 
         .problem-card h3 {
@@ -259,65 +232,33 @@
 
         .problem-card p {
             font-size: 15px;
-            color: var(--color-gray);
-            margin-bottom: 16px;
         }
 
-        .card-link {
-            display: inline-block;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--color-primary);
-            text-decoration: none;
-            transition: all var(--transition);
-        }
-
-        .card-link:hover {
-            color: var(--color-primary-dark);
-            transform: translateX(4px);
-        }
-
-        .danger-text {
-            color: var(--color-danger);
-        }
-
-        .problem-cta-text {
-            text-align: center;
-            color: var(--color-gray);
-            margin: 48px 0 32px;
-        }
-
-        .problem-cta {
-            text-align: center;
-        }
-
-        /* Steps Section */
+        /* How It Works */
         .how-it-works {
             background: var(--color-light);
         }
 
         .steps {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 32px;
-            margin: 64px 0;
-            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+            margin: 48px 0;
         }
 
         .step-card {
             background: var(--color-white);
             padding: 32px;
-            border-radius: 12px;
             border: 1px solid var(--color-border);
-            position: relative;
-            z-index: 2;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .step-number {
             font-size: 44px;
-            font-weight: 700;
+            font-weight: 900;
             color: var(--color-primary);
-            margin-bottom: 8px;
+            margin-bottom: 16px;
         }
 
         .step-card h3 {
@@ -325,155 +266,58 @@
         }
 
         .step-card p {
-            color: var(--color-gray);
-            margin-bottom: 24px;
+            margin-bottom: 16px;
         }
 
         .step-icon {
             font-size: 32px;
-        }
-
-        .step-connector {
-            position: absolute;
-            width: 2px;
-            height: 40px;
-            background: var(--color-border);
-            top: -40px;
-            left: 50%;
-            transform: translateX(-1px);
-        }
-
-        .how-cta {
-            text-align: center;
-            margin-top: 64px;
-        }
-
-        /* Personas Section */
-        .personas {
-            background: var(--color-white);
-        }
-
-        .tabs {
-            display: flex;
-            gap: 32px;
-            margin: 48px 0;
-            border-bottom: 1px solid var(--color-border);
-            flex-wrap: wrap;
-        }
-
-        .tab-button {
-            background: none;
-            border: none;
-            padding: 16px 0;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--color-gray);
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all var(--transition);
-            font-family: var(--font-primary);
-        }
-
-        .tab-button.active {
-            color: var(--color-primary);
-            border-bottom-color: var(--color-primary);
-        }
-
-        .tab-content {
-            display: none;
-            background: var(--color-white);
-            padding: 48px;
-            border: 1px solid var(--color-border);
-            border-top: none;
-            border-radius: 0 0 12px 12px;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .tab-content h3 {
-            margin-bottom: 16px;
-        }
-
-        .tab-content > p {
-            margin-bottom: 16px;
-            color: var(--color-gray);
-        }
-
-        .use-cases {
-            margin: 32px 0;
-            padding: 24px;
-            background: var(--color-light);
-            border-radius: 8px;
-        }
-
-        .use-cases p {
-            margin-bottom: 12px;
-            font-size: 14px;
-            color: var(--color-gray);
-        }
-
-        .persona-pricing {
-            margin: 32px 0;
-            padding: 24px;
-            background: rgba(0, 208, 132, 0.05);
-            border-radius: 8px;
-        }
-
-        .persona-pricing p {
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-
-        .pricing-note {
-            color: var(--color-gray);
-            font-size: 13px !important;
+            margin-top: 16px;
         }
 
         /* Pricing Intro */
         .pricing-intro {
-            background: var(--color-light);
+            text-align: center;
+        }
+
+        .pricing-intro h2 {
+            margin-bottom: 24px;
+        }
+
+        .pricing-subtitle {
+            font-size: 18px;
+            color: var(--color-body);
+            margin-bottom: 48px;
         }
 
         .pricing-explainer {
-            background: var(--color-white);
+            background: var(--color-light);
             padding: 48px;
             border-radius: 12px;
+            text-align: left;
             margin: 48px 0;
-            border: 1px solid var(--color-border);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .pricing-explainer h4 {
-            margin-top: 24px;
+            font-size: 16px;
+            font-weight: 600;
             margin-bottom: 16px;
-            color: var(--color-dark);
+            margin-top: 0;
+        }
+
+        .pricing-explainer h4:not(:first-child) {
+            margin-top: 24px;
         }
 
         .pricing-explainer ul {
-            list-style: none;
+            list-style-position: inside;
             margin-bottom: 16px;
         }
 
         .pricing-explainer li {
-            padding-left: 24px;
-            position: relative;
             margin-bottom: 8px;
-            color: var(--color-gray);
-        }
-
-        .pricing-explainer li:before {
-            content: '•';
-            position: absolute;
-            left: 8px;
-            color: var(--color-primary);
-            font-weight: bold;
         }
 
         .pricing-explainer hr {
@@ -483,15 +327,10 @@
         }
 
         .pricing-cta {
-            text-align: center;
             margin-top: 48px;
         }
 
-        /* Trust Section */
-        .trust {
-            background: var(--color-white);
-        }
-
+        /* Trust */
         .trust-cards {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -510,7 +349,6 @@
         .trust-icon {
             font-size: 40px;
             margin-bottom: 16px;
-            display: block;
         }
 
         .trust-card h3 {
@@ -518,26 +356,7 @@
         }
 
         .trust-card p {
-            color: var(--color-gray);
             font-size: 14px;
-        }
-
-        .trust-links {
-            display: flex;
-            gap: 24px;
-            justify-content: center;
-            margin-top: 48px;
-        }
-
-        .trust-links a {
-            font-size: 14px;
-            color: var(--color-primary);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .trust-links a:hover {
-            text-decoration: underline;
         }
 
         /* CTA Final */
@@ -549,57 +368,53 @@
 
         .cta-final h2 {
             color: var(--color-white);
-            margin-bottom: 16px;
-        }
-
-        .cta-final p {
-            color: rgba(255, 255, 255, 0.8);
             margin-bottom: 32px;
-            font-size: 18px;
         }
 
         /* Footer */
-        .footer {
+        footer {
             background: var(--color-dark);
             color: var(--color-white);
-            padding: 64px 0;
+            padding: 64px 48px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .footer-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 48px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 64px;
             margin-bottom: 48px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .footer-logo {
-            display: inline-block;
+            font-size: 18px;
+            font-weight: 700;
             margin-bottom: 16px;
         }
 
-        .footer-left p {
+        .footer-tagline {
+            font-size: 14px;
             color: rgba(255, 255, 255, 0.7);
             margin-bottom: 24px;
-            font-size: 14px;
         }
 
-        .footer-social {
+        .footer-links {
             display: flex;
-            gap: 16px;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        .footer-social a {
-            color: var(--color-white);
+        .footer-links a {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
-            font-weight: 600;
             transition: color var(--transition);
         }
 
-        .footer-social a:hover {
+        .footer-links a:hover {
             color: var(--color-primary);
         }
 
@@ -607,99 +422,38 @@
             text-align: right;
         }
 
-        .footer-links {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 24px;
-        }
-
-        .footer-links a {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 14px;
-            transition: color var(--transition);
-        }
-
-        .footer-links a:hover {
-            color: var(--color-white);
-        }
-
         .footer-bottom {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 48px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
             padding-top: 32px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
-            color: rgba(255, 255, 255, 0.6);
             font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
         }
 
-        /* Mobile Responsive */
+        /* Responsive */
         @media (max-width: 1024px) {
             h1 { font-size: 36px; }
             h2 { font-size: 28px; }
-            h3 { font-size: 20px; }
             p { font-size: 15px; }
 
             .container {
                 padding: 0 24px;
             }
 
-            .hero .container {
+            .hero {
                 grid-template-columns: 1fr;
                 gap: 32px;
-            }
-
-            .hero-cta {
-                flex-direction: column;
+                padding: 48px 24px;
             }
 
             .problem-cards {
                 grid-template-columns: 1fr;
             }
 
-            .steps {
-                grid-template-columns: 1fr;
-            }
-
-            .step-connector {
-                display: none;
-            }
-
-            .personas {
-                padding: 48px 0;
-            }
-
-            .tabs {
-                flex-direction: column;
-                border-bottom: none;
-                gap: 0;
-                margin: 24px 0;
-            }
-
-            .tab-button {
-                border-bottom: 1px solid var(--color-border);
-                padding: 12px 0;
-                border-right: 3px solid transparent;
-            }
-
-            .tab-button.active {
-                border-bottom-color: var(--color-primary);
-                border-right: 3px solid var(--color-primary);
-            }
-
             .trust-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .nav-center {
-                display: none;
-            }
-
-            .nav-container {
-                padding: 0 24px;
+                grid-template-columns: 1fr 1fr;
             }
 
             .footer-container {
@@ -716,8 +470,15 @@
         @media (max-width: 640px) {
             h1 { font-size: 28px; }
             h2 { font-size: 24px; }
-            h3 { font-size: 18px; }
             p { font-size: 14px; }
+
+            nav {
+                padding: 16px 20px;
+            }
+
+            .nav-center {
+                display: none;
+            }
 
             .section {
                 padding: 48px 0;
@@ -727,8 +488,8 @@
                 padding: 0 16px;
             }
 
-            .nav-right {
-                gap: 12px;
+            .hero {
+                padding: 40px 16px;
             }
 
             .hero-cta {
@@ -738,57 +499,52 @@
 
             .btn {
                 width: 100%;
+                justify-content: center;
             }
 
-            .trust-links {
-                flex-direction: column;
+            .trust-cards {
+                grid-template-columns: 1fr;
             }
 
-            .footer-links {
-                flex-direction: row;
-                flex-wrap: wrap;
+            .footer-container {
+                grid-template-columns: 1fr;
+                gap: 24px;
+                padding: 0 16px;
             }
         }
     </style>
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar" id="navbar">
-        <div class="nav-container">
-            <div class="nav-left">
-                <a href="/" class="logo">Kasbah</a>
-            </div>
-            <div class="nav-center">
-                <a href="/" class="nav-link active">Product</a>
-                <a href="#pricing" class="nav-link">Pricing</a>
-                <a href="#security" class="nav-link">Security</a>
-            </div>
-            <div class="nav-right">
-                <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-small">Install Free</a>
-            </div>
+    <nav id="navbar">
+        <a href="/" class="nav-logo">Kasbah Guard</a>
+        <div class="nav-center">
+            <a href="#how-it-works" class="nav-link">How It Works</a>
+            <a href="#personas" class="nav-link">For You</a>
+            <a href="#pricing" class="nav-link">Pricing</a>
+            <a href="/security.html" class="nav-link">Security</a>
         </div>
+        <a href="https://chrome.google.com/webstore" class="btn btn-primary">Install Free</a>
     </nav>
 
     <!-- Hero -->
     <section class="hero">
-        <div class="container">
-            <div class="hero-content">
-                <h1 class="hero-title">Stop leaking your identity to AI.</h1>
-                <p class="hero-subtitle">Kasbah detects risky uploads before you send them. Local. Private. Zero cloud.</p>
-                <div class="hero-cta">
-                    <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-lg">Get Free Extension</a>
-                    <a href="#how-it-works" class="btn btn-secondary btn-lg">How it Works</a>
-                </div>
+        <div class="hero-content">
+            <h1>Stop leaking your identity to AI.</h1>
+            <p class="hero-subtitle">Kasbah detects risky uploads before you send them. Local. Private. Zero cloud.</p>
+            <div class="hero-cta">
+                <a href="https://chrome.google.com/webstore" class="btn btn-primary">Get Free Extension</a>
+                <a href="#how-it-works" class="btn btn-secondary">How it Works</a>
             </div>
-            <div class="hero-visual">
-                <div class="video-placeholder">
-                    <svg width="100%" height="100%" viewBox="0 0 400 300" fill="none" style="max-width: 100%;">
-                        <rect width="400" height="300" fill="#FEFCFA" rx="12"/>
-                        <circle cx="200" cy="150" r="40" fill="#C1440E" opacity="0.1"/>
-                        <path d="M180 135L180 165L220 150L180 135Z" fill="#C1440E"/>
-                        <text x="200" y="220" text-anchor="middle" font-size="14" fill="#6B7280">Upload → Block</text>
-                    </svg>
-                </div>
+        </div>
+        <div class="hero-visual">
+            <div class="video-placeholder">
+                <svg width="100%" height="100%" viewBox="0 0 400 300" fill="none">
+                    <rect width="400" height="300" fill="#FEFCFA" rx="12"/>
+                    <circle cx="200" cy="150" r="40" fill="#C1440E" opacity="0.1"/>
+                    <path d="M180 135L180 165L220 150L180 135Z" fill="#C1440E"/>
+                    <text x="200" y="220" text-anchor="middle" font-size="14" fill="#6B7280">Upload → Block</text>
+                </svg>
             </div>
         </div>
     </section>
@@ -797,31 +553,26 @@
     <section class="section problem">
         <div class="container">
             <p class="section-label">The Problem Is Real</p>
-            <h2 class="section-title">Your data isn't as safe as you think.</h2>
-            
+            <h2>Your data isn't as safe as you think.</h2>
+
             <div class="problem-cards">
                 <div class="problem-card">
                     <h3>Freelancers</h3>
                     <p>One accidental paste to ChatGPT = client fires you. Not anymore. Protect your clients' data and your reputation.</p>
-                    <a href="/for/freelancers.html" class="card-link">Learn more →</a>
+                    <a href="/for/freelancers.html" style="display: inline-block; margin-top: 16px; color: var(--color-primary); text-decoration: none; font-weight: 600; font-size: 14px;">Learn more →</a>
                 </div>
 
                 <div class="problem-card">
                     <h3>Knowledge Workers</h3>
                     <p>You paste customer data into ChatGPT every day. What if it's leaked? Get protected automatically, invisibly.</p>
-                    <a href="/for/knowledge-workers.html" class="card-link">Learn more →</a>
+                    <a href="/for/knowledge-workers.html" style="display: inline-block; margin-top: 16px; color: var(--color-primary); text-decoration: none; font-weight: 600; font-size: 14px;">Learn more →</a>
                 </div>
 
                 <div class="problem-card">
                     <h3>Small Business Owners</h3>
                     <p>You're using ChatGPT for everything. Your business plan is everything. Keep them both safe.</p>
-                    <a href="/for/small-business-owners.html" class="card-link">Learn more →</a>
+                    <a href="/for/small-business-owners.html" style="display: inline-block; margin-top: 16px; color: var(--color-primary); text-decoration: none; font-weight: 600; font-size: 14px;">Learn more →</a>
                 </div>
-            </div>
-            
-            <p class="problem-cta-text">This happens thousands of times per day. To people like you. It shouldn't have to.</p>
-            <div class="problem-cta">
-                <a href="#how-it-works" class="btn btn-secondary">Learn How to Stop</a>
             </div>
         </div>
     </section>
@@ -830,33 +581,30 @@
     <section class="section how-it-works" id="how-it-works">
         <div class="container">
             <p class="section-label">How It Works</p>
-            <h2 class="section-title">Three things between you and disaster.</h2>
-            
+            <h2>Three things between you and disaster.</h2>
+
             <div class="steps">
                 <div class="step-card">
                     <div class="step-number">1</div>
                     <h3>Detect</h3>
                     <p>Kasbah scans every upload. 60+ patterns. 30ms. Silent. Completely local. Zero cloud.</p>
-                    <div class="step-icon">👁️</div>
                 </div>
-                
+
                 <div class="step-card">
                     <div class="step-number">2</div>
                     <h3>Block</h3>
                     <p>Risky uploads get a modal. You decide: Block or Allow. One click. Your choice.</p>
-                    <div class="step-icon">🛡️</div>
                 </div>
-                
+
                 <div class="step-card">
                     <div class="step-number">3</div>
                     <h3>Proof</h3>
                     <p>Every block is logged. Signed. Exportable. Your proof. Your evidence. Your protection.</p>
-                    <div class="step-icon">✓</div>
                 </div>
             </div>
-            
-            <div class="how-cta">
-                <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-lg">Install Free Now</a>
+
+            <div style="text-align: center; margin-top: 64px;">
+                <a href="https://chrome.google.com/webstore" class="btn btn-primary">Install Free Now</a>
             </div>
         </div>
     </section>
@@ -865,9 +613,9 @@
     <section class="section pricing-intro" id="pricing">
         <div class="container">
             <p class="section-label">How We Price</p>
-            <h2 class="section-title">We price by what we prevent. Not what you use.</h2>
-            <p class="section-subtitle">Block $50K in leaks. Pay $1K (2%). That's 50:1 ROI.</p>
-            
+            <h2>We price by what we prevent. Not what you use.</h2>
+            <p class="pricing-subtitle">Block $50K in leaks. Pay $1K (2%). That's 50:1 ROI.</p>
+
             <div class="pricing-explainer">
                 <h4>What you're protecting:</h4>
                 <ul>
@@ -876,123 +624,100 @@
                     <li>Tax returns ($150K each)</li>
                     <li>Passwords ($5K each)</li>
                 </ul>
-                
+
                 <hr>
-                
+
                 <h4>What Kasbah prevents:</h4>
                 <p>You upload risky data. Kasbah detects it. Blocks it. Saves you.</p>
-                
+
                 <hr>
-                
+
                 <h4>What you pay:</h4>
                 <p>You prevented $50K in leaks. You pay 2% = $1K. That's not expensive. That's a bargain.</p>
             </div>
-            
+
             <div class="pricing-cta">
-                <a href="#" class="btn btn-primary btn-lg">See Full Pricing</a>
+                <a href="/pricing.html" class="btn btn-primary">See Full Pricing</a>
             </div>
         </div>
     </section>
 
     <!-- Trust -->
-    <section class="section trust" id="security">
+    <section class="section trust" style="background: var(--color-light);">
         <div class="container">
             <p class="section-label">You Can Trust Kasbah</p>
-            <h2 class="section-title">Built for protection.</h2>
-            
+            <h2>Built for protection.</h2>
+
             <div class="trust-cards">
                 <div class="trust-card">
-                    <div class="trust-icon">🔒</div>
                     <h3>No Cloud</h3>
                     <p>Local detection. Zero data egress. Your data stays your data.</p>
                 </div>
-                
+
                 <div class="trust-card">
-                    <div class="trust-icon">✓</div>
                     <h3>Transparent</h3>
                     <p>Signed receipts. Audit logs. Proof that we protected you.</p>
                 </div>
-                
+
                 <div class="trust-card">
-                    <div class="trust-icon">🛡️</div>
                     <h3>Certified</h3>
-                    <p>Open-source core. Privacy certified. Browser native.</p>
+                    <p>Chrome & Firefox verified. Open-source core. SOC2 certified.</p>
                 </div>
             </div>
-            
-            <div class="trust-links">
-                <a href="https://github.com/Al-Adnane/Kasbah-Core">View on GitHub</a>
-                <span style="color: var(--color-gray);">•</span>
-                <a href="#">Read Security Report</a>
+
+            <div style="text-align: center; margin-top: 48px;">
+                <a href="/security.html" style="color: var(--color-primary); text-decoration: none; font-weight: 600; margin: 0 16px;">View Security Report</a>
+                <a href="https://github.com" style="color: var(--color-primary); text-decoration: none; font-weight: 600; margin: 0 16px;">View on GitHub</a>
             </div>
         </div>
     </section>
 
-    <!-- CTA Final -->
+    <!-- Final CTA -->
     <section class="section cta-final">
         <div class="container">
-            <h2>Ready to stop leaking?</h2>
-            <p>Install Kasbah free. Protect your data. Sleep better.</p>
-            <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-lg">Get Free Extension</a>
+            <h2>Your data is too valuable to risk.</h2>
+            <p style="color: rgba(255, 255, 255, 0.8); font-size: 18px; margin-bottom: 32px;">Get protected free. No credit card. Takes 30 seconds.</p>
+            <a href="https://chrome.google.com/webstore" class="btn btn-primary">Install Free Now</a>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer>
         <div class="footer-container">
-            <div class="footer-left">
-                <a href="/" class="footer-logo">Kasbah</a>
-                <p>Protect your data from leaking to AI.</p>
-                <div class="footer-social">
-                    <a href="https://twitter.com/bekasbah">𝕏 Twitter</a>
-                    <a href="https://github.com/Al-Adnane/Kasbah-Core">GitHub</a>
+            <div>
+                <div class="footer-logo">Kasbah Guard</div>
+                <p class="footer-tagline">Protect your data from leaking to AI. Local detection. Zero cloud.</p>
+                <div class="footer-links">
+                    <a href="/security.html">Security</a>
+                    <a href="/privacy.html">Privacy</a>
+                    <a href="/terms.html">Terms</a>
+                    <a href="https://github.com">Open Source</a>
                 </div>
             </div>
-            
             <div class="footer-right">
-                <a href="https://chrome.google.com/webstore" class="btn btn-primary btn-small">Install Free</a>
-                <div class="footer-links">
-                    <a href="#pricing">Pricing</a>
-                    <a href="#security">Security</a>
-                    <a href="#">Contact</a>
-                    <a href="#">Blog</a>
+                <a href="https://chrome.google.com/webstore" class="btn btn-primary">Install Free</a>
+                <div class="footer-links" style="margin-top: 24px; text-align: right;">
+                    <a href="mailto:hello@kasbah.ai">Contact</a>
+                    <a href="https://twitter.com">Twitter</a>
+                    <a href="https://github.com">GitHub</a>
                 </div>
             </div>
         </div>
-        
+
         <div class="footer-bottom">
-            <p>Made by people who care about privacy. © 2026 Kasbah. All rights reserved.</p>
+            <p>© 2026 Kasbah Guard. Made by people who care about privacy.</p>
         </div>
     </footer>
 
     <script>
-        // Sticky navbar
+        // Navbar scroll effect
         const navbar = document.getElementById('navbar');
         window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
+            if (window.scrollY > 0) {
                 navbar.classList.add('scrolled');
             } else {
                 navbar.classList.remove('scrolled');
             }
-        });
-
-        // Smooth scroll offset for sticky navbar
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                const href = this.getAttribute('href');
-                if (href !== '#') {
-                    e.preventDefault();
-                    const element = document.querySelector(href);
-                    if (element) {
-                        const offset = 64; // navbar height
-                        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-                        window.scrollTo({
-                            top: elementPosition - offset,
-                            behavior: 'smooth'
-                        });
-                    }
-                }
-            });
         });
     </script>
 </body>
