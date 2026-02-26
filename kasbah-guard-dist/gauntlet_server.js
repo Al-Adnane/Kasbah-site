@@ -24,6 +24,19 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 8789;
 const SECRET = "sk-proj-1234567890abcdefghijklmnopqrstuvwxyz";
+const SECRET_B64 = Buffer.from(SECRET).toString("base64"); // c2stcHJvai0xMjM0...
+
+function bodyContainsSecret(str) {
+  if (!str) return false;
+  if (str.includes(SECRET)) return true;
+  if (str.includes(SECRET_B64)) return true;
+  // Also try decoding any base64-looking substrings
+  const b64matches = str.match(/[A-Za-z0-9+/]{20,}={0,2}/g) || [];
+  for (const m of b64matches) {
+    try { if (Buffer.from(m, "base64").toString("utf8").includes(SECRET)) return true; } catch {}
+  }
+  return false;
+}
 
 /** All inbound request bodies, in order */
 const COLLECT = [];
@@ -49,7 +62,7 @@ const server = http.createServer(async (req, res) => {
   if (req.url === "/collect" && req.method === "POST") {
     const body = await readBody(req);
     const bodyStr = body.toString("utf8");
-    const hit = bodyStr.includes(SECRET);
+    const hit = bodyContainsSecret(bodyStr);
     const entry = { t: Date.now(), vector: "http-post", body: bodyStr, SECRET_FOUND: hit };
     COLLECT.push(entry);
 
@@ -68,7 +81,8 @@ const server = http.createServer(async (req, res) => {
   if (req.url.startsWith("/collect") && req.method === "GET") {
     const urlObj = new URL(req.url, `http://127.0.0.1:${PORT}`);
     const qs = urlObj.searchParams.toString();
-    const hit = qs.includes(encodeURIComponent(SECRET)) || qs.includes(SECRET);
+    const qsDecoded = decodeURIComponent(qs);
+    const hit = bodyContainsSecret(qs) || bodyContainsSecret(qsDecoded);
     const entry = { t: Date.now(), vector: "http-get", query: qs, SECRET_FOUND: hit };
     COLLECT.push(entry);
 

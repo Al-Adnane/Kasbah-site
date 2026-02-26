@@ -1,3 +1,119 @@
+// ═══════════════════════════════════════════════════════════════════
+// KASBAH NETWORK EGRESS GATE — runs in MAIN world at document_start
+// Wraps all outbound network APIs so programmatic exfil is blocked
+// the same way paste/click interception blocks user-driven actions.
+// Covered: fetch · XHR · sendBeacon · WebSocket · form.submit
+// ═══════════════════════════════════════════════════════════════════
+(() => {
+  // detector.js runs first — getDecision is already a page global
+  const det = window;
+
+  const DENY = "DENY";
+
+  function s(v) { try { return String(v); } catch { return ""; } }
+
+  function containsSecretStr(str) {
+    if (!str || str.length < 8) return false;
+    try { return det.getDecision(str) === DENY; } catch { return false; }
+  }
+
+  function scanUrl(u) { return containsSecretStr(s(u)); }
+
+  function scanBody(body) {
+    if (body == null) return false;
+    if (typeof body === "string")       return containsSecretStr(body);
+    if (body instanceof URLSearchParams) return containsSecretStr(body.toString());
+    if (body instanceof FormData) {
+      for (const [k, v] of body.entries()) {
+        if (containsSecretStr(s(k)) || containsSecretStr(s(v))) return true;
+      }
+      return false;
+    }
+    // Blob: block conservatively if text/json type (can't sync-read bytes)
+    if (body instanceof Blob) {
+      const t = (body.type || "").toLowerCase();
+      return t.includes("text") || t.includes("json") || t.includes("xml") || t.includes("javascript");
+    }
+    if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) return false;
+    if (typeof body === "object") {
+      try { return containsSecretStr(JSON.stringify(body)); } catch { return false; }
+    }
+    return false;
+  }
+
+  function block(reason) {
+    // Throwing here propagates out of the patched function and cancels the call
+    throw new Error("KASBAH_BLOCKED_EGRESS:" + reason);
+  }
+
+  // ── E1: fetch() ──
+  const _fetch = window.fetch;
+  if (typeof _fetch === "function") {
+    window.fetch = function(input, init) {
+      if (scanUrl(input))                   block("fetch:url");
+      if (init && scanBody(init.body))      block("fetch:body");
+      return _fetch.apply(this, arguments);
+    };
+  }
+
+  // ── E2: XMLHttpRequest.send() ──
+  // NOTE: try/catch only wraps scanBody, NOT block() — so the throw propagates
+  const _xhrSend = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.send = function(body) {
+    let _flagged = false;
+    try { if (scanBody(body)) _flagged = true; } catch {}
+    if (_flagged) block("xhr:body");
+    return _xhrSend.apply(this, arguments);
+  };
+
+  // ── E3: navigator.sendBeacon() ──
+  const _beacon = navigator.sendBeacon?.bind(navigator);
+  if (_beacon) {
+    navigator.sendBeacon = function(url, data) {
+      if (scanUrl(url))   block("beacon:url");
+      if (scanBody(data)) block("beacon:body");
+      return _beacon(url, data);
+    };
+  }
+
+  // ── E4: WebSocket.prototype.send() ──
+  const _wsSend = WebSocket.prototype.send;
+  WebSocket.prototype.send = function(data) {
+    if (containsSecretStr(s(data))) block("ws:send");
+    return _wsSend.apply(this, arguments);
+  };
+
+  // ── E5: HTMLFormElement.prototype.submit() + submit event ──
+  // NOTE: programmatic form.submit() doesn't fire the submit event —
+  // the prototype override catches it; the event listener catches normal submits.
+  const _formSubmit = HTMLFormElement.prototype.submit;
+  HTMLFormElement.prototype.submit = function() {
+    let _reason = "";
+    try {
+      const fd = new FormData(this);
+      if (scanBody(fd))          _reason = "form:submit";
+      else if (scanUrl(this.action)) _reason = "form:action";
+    } catch {}
+    if (_reason) block(_reason);
+    return _formSubmit.apply(this, arguments);
+  };
+
+  document.addEventListener("submit", (ev) => {
+    try {
+      const form = ev.target;
+      if (form instanceof HTMLFormElement) {
+        const fd = new FormData(form);
+        if (scanBody(fd) || scanUrl(form.action)) {
+          ev.preventDefault();
+          ev.stopImmediatePropagation();
+        }
+      }
+    } catch {}
+  }, true);
+
+  console.log("[Kasbah Guard] Network egress gate active (fetch · XHR · beacon · WS · form)");
+})();
+
 /**
  * Kasbah Guard — Sovereign Intent Layer (Extension v1.1.0)
  * Intercepts 6 irreversible verbs before AI sees them:
@@ -21,6 +137,14 @@
   "use strict";
 
   // Kasbah now uses local detection - no HTTP endpoint needed
+  // Stub GUARD object for backward compatibility with remaining /health, /events calls
+  var GUARD = {
+    __stub: true,
+    "/health": "http://stub/health",
+    "/events": "http://stub/events"
+  };
+  GUARD[""] = "";  // For string concatenation
+
   var FLAG_KEY = "__kasbah_allow__";
   var PASTE_FLAG = "__kasbah_paste_ok__";
 
@@ -94,12 +218,96 @@
 
   // ── Sensitive filename detection for uploads ──
   var SENSITIVE_FILENAMES = [
-    /passport/i, /passeport/i, /id[_\-\s]?card/i, /identity/i, /carte[_\-\s]?id/i,
-    /national[_\-\s]?id/i, /driver[_\-\s]?licen[sc]e/i, /permis/i, /cedula/i,
-    /birth[_\-\s]?cert/i, /ssn/i, /social[_\-\s]?security/i,
-    /tax[_\-\s]?return/i, /w[_\-]?2/i, /1099/i, /bank[_\-\s]?statement/i,
-    /medical[_\-\s]?record/i, /health[_\-\s]?record/i, /prescription/i,
-    /visa[_\-\s]?scan/i, /residence[_\-\s]?permit/i, /green[_\-\s]?card/i,
+    // ENGLISH: Passports & Travel Documents
+    /passport/i, /visa/i, /travel[_\-\s]?doc/i, /travel[_\-\s]?permit/i,
+    /residence[_\-\s]?permit/i, /green[_\-\s]?card/i, /work[_\-\s]?permit/i, /entry[_\-\s]?visa/i,
+
+    // ENGLISH: ID Documents (EXHAUSTIVE)
+    /^id$/i, /^id\./i, /id[_\-\s]?card/i, /identity[_\-\s]?card/i, /carnet/i,
+    /national[_\-\s]?id/i, /nid/i, /government[_\-\s]?id/i,
+
+    // SPANISH/LATIN AMERICA: ID Documents
+    /^dni$/i, /^dni\./i, /dni[_\-\s]?/i, /cedula/i, /cédula/i, /cif/i,
+    /^nic$/i, /^nic\./i,
+
+    // FRENCH: ID Documents & Documents
+    /^carte$/i, /^carte\./i, /carte[_\-\s]?id/i, /carte[_\-\s]?d['']?identité/i,
+    /^carnet/i, /passeport/i, /permis[_\-\s]?de[_\-\s]?conduct/i, /permis[_\-\s]?drive/i, /permis/i,
+
+    // PORTUGUESE: ID Documents
+    /^cartão$/i, /^cartao$/i, /^cartão\./i, /^cartao\./i, /cartão[_\-\s]?id/i,
+    /identidade/i, /carnê/i, /carteira/i,
+
+    // ARABIC: ID Documents & Documents (بطاقة = card, هويّة = identity)
+    /بطاقة/i, /بطاقة[_\-\s]?هويّة/i, /بطاقة[_\-\s]?شخصية/i, /هويّة/i, /هويه/i, /هوية/i,
+    /cartebi/i, /cartebio/i, /cin/i, /cnie/i,
+
+    // ITALIAN: ID Documents
+    /^carta$/i, /^carta\./i, /carta[_\-\s]?id/i, /documento[_\-\s]?identità/i, /patente/i,
+
+    // GERMAN: ID Documents
+    /ausweis/i, /personalausweis/i, /id[_\-\s]?karte/i, /führerschein/i, /reisepass/i,
+
+    // DUTCH: ID Documents
+    /burgerservicenummer/i, /bsn/i, /identiteitskaart/i,
+
+    // POLISH: ID Documents
+    /dowód[_\-\s]?osobisty/i, /pesel/i,
+
+    // DRIVER LICENSE (ALL LANGUAGES)
+    /driver[_\-\s]?licen[cs]e/i, /drivers[_\-\s]?licen[cs]e/i, /driving[_\-\s]?licen[cs]e/i,
+    /patente/i, /führerschein/i, /permis/i, /carnet[_\-\s]?conducir/i,
+
+    // BIRTH & LEGAL DOCUMENTS
+    /birth[_\-\s]?cert/i, /birth[_\-\s]?record/i, /baptism/i, /marriage[_\-\s]?cert/i,
+    /divorce[_\-\s]?cert/i, /death[_\-\s]?cert/i, /legal[_\-\s]?document/i,
+    /acte[_\-\s]?de[_\-\s]?naissance/i, /certificado[_\-\s]?de[_\-\s]?nacimiento/i,
+    /acta[_\-\s]?de[_\-\s]?nacimiento/i, /atto[_\-\s]?di[_\-\s]?nascita/i,
+
+    // GOVERNMENT IDs
+    /ssn/i, /social[_\-\s]?security/i, /tax[_\-\s]?id/i, /taxpayer/i, /itin/i, /ein/i,
+    /^sin$/i, /^sin\./i, /^tin$/i, /numero[_\-\s]?fiscal/i, /nif/i, /nie/i,
+
+    // TAX & FINANCIAL DOCUMENTS
+    /tax[_\-\s]?return/i, /w[_\-]?2/i, /1099/i, /1040/i, /tax[_\-\s]?form/i, /irs[_\-\s]?form/i,
+    /tax[_\-\s]?document/i, /return[_\-\s]?tax/i, /income[_\-\s]?tax/i,
+    /déclaration[_\-\s]?impôt/i, /declaración[_\-\s]?fiscal/i, /dichiarazione[_\-\s]?redditi/i,
+
+    // BANKING & FINANCIAL
+    /bank[_\-\s]?statement/i, /bank[_\-\s]?account/i, /account[_\-\s]?statement/i,
+    /credit[_\-\s]?card/i, /debit[_\-\s]?card/i, /bank[_\-\s]?routing/i, /swift[_\-\s]?code/i,
+    /iban/i, /bban/i, /routing[_\-\s]?number/i, /account[_\-\s]?number/i, /wire[_\-\s]?transfer/i,
+    /relevé[_\-\s]?bancaire/i, /extrait[_\-\s]?de[_\-\s]?compte/i, /estado[_\-\s]?de[_\-\s]?cuenta/i,
+
+    // MEDICAL & HEALTH RECORDS
+    /medical[_\-\s]?record/i, /health[_\-\s]?record/i, /prescription/i, /lab[_\-\s]?result/i,
+    /patient[_\-\s]?record/i, /doctor[_\-\s]?note/i, /clinical[_\-\s]?note/i, /diagnosis/i,
+    /vaccination/i, /vaccine[_\-\s]?record/i, /covid[_\-\s]?test/i, /covid[_\-\s]?vaccine/i,
+    /health[_\-\s]?insurance/i, /insurance[_\-\s]?card/i,
+    /dossier[_\-\s]?médical/i, /ordonnance/i, /receta[_\-\s]?médica/i, /cartilla[_\-\s]?sanitaria/i,
+
+    // CREDENTIALS & SECRETS (ALL LANGUAGES)
+    /password/i, /passphrase/i, /secret[_\-\s]?key/i, /private[_\-\s]?key/i, /api[_\-\s]?key/i,
+    /access[_\-\s]?token/i, /auth[_\-\s]?token/i, /credential/i, /login[_\-\s]?info/i,
+    /mot[_\-\s]?de[_\-\s]?passe/i, /contraseña/i, /senha/i, /chiave[_\-\s]?privata/i,
+
+    // SENSITIVE PERSONAL DATA
+    /phone[_\-\s]?number/i, /contact[_\-\s]?info/i, /home[_\-\s]?address/i, /address[_\-\s]?book/i,
+    /email[_\-\s]?address/i, /phone[_\-\s]?list/i, /contact[_\-\s]?list/i,
+    /numéro[_\-\s]?téléphone/i, /número[_\-\s]?teléfono/i,
+
+    // BUSINESS & CORPORATE
+    /business[_\-\s]?plan/i, /financial[_\-\s]?projection/i, /business[_\-\s]?secret/i,
+    /proprietary/i, /confidential/i, /trade[_\-\s]?secret/i, /nda/i, /non[_\-\s]?disclosure/i,
+    /plan[_\-\s]?affaire/i, /plan[_\-\s]?negocio/i,
+
+    // EDUCATION RECORDS
+    /transcript/i, /diploma/i, /degree[_\-\s]?cert/i, /academic[_\-\s]?record/i,
+    /relevé[_\-\s]?de[_\-\s]?note/i, /expediente[_\-\s]?académico/i,
+
+    // OTHER GOVERNMENT DOCUMENTS
+    /document[_\-\s]?scan/i, /scan[_\-\s]?document/i, /official[_\-\s]?document/i, /notarized/i,
+    /document[_\-\s]?officiel/i, /documento[_\-\s]?oficial/i,
   ];
 
   function detectSensitiveFilename(name) {
@@ -151,7 +359,7 @@
     var style = document.createElement('style');
     style.id = 'kasbah-ext-styles';
     style.textContent = '@keyframes kasbahSlideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}@keyframes kasbahSlideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}@keyframes kasbahPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.3)}50%{box-shadow:0 0 0 12px rgba(220,38,38,0)}}@keyframes kasbahGlow{0%{background-color:#dc2626}50%{background-color:#991b1b}100%{background-color:#dc2626}}';
-    document.head.appendChild(style);
+    (document.head || document.documentElement).appendChild(style);
   })();
 
   // ── Rich toast notification with Kasbah branding ──
@@ -179,7 +387,7 @@
     textWrap.style.cssText = "flex:1;min-width:0";
     var title = document.createElement("div");
     title.style.cssText = "font-size:13px;font-weight:800;margin-bottom:2px;letter-spacing:-.3px";
-    title.textContent = isError ? 'Kasbah blocked' : 'Kasbah protected';
+    title.textContent = isError ? 'Blocked by Kasbah' : 'Kasbah Warning';
     var detail = document.createElement("div");
     detail.style.cssText = "font-size:12px;opacity:.85;line-height:1.4";
     detail.textContent = message;
@@ -406,13 +614,14 @@
       alertIcon.textContent = secrets.length > 0 ? "🔐" : "⚠️";
       alertTitle.appendChild(alertIcon);
       var alertTitleText = document.createElement("span");
-      alertTitleText.textContent = secrets.length > 0 ? "Sensitive information detected" : "Review recommended";
+      alertTitleText.textContent = secrets.length > 0 ? "Sensitive data detected" : "Heads up";
       alertTitle.appendChild(alertTitleText);
       var alertDesc = document.createElement("div");
       alertDesc.style.cssText = "font-size:13px;color:" + c.text + ";line-height:1.5;opacity:.9";
+      // Show exactly what was detected, not a generic message
       alertDesc.textContent = secrets.length > 0
-        ? "This content may contain personal or sensitive information."
-        : "This content may need a second look before sharing.";
+        ? "Found: " + secrets.join(", ")
+        : "This may need a second look before sharing.";
       alert.appendChild(alertTitle);
       alert.appendChild(alertDesc);
 
@@ -447,28 +656,29 @@
       body.appendChild(pre);
     }
 
-    // Message
+    // Message — one clear line
     var msg = document.createElement("div");
     msg.style.cssText = "font-size:13px;color:#64748b;line-height:1.6;margin-bottom:16px";
-    msg.textContent = (verbLabels[verb] || "Action") + " on " + product().toUpperCase() + ". Kasbah protects your data — you decide what happens next.";
+    msg.textContent = "Kasbah caught sensitive data before it left your device. Block to stay safe, or proceed at your own risk.";
     body.appendChild(msg);
 
-    // Buttons
+    // Buttons — Block is RED PRIMARY (right), Allow is ghost (left)
     var row = document.createElement("div");
     row.style.cssText = "display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #ede8e3";
 
-    var verbCap = verb.charAt(0).toUpperCase() + verb.slice(1);
-    var blockBtn = document.createElement("button");
-    blockBtn.textContent = "🚫 Block " + verbCap;
-    blockBtn.style.cssText = "font:700 13px system-ui;padding:10px 18px;border-radius:10px;cursor:pointer;border:1.5px solid #dc2626;background:rgba(220,38,38,.08);color:#dc2626;transition:all .2s;hover-scale:1.02";
-    blockBtn.onmouseover = function() { blockBtn.style.background = "rgba(220,38,38,.14)"; blockBtn.style.borderColor = "#991b1b"; };
-    blockBtn.onmouseout = function() { blockBtn.style.background = "rgba(220,38,38,.08)"; blockBtn.style.borderColor = "#dc2626"; };
-
+    // Allow = secondary / ghost (left)
     var allowBtn = document.createElement("button");
-    allowBtn.textContent = "✓ Allow " + verbCap;
-    allowBtn.style.cssText = "font:700 13px system-ui;padding:10px 18px;border-radius:10px;cursor:pointer;border:0;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;transition:all .2s;box-shadow:0 2px 8px rgba(220,38,38,.2)";
-    allowBtn.onmouseover = function() { allowBtn.style.background = "linear-gradient(135deg,#b91c1c,#991b1b)"; allowBtn.style.boxShadow = "0 4px 12px rgba(220,38,38,.3)"; };
-    allowBtn.onmouseout = function() { allowBtn.style.background = "linear-gradient(135deg,#dc2626,#b91c1c)"; allowBtn.style.boxShadow = "0 2px 8px rgba(220,38,38,.2)"; };
+    allowBtn.textContent = "Proceed Anyway";
+    allowBtn.style.cssText = "font:600 13px system-ui;padding:10px 18px;border-radius:10px;cursor:pointer;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;transition:all .2s";
+    allowBtn.onmouseover = function() { allowBtn.style.borderColor = "#cbd5e1"; allowBtn.style.color = "#1e293b"; };
+    allowBtn.onmouseout  = function() { allowBtn.style.borderColor = "#e2e8f0"; allowBtn.style.color = "#64748b"; };
+
+    // Block = PRIMARY red (right) — Kasbah brand color
+    var blockBtn = document.createElement("button");
+    blockBtn.textContent = "Block — Stay Safe";
+    blockBtn.style.cssText = "font:800 13px system-ui;padding:10px 22px;border-radius:10px;cursor:pointer;border:0;background:linear-gradient(135deg,#C1440E,#9a350b);color:#fff;transition:all .2s;box-shadow:0 2px 8px rgba(193,68,14,.3)";
+    blockBtn.onmouseover = function() { blockBtn.style.boxShadow = "0 4px 14px rgba(193,68,14,.45)"; blockBtn.style.transform = "translateY(-1px)"; };
+    blockBtn.onmouseout  = function() { blockBtn.style.boxShadow = "0 2px 8px rgba(193,68,14,.3)"; blockBtn.style.transform = ""; };
     var hasCritical = false; // kept for logging
 
     blockBtn.onmousedown = function () { blockBtn.style.transform = "scale(.96)"; };
@@ -483,8 +693,8 @@
       try { if (onAllow) onAllow(); } finally { overlay.remove(); }
     };
 
-    row.appendChild(blockBtn);
-    row.appendChild(allowBtn);
+    row.appendChild(allowBtn);  // ghost — left
+    row.appendChild(blockBtn);  // primary red — right
     body.appendChild(row);
 
     card.appendChild(header);
@@ -497,91 +707,124 @@
 
   // ── Helper: run decide+modal flow for any verb ──
   function guardFlow(verb, text, extraMeta, onAllowCb, onBlockCb) {
-    var secrets = scanSecrets(text);
-    var score = riskScore(text, secrets);
-    var risk = riskLabel(score);
-    var urls = extractUrls(text);
+    // Use unified detection engine (classify) for all verbs
+    var res = typeof classify !== 'undefined' ? classify(text) : { decision: "ALLOW", risk: 0, reason: "No detector available" };
 
+    // UPLOAD verb: Check for sensitive filenames (they should trigger HIGH RISK)
+    if (verb === "upload" && extraMeta && extraMeta.sensitive_filenames && extraMeta.sensitive_filenames.length > 0) {
+      console.log("[Kasbah] guardFlow - UPLOAD with sensitive filenames:", extraMeta.sensitive_filenames);
+      res = { decision: "DENY", risk: 80, reason: "Sensitive document detected: " + extraMeta.sensitive_filenames.join(", ") };
+    }
+    console.log("[Kasbah] guardFlow - verb:", verb, "decision:", res.decision, "risk:", res.risk);
+
+    // Build metadata for logging
     var meta = {
       length: text.length,
       preview: text.slice(0, 200),
-      secrets: secrets,
-      risk: score,
+      risk: res.risk,
+      reason: res.reason,
+      decision: res.decision,
     };
-    if (urls.length > 0) meta.urls = urls;
     if (extraMeta) {
       for (var k in extraMeta) {
         if (extraMeta.hasOwnProperty(k)) meta[k] = extraMeta[k];
       }
     }
 
-    var decidePayload = {
-      product: product(),
-      host: host(),
-      action: "chat." + verb,
-      verb: verb,
-      text: text,
-      meta: meta,
-    };
-
-    // Local detection - no HTTP call needed
-    var res = typeof classify !== 'undefined' ? JSON.parse(classify(text)) : { decision: "ALLOW", risk: 0 };
-    {
-      // Guard says no — still give user the choice
-      if (res.decision === "DENY") {
-          createModal({
-            risk: "high",
-            secrets: secrets.length > 0 ? secrets : ["Review needed"],
-            preview: text.slice(0, 400),
-            verb: verb,
-            onAllow: function () {
-              if (onAllowCb) onAllowCb();
-            },
-            onBlock: function () {
-              showToast("Blocked — you're in control", true, verb);
-              if (onBlockCb) onBlockCb();
-              try { chrome.runtime.sendMessage({ type: 'BLOCK_EVENT', verb: verb }); } catch(e) {}
-            },
-          });
-          return;
-        }
-
-        var ticket = res.ticket;
-
-        // Show review modal — user always decides
-        createModal({
-          risk: risk,
-          secrets: secrets,
-          preview: text.slice(0, 400),
+    // SILENT (risk < 40): Proceed without UI
+    if (res.decision === "ALLOW") {
+      // Log silently to localStorage
+      try {
+        var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
+        logs.push({
+          action: 'SILENT_ALLOW',
           verb: verb,
-          onAllow: function () {
-            // Local logging only - no server call needed
-            if (onAllowCb) onAllowCb();
-            // Log to localStorage for audit trail
-            try {
-              var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
-              logs.push({ action: 'ALLOW', text: text.slice(0, 100), time: new Date().toISOString() });
-              localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100))); // Keep last 100
-            } catch(e) {}
-          },
-          onBlock: function () {
-            if (onBlockCb) onBlockCb();
-            // Log to localStorage
-            try {
-              var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
-              logs.push({ action: 'DENY', text: text.slice(0, 100), time: new Date().toISOString() });
-              localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
-            } catch(e) {}
-          },
+          risk: res.risk,
+          text: text.slice(0, 100),
+          reason: res.reason,
+          time: new Date().toISOString()
         });
-      }
+        localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
+      } catch(e) {}
+
+      if (onAllowCb) onAllowCb();
+      return;
+    }
+
+    // WARN (risk 40-69): Show toast, then proceed
+    if (res.decision === "WARN") {
+      showToast("Possible sensitive data — " + res.reason + ". Proceeding.", false, verb);
+
+      // Log warning to localStorage
+      try {
+        var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
+        logs.push({
+          action: 'WARN',
+          verb: verb,
+          risk: res.risk,
+          text: text.slice(0, 100),
+          reason: res.reason,
+          time: new Date().toISOString()
+        });
+        localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
+      } catch(e) {}
+
+      if (onAllowCb) onAllowCb();
+      return;
+    }
+
+    // DENY (risk >= 70): Show modal, let user choose
+    if (res.decision === "DENY") {
+      createModal({
+        risk: "high",
+        secrets: [res.reason || "High-risk content detected"],
+        preview: text.slice(0, 400),
+        verb: verb,
+        onAllow: function () {
+          // User chose to allow despite warning
+          try {
+            var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
+            logs.push({
+              action: 'OVERRIDE_ALLOW',
+              verb: verb,
+              risk: res.risk,
+              text: text.slice(0, 100),
+              reason: res.reason,
+              time: new Date().toISOString()
+            });
+            localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
+          } catch(e) {}
+          if (onAllowCb) onAllowCb();
+        },
+        onBlock: function () {
+          // User chose to block
+          showToast("Blocked. Your sensitive data stayed on your device.", true, verb);
+          try {
+            var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
+            logs.push({
+              action: 'BLOCKED',
+              verb: verb,
+              risk: res.risk,
+              text: text.slice(0, 100),
+              reason: res.reason,
+              time: new Date().toISOString()
+            });
+            localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
+          } catch(e) {}
+          if (onBlockCb) onBlockCb();
+          try { chrome.runtime.sendMessage({ type: 'BLOCK_EVENT', verb: verb }); } catch(e) {}
+        },
+      });
+      return;
+    }
   }
 
   // ═══════════════════════════════════════════════════
   // L6: HEARTBEAT — Poll guard health every 5s, fail-closed after 3 failures
   // ═══════════════════════════════════════════════════
   function heartbeatPoll() {
-    fetch(GUARD + "/health", { method: "GET", cache: "no-store" })
+    // Stub: Guard health check disabled for local-only mode
+  if (false) fetch("http://stub", { method: "GET", cache: "no-store" })
       .then(function (r) {
         if (r.ok) {
           __kasbah_guard_alive = true;
@@ -652,16 +895,16 @@
 
     // Log to guard
     try {
-      postJson(GUARD + "/events", {
-        kind: "L1_BEFOREINPUT",
-        data: {
-          input_type: ev.inputType,
-          secrets_detected: secrets,
-          length: data.length,
-          product: product(),
-          host: host(),
-        },
-      });
+      // Stub: postJson(GUARD + "/events", {
+      //   kind: "L1_BEFOREINPUT",
+      //   data: {
+      //     input_type: ev.inputType,
+      //     secrets_detected: secrets,
+      //     length: data.length,
+      //     product: product(),
+      //     host: host(),
+      //   },
+      // });
     } catch (e) { /* ignore */ }
 
     showToast("Kasbah Guard caught a paste with personal info — review before sharing", false);
@@ -698,16 +941,16 @@
 
         // Log potential programmatic injection to guard
         try {
-          postJson(GUARD + "/events", {
-            kind: "L1_MUTATION",
-            data: {
-              mutation_type: mutation.type,
-              secrets_detected: secrets,
-              length: text.length,
-              product: product(),
-              host: host(),
-            },
-          });
+          // Stub: postJson(GUARD + "/events", {
+          //   kind: "L1_MUTATION",
+          //   data: {
+          //     mutation_type: mutation.type,
+          //     secrets_detected: secrets,
+          //     length: text.length,
+          //     product: product(),
+          //     host: host(),
+          //   },
+          // });
         } catch (e) { /* ignore */ }
       }
     });
@@ -767,69 +1010,51 @@
         meta: meta,
       };
 
-      postJson(GUARD + "/decide", decidePayload)
-        .then(function (res) {
-          // Guard flags this — still give user the choice
-          if (res.blocked === true || res.decision === "DENY") {
-            createModal({
-              risk: "high",
-              secrets: secrets.length > 0 ? secrets : ["Review needed"],
-              preview: msg.slice(0, 400),
-              verb: "send",
-              onAllow: function () {
-                btn[FLAG_KEY] = true;
-                btn.click();
-              },
-              onBlock: function () {
-                showToast("Message not sent — your choice", false);
-              },
-            });
-            return;
-          }
+      var res = typeof classify !== "undefined" ? classify(text) : { decision: "ALLOW", risk: 0 };
 
-          var ticket = res.ticket;
-          createModal({
-            risk: risk,
-            secrets: secrets,
-            preview: msg.slice(0, 400),
-            verb: "send",
-            onAllow: function () {
-              if (!ticket) return;
-              postJson(GUARD + "/consume", { ticket: ticket, choice: "ALLOW" })
-                .then(function (cr) {
-                  if (cr && cr.decision === "ALLOW") {
-                    btn[FLAG_KEY] = true;
-                    btn.click();
-                  } else {
-                    showToast("Couldn't complete — try again", true);
-                  }
-                })
-                .catch(function () {
-                  showToast("Couldn't reach guard — try again", true);
-                });
-            },
-            onBlock: function () {
-              if (!ticket) return;
-              postJson(GUARD + "/consume", { ticket: ticket, choice: "DENY" }).catch(function () {});
-              showToast("Message not sent — your choice", false);
-            },
-          });
-        })
-        .catch(function () {
-          createModal({
-            risk: "medium",
-            secrets: ["Guard not running"],
-            preview: "Kasbah Guard isn't running.\n\nOpen the app for full protection, or send anyway.",
-            verb: "send",
-            onAllow: function () {
-              btn[FLAG_KEY] = true;
-              btn.click();
-            },
-            onBlock: function () {
-              showToast("Message not sent", false);
-            },
-          });
-        });
+      // SILENT/WARN: risk < 70 — let action proceed, maybe show toast
+      if (res.decision !== "DENY") {
+        if (res.decision === "WARN") {
+          showToast("Heads up — " + (secrets.length > 0 ? secrets[0] + " detected" : "review recommended"), false, "send");
+        }
+        // Log allowed action
+        try {
+          var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
+          logs.push({ action: res.decision, text: msg.slice(0, 100), risk: res.risk, time: new Date().toISOString() });
+          localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
+        } catch(e) {}
+        // Proceed with action
+        btn[FLAG_KEY] = true;
+        btn.click();
+        return;
+      }
+
+      // BLOCK: risk >= 70 — show modal, user decides
+      createModal({
+        risk: "high",
+        secrets: secrets.length > 0 ? secrets : ["Review needed"],
+        preview: msg.slice(0, 400),
+        verb: "send",
+        onAllow: function () {
+          // Log to localStorage
+          try {
+            var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
+            logs.push({ action: 'ALLOW_OVERRIDE', text: msg.slice(0, 100), time: new Date().toISOString() });
+            localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
+          } catch(e) {}
+          btn[FLAG_KEY] = true;
+          btn.click();
+        },
+        onBlock: function () {
+          // Log to localStorage
+          try {
+            var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
+            logs.push({ action: 'DENIED', text: msg.slice(0, 100), time: new Date().toISOString() });
+            localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
+          } catch(e) {}
+          showToast("Message not sent — your choice", false);
+        },
+      });
     },
     true
   );
@@ -854,11 +1079,11 @@
       // Only intercept if paste has meaningful content
       if (clipText.length < 20) return;
 
-      var secrets = scanSecrets(clipText);
-      var score = riskScore(clipText, secrets);
+      // Use unified detector to classify clipboard content
+      var res = typeof classify !== 'undefined' ? classify(clipText) : { decision: "ALLOW", risk: 0 };
 
-      // Only show modal for risky pastes (secrets found, or very long)
-      if (secrets.length === 0 && clipText.length < 2500) return;
+      // For SILENT/ALLOW with no long text, let it through without interception
+      if (res.decision === "ALLOW" && clipText.length < 2500) return;
 
       ev.preventDefault();
       ev.stopPropagation();
@@ -868,7 +1093,7 @@
 
       var activeEl = document.activeElement;
 
-      guardFlow("paste", clipText, { source: "clipboard" },
+      guardFlow("paste", clipText, { source: "clipboard", detected_risk: res.risk, detected_reason: res.reason },
         function () {
           // Allow: re-paste by inserting text directly
           if (activeEl) {
@@ -899,8 +1124,13 @@
     "change",
     function (ev) {
       var target = ev.target;
-      if (!target || target.tagName !== "INPUT" || target.type !== "file") return;
+      console.log("[Kasbah] Upload change event - target:", target ? target.tagName : "null", target ? target.type : "");
+      if (!target || target.tagName !== "INPUT" || target.type !== "file") {
+        console.log("[Kasbah] Upload - skipping (not file input)");
+        return;
+      }
       if (target.__kasbah_allowed) {
+        console.log("[Kasbah] Upload - already allowed");
         target.__kasbah_allowed = false;
         return;
       }
@@ -921,7 +1151,9 @@
 
       var previewText = "Files: " + fileList.join(", ");
       // If sensitive filename detected, add context so guard and local scanner both flag it
+      console.log("[Kasbah] Upload - Detected sensitive files:", sensitiveDocNames);
       if (sensitiveDocNames.length > 0) {
+        console.log("[Kasbah] Upload - SENSITIVE FILENAMES DETECTED:", sensitiveDocNames);
         previewText += "\nThis looks like a personal document: " + sensitiveDocNames.join(", ");
       }
       var extraMeta = {
@@ -948,36 +1180,56 @@
         }
       }
 
-      if (filesToScan.length > 0) {
-        // Read and scan file contents
+      // If we have sensitive filenames OR text files to scan, enter async scanning
+      if (filesToScan.length > 0 || sensitiveDocNames.length > 0) {
+        // Read and scan file contents using unified detector
         var scannedCount = 0;
-        var fileSecrets = [];
-        filesToScan.forEach(function (file) {
-          var reader = new FileReader();
-          reader.onload = function (e) {
-            var content = e.target.result || "";
-            var found = scanSecrets(content);
-            if (found.length > 0) {
-              fileSecrets.push({ file: file.name, secrets: found });
-            }
-            scannedCount++;
-            if (scannedCount === filesToScan.length) {
-              // All files scanned, now proceed with guardFlow
-              if (fileSecrets.length > 0) {
-                extraMeta.file_secrets = fileSecrets;
-                previewText += "\n\u26a0 File contents contain: " + fileSecrets.map(function (fs) { return fs.file + " (" + fs.secrets.join(", ") + ")"; }).join("; ");
+        var fileRisks = [];
+
+        // If we have text files to scan, process them
+        if (filesToScan.length > 0) {
+          filesToScan.forEach(function (file) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+              var content = e.target.result || "";
+              // Use unified classifier for file content analysis
+              var fileRes = typeof classify !== 'undefined' ? classify(content) : { decision: "ALLOW", risk: 0, reason: "" };
+              if (fileRes.risk > 0) {
+                fileRisks.push({
+                  file: file.name,
+                  risk: fileRes.risk,
+                  decision: fileRes.decision,
+                  reason: fileRes.reason
+                });
               }
-              guardFlow("upload", previewText, extraMeta,
-                function () {
-                  target.__kasbah_allowed = true;
-                  target.dispatchEvent(new Event("change", { bubbles: true }));
-                },
-                function () { target.value = ""; }
-              );
-            }
-          };
-          reader.readAsText(file);
-        });
+              scannedCount++;
+              if (scannedCount === filesToScan.length) {
+                // All files scanned, now proceed with guardFlow
+                if (fileRisks.length > 0) {
+                  extraMeta.file_risks = fileRisks;
+                  previewText += "\n\u26a0 File contents flagged: " + fileRisks.map(function (fr) { return fr.file + " (Risk: " + fr.risk + ", " + fr.reason + ")"; }).join("; ");
+                }
+                guardFlow("upload", previewText, extraMeta,
+                  function () {
+                    target.__kasbah_allowed = true;
+                    target.dispatchEvent(new Event("change", { bubbles: true }));
+                  },
+                  function () { target.value = ""; }
+                );
+              }
+            };
+            reader.readAsText(file);
+          });
+        } else if (sensitiveDocNames.length > 0) {
+          // No text files to scan, but we have sensitive filenames - proceed with guardFlow
+          guardFlow("upload", previewText, extraMeta,
+            function () {
+              target.__kasbah_allowed = true;
+              target.dispatchEvent(new Event("change", { bubbles: true }));
+            },
+            function () { target.value = ""; }
+          );
+        }
         return;
       }
 
@@ -1238,102 +1490,35 @@
 
       var codeContent = findEditContent(btn);
       var fileName = findEditFilename(btn);
-      var secrets = scanSecrets(codeContent);
-      var score = riskScore(codeContent, secrets);
-      var risk = riskLabel(score);
+
+      // Use unified classifier for code content analysis
+      var res = typeof classify !== 'undefined' ? classify(codeContent) : { decision: "ALLOW", risk: 0, reason: "" };
 
       var previewText = (fileName ? "File: " + fileName + "\n" : "") + codeContent.slice(0, 500);
 
       var meta = {
         length: codeContent.length,
         preview: codeContent.slice(0, 200),
-        secrets: secrets,
-        risk: score,
+        risk: res.risk,
+        reason: res.reason,
+        decision: res.decision,
         file_name: fileName,
         verb_type: "edit",
         source: "ai_code_apply"
       };
 
-      // Use /fs/gate for file edits (if it exists), fall back to /decide
-      var gatePayload = {
-        path: fileName || "unknown",
-        agent: product(),
-        action: "write",
-        preview: codeContent.slice(0, 2000),
-        diff: codeContent.slice(0, 5000)
-      };
-
-      postJson(GUARD + "/fs/gate", gatePayload)
-        .then(function (res) {
-          if (res.decision === "DENY" || res.decision === "BLOCK") {
-            createModal({
-              risk: "high",
-              secrets: secrets.length > 0 ? secrets : ["AI file edit blocked"],
-              preview: previewText.slice(0, 400),
-              verb: "edit",
-              onAllow: function () {
-                if (res.ticket) {
-                  postJson(GUARD + "/consume", { ticket: res.ticket, choice: "ALLOW" })
-                    .then(function (cr) {
-                      if (cr && cr.decision === "ALLOW") {
-                        btn[EDIT_FLAG] = true;
-                        btn.click();
-                      }
-                    }).catch(function () {});
-                } else {
-                  btn[EDIT_FLAG] = true;
-                  btn.click();
-                }
-              },
-              onBlock: function () {
-                if (res.ticket) {
-                  postJson(GUARD + "/consume", { ticket: res.ticket, choice: "DENY" }).catch(function () {});
-                }
-                showToast("Code edit blocked — your files are safe", false);
-              },
-            });
-            return;
-          }
-
-          createModal({
-            risk: risk,
-            secrets: secrets,
-            preview: previewText.slice(0, 400),
-            verb: "edit",
-            onAllow: function () {
-              if (res.ticket) {
-                postJson(GUARD + "/consume", { ticket: res.ticket, choice: "ALLOW" })
-                  .then(function (cr) {
-                    if (cr && cr.decision === "ALLOW") {
-                      btn[EDIT_FLAG] = true;
-                      btn.click();
-                    }
-                  }).catch(function () {});
-              } else {
-                btn[EDIT_FLAG] = true;
-                btn.click();
-              }
-            },
-            onBlock: function () {
-              if (res.ticket) {
-                postJson(GUARD + "/consume", { ticket: res.ticket, choice: "DENY" }).catch(function () {});
-              }
-              showToast("Code edit stopped — you're in control", false);
-            },
-          });
-        })
-        .catch(function () {
-          // /fs/gate not available — fall back to guardFlow with /decide
-          guardFlow("edit", codeContent, { file_name: fileName, source: "ai_code_apply" },
-            function () {
-              btn[EDIT_FLAG] = true;
-              btn.click();
-            },
-            function () {
-              showToast("Code edit stopped", false);
-            }
-          );
-        });
+      // Use unified guardFlow for all code edit decisions
+      guardFlow("edit", codeContent, meta,
+        function () {
+          // Allow: apply the code edit
+          btn[EDIT_FLAG] = true;
+          btn.click();
+        },
+        function () {
+          // Block: prevent code edit
+          showToast("Code edit blocked — you're in control", false);
+        }
+      );
     },
     true
   );

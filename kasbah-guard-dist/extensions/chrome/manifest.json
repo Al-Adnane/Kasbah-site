@@ -21,36 +21,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://chatgpt.com/*",
-        "https://chat.openai.com/*",
-        "https://claude.ai/*",
-        "https://gemini.google.com/*",
-        "https://aistudio.google.com/*",
-        "https://perplexity.ai/*",
-        "https://www.perplexity.ai/*",
-        "https://poe.com/*",
-        "https://chat.deepseek.com/*",
-        "https://grok.x.ai/*",
-        "https://grok.com/*",
-        "https://copilot.microsoft.com/*",
-        "https://github.com/copilot/*",
-        "https://huggingface.co/chat/*",
-        "https://you.com/*",
-        "https://pi.ai/*",
-        "https://chat.mistral.ai/*",
-        "https://manus.im/*",
-        "https://app.manus.im/*",
-        "https://cursor.sh/*",
-        "https://www.cursor.com/*",
-        "https://windsurf.ai/*",
-        "https://codeium.com/*",
-        "https://labs.google/*",
-        "https://notebooklm.google.com/*",
-        "https://meta.ai/*",
-        "https://www.meta.ai/*",
-        "https://coral.cohere.com/*",
-        "https://chat.lmsys.org/*",
-        "https://open-assistant.io/*"
+        "<all_urls>"
       ],
       "js": [
         "src/detector.js",
@@ -59,7 +30,8 @@
       "css": [
         "src/styles.css"
       ],
-      "run_at": "document_end"
+      "run_at": "document_start",
+      "world": "MAIN"
     }
   ],
   "action": {
