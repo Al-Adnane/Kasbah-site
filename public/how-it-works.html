@@ -97,7 +97,7 @@
 
 <div class="wrap">
   <h1>How it works</h1>
-  <p class="lede">Kasbah is a browser extension backed by a local detection engine. Everything happens on your device. Nothing leaves.</p>
+  <p class="lede">Kasbah is a browser extension with a built-in detection engine. Everything happens inside your browser. Nothing leaves your device.</p>
 
   <h2>The flow, start to finish</h2>
 
@@ -106,7 +106,7 @@
       <div class="step-n">1</div>
       <div class="step-body">
         <h3>Install the extension</h3>
-        <p>You add Kasbah to your browser, plus a small background app that runs on your machine at <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">127.0.0.1:8788</code>. The extension watches. The app analyses. They talk only to each other — nothing external.</p>
+        <p>Add Kasbah to your browser in one click. The extension starts watching immediately — no extra downloads, no background process, no setup. Thirty seconds and you're protected.</p>
       </div>
     </div>
     <div class="step">
@@ -120,14 +120,14 @@
       <div class="step-n">3</div>
       <div class="step-body">
         <h3>Something risky happens</h3>
-        <p>You're about to paste database credentials into ChatGPT. The extension intercepts the action — before it completes — and sends the content to your local app for analysis. This takes under 10ms. The text never leaves your machine.</p>
+        <p>You're about to paste database credentials into ChatGPT. The extension intercepts the action — before it completes — and runs the detection engine right there in the browser. This takes under 10ms. The text never leaves your device.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-n">4</div>
       <div class="step-body">
         <h3>You get a response</h3>
-        <p>The app returns a risk score from 0–100. Under 40: silent, action goes through. 40–69: small warning toast. 70+: a modal stops the action and shows exactly what was found. You decide what happens next. Always.</p>
+        <p>Kasbah produces a risk score from 0–100. Under 40: silent, action goes through. 40–69: small warning toast. 70+: a modal stops the action and shows exactly what was found. You decide what happens next. Always.</p>
       </div>
     </div>
   </div>
@@ -247,14 +247,12 @@
     <p class="faq-q">Which sites does it cover?</p>
     <p class="faq-a">ChatGPT, Claude, Gemini, Copilot, and most AI tools by default. It also works on Gmail, Slack, Notion, GitHub — essentially any site you paste into. You can configure which sites it watches.</p>
 
-    <p class="faq-q">What's the desktop app for?</p>
-    <p class="faq-a">The detection engine runs as a small background process (the desktop app). The Chrome extension calls it over localhost. This keeps heavy processing off the browser thread and means you can update the detection engine without reinstalling the extension.</p>
   </div>
 
 </div>
 
 <footer>
-  <p>© 2026 Kasbah Guard · Detection engine v2.1 · <a href="/changelog.html">What changed</a> · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/benchmark">Benchmark</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
+  <p>© 2026 Kasbah Guard · Detection engine v2.1 · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/benchmark">Benchmark</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
 </footer>
 
 </body>

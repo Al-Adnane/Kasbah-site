@@ -106,11 +106,11 @@
   </ul>
 
   <h2>How the extension works</h2>
-  <p>When you're about to send, paste, or upload something, the extension sends that content to a local HTTP server running on your machine at <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">127.0.0.1:8788</code>. That server (the desktop app) analyzes it and returns a risk score. Nothing is transmitted outside your device during this process.</p>
-  <p>The extension communicates with one external service: our API at <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">api.bekasbah.com</code> — only for authentication. Not for content analysis.</p>
+  <p>When you're about to send, paste, or upload something, the extension analyzes it locally — the detection engine runs entirely inside your browser. The analysis takes under 10ms. Nothing is transmitted outside your device during this process.</p>
+  <p>The extension communicates with one external service: our API at <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">api.bekasbah.com</code> — only for account authentication, and only if you create an account. Not for content analysis.</p>
 
   <h2>Your audit trail</h2>
-  <p>Every decision Kasbah makes is logged locally in a SQLite database on your machine, secured with a SHA-256 hash chain for integrity. You own this data entirely. We have no access to it. You can delete it at any time by removing the application data directory.</p>
+  <p>Every decision Kasbah makes is logged locally in extension storage on your device. You own this data entirely. We have no access to it. You can clear it at any time from the extension settings.</p>
 
   <h2>Browser extension permissions</h2>
   <ul>
@@ -120,12 +120,6 @@
   </ul>
   <p>We request the minimum permissions required. We don't request permissions to read all tabs, your history, or your bookmarks.</p>
 
-  <h2>Desktop application</h2>
-  <ul>
-    <li><strong>Clipboard monitoring</strong> — optional. Scans clipboard locally. Content is never transmitted.</li>
-    <li><strong>File watching</strong> — optional. Monitors specified directories. Local only.</li>
-    <li><strong>Session data</strong> — stored in macOS Keychain and a local JSON file. Never transmitted.</li>
-  </ul>
 
   <h2>Third-party services</h2>
   <ul>
@@ -138,15 +132,14 @@
   <p>Account data stays as long as your account is active. Delete your account and it's gone. Local audit logs exist on your machine under your control — we have no copies and no access.</p>
 
   <h2>Your rights</h2>
-  <p>Under GDPR, CCPA, and similar laws, you can request access to, correction of, or deletion of your account data at any time. Email <a href="mailto:privacy@bekasbah.com">privacy@bekasbah.com</a>.</p>
+  <p>Under GDPR, CCPA, and similar laws, you can request access to, correction of, or deletion of your account data at any time. Email <a href="mailto:yo@bekasbah.com">yo@bekasbah.com</a>.</p>
 
   <h2>Contact</h2>
-  <p>Privacy questions: <a href="mailto:privacy@bekasbah.com">privacy@bekasbah.com</a><br>
-  Security issues: <a href="mailto:security@bekasbah.com">security@bekasbah.com</a></p>
+  <p>Privacy questions, security issues, or account requests: <a href="mailto:yo@bekasbah.com">yo@bekasbah.com</a></p>
 </div>
 
 <footer>
-  <p>© 2026 Kasbah Guard · Detection engine v2.1 · <a href="/changelog.html">What changed</a> · <a href="/">Home</a> · <a href="/how-it-works">How it works</a> · <a href="/benchmark">Benchmark</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
+  <p>© 2026 Kasbah Guard · Detection engine v2.1 · <a href="/">Home</a> · <a href="/how-it-works">How it works</a> · <a href="/benchmark">Benchmark</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
 </footer>
 
 </body>

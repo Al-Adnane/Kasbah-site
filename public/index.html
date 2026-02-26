@@ -253,6 +253,16 @@
     .cta-ghost { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--muted); padding: 13px 24px; border-radius: var(--r); text-decoration: none; font-weight: 600; font-size: 15px; border: 1.5px solid var(--border); transition: all .15s; }
     .cta-ghost:hover { border-color: #94a3b8; color: var(--text); }
 
+    /* WAITLIST */
+    .wl-form { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .wl-row { display: flex; gap: 10px; max-width: 440px; width: 100%; flex-wrap: wrap; justify-content: center; }
+    .wl-input { flex: 1; min-width: 200px; padding: 13px 16px; border: 1.5px solid var(--border); border-radius: var(--r); font-size: 14px; font-family: inherit; color: var(--text); background: #fff; outline: none; transition: border-color .15s; }
+    .wl-input:focus { border-color: var(--red); }
+    .wl-input::placeholder { color: var(--subtle); }
+    .wl-btn { padding: 13px 22px; background: var(--red); color: #fff; border: none; border-radius: var(--r); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .15s; }
+    .wl-btn:hover { opacity: .88; }
+    .wl-note { font-size: 12px; color: var(--subtle); text-align: center; }
+
     /* FOOTER */
     footer { border-top: 1px solid var(--border); padding: 28px 40px; background: var(--bg); }
     .footer-in { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
@@ -314,11 +324,6 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-inner">
-    <div class="hero-badge">
-      <span class="badge-pulse"></span>
-      Local-first &nbsp;·&nbsp; No account needed &nbsp;·&nbsp; Works on all major browsers
-    </div>
-
     <h1>One paste away<br>from a <em>leak.</em></h1>
 
     <p class="hero-sub">
@@ -443,7 +448,7 @@
     <h2 class="s-h">Invisible until you need it</h2>
     <p class="s-sub">Install once. It runs silently. You only see it when you're about to share something you shouldn't.</p>
     <div class="steps">
-      <div class="step"><p class="step-n">Step 01</p><h3>Install</h3><p>One click from the extension store. A local process starts. No account needed. 30 seconds total.</p></div>
+      <div class="step"><p class="step-n">Step 01</p><h3>Install</h3><p>One click from the extension store. No account needed. 30 seconds total.</p></div>
       <div class="step"><p class="step-n">Step 02</p><h3>Work normally</h3><p>ChatGPT, Claude, Gemini — everything works as usual. Kasbah watches for 6 moments: send, paste, upload, edit, browse, download.</p></div>
       <div class="step"><p class="step-n">Step 03</p><h3>Get protected</h3><p>Low risk: silent. Medium: a small heads-up. High risk: a modal shows what was found. You always decide.</p></div>
     </div>
@@ -465,24 +470,24 @@
         <p>Need the Team plan with audit trails and unlimited seats? Want to talk enterprise pricing or get on the waitlist for the Founders Club? Reach out — a human responds.</p>
       </div>
       <div class="ent-actions">
-        <a class="ent-btn ent-primary" href="mailto:sales@bekasbah.com">sales@bekasbah.com</a>
+        <a class="ent-btn ent-primary" href="mailto:yo@bekasbah.com">yo@bekasbah.com</a>
         <a class="ent-btn ent-ghost" href="/personas">See who it's for →</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section class="cta">
-  <h2>Start protecting your work</h2>
-  <p>No credit card. No account required to install. Works on all major browsers.</p>
-  <div class="cta-btns">
-    <a id="cta-btn" class="btn-install" href="https://chromewebstore.google.com/detail/kasbah-guard/idikjiajiomhekkkpfkhnpfepfgknokc" target="_blank" rel="noopener" style="font-size:15px;padding:13px 26px">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2a10 10 0 0 1 8.66 5H12a5 5 0 0 0-4.33 2.5L4.6 4.68A9.97 9.97 0 0 1 12 2z" fill="#EA4335"/><path d="M2.05 13.91 7.68 9.5A5 5 0 0 0 12 17l-2.5 4.33A10 10 0 0 1 2.05 13.9z" fill="#34A853"/><path d="M14.5 9.5 20.66 9a10 10 0 0 1-11.17 11.33L12 17a5 5 0 0 0 4.33-7.5z" fill="#FBBC05"/><circle cx="12" cy="12" r="3.5" fill="white"/></svg>
-      <div class="b-label"><span class="b-main" id="cta-label">Add to Browser</span><span class="b-sub">Free extension</span></div>
-    </a>
-    <a class="cta-ghost" href="/personas">Who uses Kasbah →</a>
-  </div>
+<!-- WAITLIST -->
+<section class="cta" id="waitlist">
+  <h2>The full app is coming</h2>
+  <p>Clipboard monitoring, file watching, team audit trail. Drop your email and we'll reach out when it's ready.</p>
+  <form class="wl-form" onsubmit="handleWaitlist(event)">
+    <div class="wl-row">
+      <input class="wl-input" type="email" id="wl-email" placeholder="you@company.com" required autocomplete="email">
+      <button class="wl-btn" type="submit" id="wl-btn">Join waitlist</button>
+    </div>
+    <p class="wl-note" id="wl-note">No spam. One email when it's ready.</p>
+  </form>
 </section>
 
 <!-- FOOTER -->
@@ -493,18 +498,41 @@
       <a href="/how-it-works">How it works</a>
       <a href="/benchmark">Benchmark</a>
       <a href="/privacy">Privacy</a>
-      <a href="/changelog.html">Changelog</a>
       <a href="https://github.com/Al-Adnane/Kasbah-Core" target="_blank" rel="noopener">GitHub</a>
       <a href="mailto:yo@bekasbah.com">Contact</a>
     </div>
     <div class="footer-right">
       <p class="footer-copy">© 2026 Kasbah Guard</p>
-      <p class="footer-version">Detection engine v2.1 · <a href="/changelog.html">What changed</a></p>
+      <p class="footer-version">Detection engine v2.1</p>
     </div>
   </div>
 </footer>
 
 <script>
+function handleWaitlist(e) {
+  e.preventDefault();
+  var email = document.getElementById('wl-email').value;
+  var btn = document.getElementById('wl-btn');
+  var note = document.getElementById('wl-note');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  fetch('https://api.bekasbah.com/waitlist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
+  }).then(function(r) {
+    if (r.ok) {
+      btn.textContent = 'You\'re on the list ✓';
+      btn.style.background = '#16a34a';
+      note.textContent = 'We\'ll email you when it\'s ready.';
+      note.style.color = '#16a34a';
+      document.getElementById('wl-email').disabled = true;
+    } else { throw new Error(); }
+  }).catch(function() {
+    window.location.href = 'mailto:yo@bekasbah.com?subject=Kasbah%20Waitlist&body=Please%20add%20me%20to%20the%20waitlist%3A%20' + encodeURIComponent(email);
+  });
+}
+
 (function(){
   const ua = navigator.userAgent;
   const isBrave = typeof navigator.brave !== 'undefined';
@@ -537,8 +565,6 @@
   const pIcon = document.getElementById('primary-icon');
   const pMain = document.getElementById('btn-main');
   const pBtn = document.getElementById('primary-btn');
-  const ctaBtn = document.getElementById('cta-btn');
-  const ctaLabel = document.getElementById('cta-label');
   const navCta = document.getElementById('nav-cta');
   const navIcon = document.getElementById('nav-icon');
   const navLabel = document.getElementById('nav-label');
@@ -546,8 +572,6 @@
   if (pIcon) pIcon.innerHTML = icon(22);
   if (pMain) pMain.textContent = `Add to ${name}`;
   if (pBtn && url !== '#') pBtn.href = url;
-  if (ctaLabel) ctaLabel.textContent = `Add to ${name}`;
-  if (ctaBtn && url !== '#') { ctaBtn.href = url; ctaBtn.querySelector('svg').outerHTML; ctaBtn.insertAdjacentHTML('afterbegin', icon(20)); ctaBtn.querySelector('svg:first-child').remove(); }
   if (navIcon) navIcon.outerHTML = icon(14).replace('<svg ', '<svg id="nav-icon" ');
   if (navLabel) navLabel.textContent = `Add to ${name}`;
   if (navCta && url !== '#') navCta.href = url;
