@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kasbah Guard — Stop Data Leaks to AI Before They Happen</title>
-  <meta name="description" content="Free Chrome extension that detects and blocks passwords, API keys, credit cards, and sensitive documents before they leak to ChatGPT, Claude, or anywhere else. 100% local. Zero servers. 91/100 accuracy.">
+  <meta name="description" content="Free Chrome extension that detects and blocks passwords, API keys, credit cards, and documents before they leak to ChatGPT, Claude, or anywhere else. 100% local. Zero servers.">
   <meta property="og:title" content="Kasbah Guard — Stop Leaking Secrets to AI">
   <meta property="og:description" content="Free Chrome extension. Blocks passwords, credit cards, API keys before they reach ChatGPT. 100% local. Zero servers.">
   <meta property="og:image" content="/og.png">
@@ -14,109 +14,60 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    :root{--red:#C1440E;--red-light:rgba(193,68,14,.1);--red-glow:rgba(193,68,14,.2);--dark:#0F172A;--bg:#FEFCFA;--bg2:#F5F3F0;--card:#FFF;--text:#0F172A;--muted:#64748B;--subtle:#94A3B8;--border:#E2DDD7;--radius:12px;--lg:16px}
-    html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}::selection{background:var(--red);color:#fff}a{color:var(--red);text-decoration:none;transition:color .2s}a:hover{color:#9a350b}
+    :root{--red:#C1440E;--red-light:rgba(193,68,14,.1);--red-glow:rgba(193,68,14,.2);--dark:#0F172A;--bg:#FEFCFA;--text:#0F172A;--muted:#64748B;--subtle:#94A3B8;--border:#E2DDD7;--radius:12px}
+    html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}::selection{background:var(--red);color:#fff}
 
     /* NAV */
     nav{border-bottom:1px solid var(--border);padding:14px 0;background:rgba(254,252,250,.92);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100}
     .nav-in{max-width:1120px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
-    .n-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+    .n-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:900;font-size:15px}
     .n-brand img{width:32px;height:32px;border-radius:8px}
-    .n-brand span{font-weight:900;font-size:15px}
     .n-links{display:flex;gap:24px;align-items:center}
-    .n-links a{color:var(--muted);font-size:14px;font-weight:500;transition:color .2s}
+    .n-links a{color:var(--muted);font-size:14px;font-weight:500;text-decoration:none;transition:color .2s}
     .n-links a:hover{color:var(--text)}
-    .btn-install-nav{background:var(--red);color:#fff;padding:8px 18px;border-radius:var(--radius);font-size:12px;font-weight:800;transition:all .2s}
-    .btn-install-nav:hover{opacity:.9;box-shadow:0 4px 12px var(--red-glow)}
+    .btn-nav{background:var(--red);color:#fff;padding:8px 18px;border-radius:var(--radius);font-size:12px;font-weight:800;transition:all .2s;text-decoration:none}
+    .btn-nav:hover{opacity:.9;box-shadow:0 4px 12px var(--red-glow)}
 
     .page{max-width:1120px;margin:0 auto;padding:0 28px}
 
     /* HERO */
-    .hero{padding:100px 0 80px;text-align:center;position:relative}
-    .hero::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,var(--red-light) 0%,transparent 70%);pointer-events:none}
+    .hero{padding:120px 0 100px;text-align:center;position:relative}
+    .hero::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:900px;height:700px;background:radial-gradient(ellipse,var(--red-light) 0%,transparent 70%);pointer-events:none;z-index:0}
     .hero>*{position:relative;z-index:1}
-    .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;background:var(--red-light);border:1px solid var(--red-glow);font-size:12px;font-weight:700;color:var(--red);margin-bottom:24px;letter-spacing:.02em}
+    .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;background:var(--red-light);border:1px solid var(--red-glow);font-size:12px;font-weight:700;color:var(--red);margin-bottom:28px;letter-spacing:.02em}
     .dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulse 2s ease infinite}
-    .hero h1{font-size:clamp(38px,7vw,64px);font-weight:900;letter-spacing:-.05em;line-height:1.1;margin-bottom:16px;color:var(--dark)}
-    .hero .sub{font-size:18px;color:var(--muted);max-width:640px;margin:0 auto 40px;line-height:1.7}
-
-    .hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-    .btn-hero{display:inline-flex;align-items:center;gap:8px;padding:16px 36px;font-size:16px;font-weight:800;border:none;border-radius:var(--radius);cursor:pointer;font-family:inherit;text-decoration:none;transition:all .2s}
-    .btn-primary{background:var(--red);color:#fff;box-shadow:0 4px 20px var(--red-glow)}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(193,68,14,.25)}
-    .btn-secondary{background:transparent;color:var(--text);border:1.5px solid var(--border)}
+    .hero h1{font-size:clamp(42px,8vw,72px);font-weight:900;letter-spacing:-.05em;line-height:1.1;margin-bottom:20px;color:var(--dark)}
+    .hero .sub{font-size:20px;color:var(--muted);max-width:700px;margin:0 auto 48px;line-height:1.7}
+    .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+    .btn-primary{display:inline-flex;align-items:center;gap:8px;padding:18px 40px;font-size:17px;font-weight:800;background:var(--red);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-family:inherit;text-decoration:none;transition:all .2s;box-shadow:0 4px 20px var(--red-glow)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(193,68,14,.3)}
+    .btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:18px 40px;font-size:17px;font-weight:800;background:transparent;color:var(--text);border:2px solid var(--border);border-radius:var(--radius);cursor:pointer;font-family:inherit;text-decoration:none;transition:all .2s}
     .btn-secondary:hover{border-color:var(--red);color:var(--red)}
 
-    .hero-proof{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:36px;flex-wrap:wrap;font-size:13px}
-    .proof-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700}
-    .badge-green{background:rgba(6,95,70,.1);border:1px solid rgba(6,95,70,.2);color:#065F46}
-    .badge-red{background:var(--red-light);border:1px solid var(--red-glow);color:var(--red)}
+    .proof{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:48px;flex-wrap:wrap;font-size:13px}
+    .proof-item{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700}
+    .proof-green{background:rgba(6,95,70,.1);border:1px solid rgba(6,95,70,.2);color:#065F46}
+    .proof-red{background:var(--red-light);border:1px solid var(--red-glow);color:var(--red)}
+
+    .links{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:64px;flex-wrap:wrap;font-size:14px}
+    .link{color:var(--muted);text-decoration:none;font-weight:600;transition:color .2s}
+    .link:hover{color:var(--red)}
+
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-    /* SECTION COMMON */
-    .section{padding:80px 0;border-top:1px solid var(--border)}
-    .section-label{font-size:12px;font-weight:700;color:var(--red);letter-spacing:.08em;text-transform:uppercase;text-align:center;margin-bottom:16px}
-    .section h2{font-size:clamp(28px,5vw,44px);font-weight:900;text-align:center;margin-bottom:48px;letter-spacing:-.03em}
-
-    /* PERSONAS */
-    .personas{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
-    .persona{padding:28px;background:var(--card);border:1px solid var(--border);border-radius:var(--lg);transition:all .2s;cursor:pointer}
-    .persona:hover{border-color:var(--red);box-shadow:0 8px 24px var(--red-light);transform:translateY(-4px)}
-    .persona-icon{font-size:48px;margin-bottom:16px}
-    .persona h3{font-size:16px;font-weight:800;margin-bottom:8px}
-    .persona p{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:12px}
-    .persona-risk{font-size:13px;font-weight:700;color:var(--red);padding:8px 12px;background:var(--red-light);border-radius:8px;display:inline-block}
-
-    /* HOW IT WORKS */
-    .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px}
-    .step{padding:28px;background:var(--card);border:1px solid var(--border);border-radius:var(--lg);text-align:center}
-    .step-num{font-size:48px;font-weight:900;color:var(--red);margin-bottom:12px;line-height:1}
-    .step h3{font-size:16px;font-weight:800;margin-bottom:10px}
-    .step p{font-size:14px;color:var(--muted);line-height:1.6}
-    .step-visual{background:var(--bg2);padding:24px;border-radius:var(--radius);margin-bottom:16px;font-size:32px;line-height:1}
-
-    /* BENCHMARK */
-    .benchmark{background:var(--bg2);padding:40px;border-radius:var(--lg);margin:40px 0}
-    .bench-title{font-size:16px;font-weight:800;margin-bottom:24px}
-    .bench-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
-    .bench-row:last-child{border-bottom:0}
-    .bench-product{font-weight:700;color:var(--text)}
-    .bench-score{text-align:center;font-weight:800;font-size:18px}
-    .bench-kasbah{color:var(--red)}
-    .bench-detail{text-align:center;font-size:12px;color:var(--muted)}
-    @media(max-width:768px){.bench-row{grid-template-columns:1fr 1fr;gap:12px}.bench-detail{display:none}}
-
-    /* SYSTEM ARCHITECTURE */
-    .arch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin:40px 0}
-    .arch-card{padding:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-align:center}
-    .arch-icon{font-size:40px;margin-bottom:12px}
-    .arch-card h4{font-size:14px;font-weight:800;margin-bottom:6px}
-    .arch-card p{font-size:12px;color:var(--muted)}
-
-    /* PRIVACY */
-    .privacy-section{background:var(--card);padding:32px;border-radius:var(--lg);margin:40px 0}
-    .privacy-section h3{font-size:18px;font-weight:800;margin:24px 0 12px}
-    .privacy-section p,.privacy-section li{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:12px}
-    .privacy-section ul{margin-left:20px;margin-bottom:16px}
-
-    /* INSTALL CTA */
-    .install-section{background:var(--dark);color:#fff;padding:80px 28px;margin:60px -28px 0;text-align:center}
-    .install-section h2{color:#fff;font-size:clamp(28px,5vw,44px);font-weight:900;letter-spacing:-.03em;margin-bottom:16px}
-    .install-section p{color:rgba(255,255,255,.7);font-size:16px;margin-bottom:32px;max-width:600px;margin-left:auto;margin-right:auto}
-    .btn-install-dark{display:inline-flex;align-items:center;gap:10px;padding:18px 44px;font-size:17px;font-weight:900;background:var(--red);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-family:inherit;text-decoration:none;transition:all .2s;box-shadow:0 4px 24px rgba(193,68,14,.4)}
-    .btn-install-dark:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(193,68,14,.5);color:#fff}
-
     /* FOOTER */
-    footer{padding:32px 0;text-align:center;color:var(--subtle);font-size:12px;border-top:1px solid var(--border)}
-    footer a{color:var(--muted)}
+    footer{padding:32px 0;text-align:center;color:var(--subtle);font-size:12px;border-top:1px solid var(--border);margin-top:80px}
+    footer a{color:var(--muted);text-decoration:none;transition:color .2s}
     footer a:hover{color:var(--red)}
 
     @media(max-width:700px){
-      .personas,.steps,.arch-grid{grid-template-columns:1fr}
-      .hero{padding:60px 0 40px}
-      .section{padding:60px 0}
-      .hero-ctas{flex-direction:column}
-      .btn-hero{width:100%}
+      .hero{padding:80px 0 60px}
+      .hero h1{font-size:clamp(32px,6vw,52px)}
+      .hero .sub{font-size:16px}
+      .hero-cta{flex-direction:column;gap:10px}
+      .btn-primary,.btn-secondary{width:100%;justify-content:center}
+      .proof{margin-top:32px}
+      .links{margin-top:40px;gap:16px;font-size:13px}
     }
   </style>
 </head>
@@ -124,225 +75,46 @@
 
   <nav>
     <div class="nav-in">
-      <a class="n-brand" href="/"><img src="/logo-200.png" alt="Kasbah"><span>Kasbah Guard</span></a>
+      <a class="n-brand" href="/"><img src="/logo-200.png" alt="Kasbah">Kasbah Guard</a>
       <div class="n-links">
-        <a href="#how-it-works">How It Works</a>
-        <a href="#privacy">Privacy</a>
-        <a href="#system">System</a>
-        <a class="btn-install-nav" href="https://chrome.google.com/webstore/detail/kasbah-guard">Add to Chrome</a>
+        <a href="/personas">Personas</a>
+        <a href="/how-it-works">How It Works</a>
+        <a href="/benchmark">Benchmark</a>
+        <a href="/privacy">Privacy</a>
+        <a class="btn-nav" href="https://chrome.google.com/webstore/detail/kasbah-guard">Add to Chrome</a>
       </div>
     </div>
   </nav>
 
-  <!-- HERO -->
   <section class="hero">
     <div class="page">
-      <div class="badge"><span class="dot"></span> Free Browser Extension — No Account</div>
-      <h1>Stop leaking secrets<br>to AI</h1>
-      <p class="sub">Kasbah detects passwords, credit cards, API keys, and documents before they leave your device. 100% local processing. Zero servers. Works on every site you visit.</p>
-      <div class="hero-ctas">
-        <a href="https://chrome.google.com/webstore/detail/kasbah-guard" class="btn-hero btn-primary">→ Add to Chrome (Free)</a>
-        <a href="#how-it-works" class="btn-hero btn-secondary">How It Works</a>
+      <div class="badge"><span class="dot"></span> Free · No Account · 5 Seconds to Install</div>
+      <h1>Stop leaking secrets to AI</h1>
+      <p class="sub">Kasbah detects passwords, credit cards, API keys, and documents before they leave your device. 100% local. Zero servers. Works on every site.</p>
+      <div class="hero-cta">
+        <a href="https://chrome.google.com/webstore/detail/kasbah-guard" class="btn-primary">→ Add to Chrome (Free)</a>
+        <a href="/how-it-works" class="btn-secondary">How It Works</a>
       </div>
-      <div class="hero-proof">
-        <div class="proof-badge badge-green">✓ 100% Local Processing</div>
-        <div class="proof-badge badge-red">91/100 Accuracy</div>
-        <div class="proof-badge badge-green">✓ Zero Cloud Servers</div>
-        <div class="proof-badge badge-red">Beats CrowdStrike by 18 pts</div>
+      <div class="proof">
+        <div class="proof-item proof-green">✓ 100% Local</div>
+        <div class="proof-item proof-red">91/100 Accurate</div>
+        <div class="proof-item proof-green">✓ Zero Cloud</div>
+        <div class="proof-item proof-red">Free Forever</div>
       </div>
-    </div>
-  </section>
-
-  <!-- PERSONAS: The Problem -->
-  <section class="section">
-    <div class="page">
-      <div class="section-label">The Reality</div>
-      <h2>You're one paste away from a breach</h2>
-      <div class="personas">
-        <div class="persona">
-          <div class="persona-icon">💼</div>
-          <h3>Consultant</h3>
-          <p>You paste client data into Claude for analysis. It's immediately in their training data. Forever.</p>
-          <div class="persona-risk">Loss: $100K+ per breach</div>
-        </div>
-        <div class="persona">
-          <div class="persona-icon">👤</div>
-          <h3>Freelancer</h3>
-          <p>You upload a customer list to ChatGPT. Now their full names, emails, and phone numbers are indexed by a search engine.</p>
-          <div class="persona-risk">Loss: Your reputation</div>
-        </div>
-        <div class="persona">
-          <div class="persona-icon">🏢</div>
-          <h3>Founder</h3>
-          <p>You paste a business plan or pitch deck to Claude. A competitor finds it. Your startup's strategy is public knowledge.</p>
-          <div class="persona-risk">Loss: Competitive edge</div>
-        </div>
-        <div class="persona">
-          <div class="persona-icon">🔐</div>
-          <h3>Everyone</h3>
-          <p>You upload your passport or driver's license to verify your identity. Someone now has everything they need to steal yours.</p>
-          <div class="persona-risk">Loss: Your identity</div>
-        </div>
+      <div class="links">
+        <a href="/personas" class="link">See Real Problems →</a>
+        <a href="/benchmark" class="link">Vs CrowdStrike →</a>
+        <a href="/privacy" class="link">Trust & Privacy →</a>
       </div>
     </div>
   </section>
-
-  <!-- HOW IT WORKS -->
-  <section class="section" id="how-it-works">
-    <div class="page">
-      <div class="section-label">The Solution</div>
-      <h2>Three things Kasbah watches</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-visual">📋</div>
-          <h3>Every Paste</h3>
-          <p>When you paste anything into a text field (ChatGPT, Gmail, forms), Kasbah scans it in real-time.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-visual">⬆️</div>
-          <h3>Every Upload</h3>
-          <p>When you upload a file, Kasbah checks both the filename and content for sensitive data patterns.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-visual">✍️</div>
-          <h3>Everything You Type</h3>
-          <p>As you fill out forms, Kasbah monitors for credit cards, SSNs, API keys, and other secrets.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- BENCHMARK: Honest Comparison -->
-  <section class="section">
-    <div class="page">
-      <div class="section-label">Honest Benchmark</div>
-      <h2>How we stack up against enterprise DLP</h2>
-      <p style="text-align:center;color:var(--muted);margin-bottom:32px">We compared Kasbah against industry leaders on 500 real-world leak scenarios. Here's what we found.</p>
-      <div class="benchmark">
-        <div class="bench-title">Detection Accuracy on Real Leaks</div>
-        <div class="bench-row">
-          <div class="bench-product">Kasbah Guard</div>
-          <div class="bench-score bench-kasbah">91/100</div>
-          <div class="bench-detail">Free<br>Local</div>
-        </div>
-        <div class="bench-row">
-          <div class="bench-product">CrowdStrike</div>
-          <div class="bench-score">73/100</div>
-          <div class="bench-detail">$20/user/mo<br>Cloud</div>
-        </div>
-        <div class="bench-row">
-          <div class="bench-product">Nightfall DLP</div>
-          <div class="bench-score">70/100</div>
-          <div class="bench-detail">$300+/mo<br>Cloud</div>
-        </div>
-        <div class="bench-row">
-          <div class="bench-product">Microsoft Purview</div>
-          <div class="bench-score">70/100</div>
-          <div class="bench-detail">$10/user/mo<br>Cloud</div>
-        </div>
-      </div>
-      <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:20px">Test methodology: 500 real-world leak scenarios (credit cards, SSNs, API keys, documents, credentials). We tested each platform's ability to detect and block before exfiltration. False positive rate limited to <1% on all platforms.</p>
-    </div>
-  </section>
-
-  <!-- SYSTEM ARCHITECTURE -->
-  <section class="section" id="system">
-    <div class="page">
-      <div class="section-label">How It Works Under the Hood</div>
-      <h2>Cryptographic proof. Local processing. Zero tracking.</h2>
-
-      <p style="text-align:center;color:var(--muted);margin-bottom:40px;max-width:600px;margin-left:auto;margin-right:auto">
-        Every detection is cryptographically signed. You own the keys. Every decision stays on your device. No cloud upload. No training on your data. No logs sent anywhere.
-      </p>
-
-      <div class="arch-grid">
-        <div class="arch-card">
-          <div class="arch-icon">🔍</div>
-          <h4>Detection Engine</h4>
-          <p>Shannon entropy + 100+ regex patterns. Detects CC, SSN, API keys, secrets in <100ms.</p>
-        </div>
-        <div class="arch-card">
-          <div class="arch-icon">📝</div>
-          <h4>Risk Scoring</h4>
-          <p>Weights detections by severity. 40-69 = warning. 70+ = block. You choose.</p>
-        </div>
-        <div class="arch-card">
-          <div class="arch-icon">🔐</div>
-          <h4>Cryptographic Signing</h4>
-          <p>Every block is HMAC-SHA256 signed. Proof that Kasbah protected you.</p>
-        </div>
-        <div class="arch-card">
-          <div class="arch-icon">💾</div>
-          <h4>Local Storage</h4>
-          <p>All data stays on your device. Audit trail. Your control. Your keys.</p>
-        </div>
-        <div class="arch-card">
-          <div class="arch-icon">⚡</div>
-          <h4>Sub-100ms Latency</h4>
-          <p>Real-time detection. Doesn't slow down your workflow. You won't notice it.</p>
-        </div>
-        <div class="arch-card">
-          <div class="arch-icon">🚫</div>
-          <h4>Zero Cloud</h4>
-          <p>No servers. No tracking. No data collection. Your secrets stay yours.</p>
-        </div>
-      </div>
-
-      <div style="background:var(--bg2);padding:32px;border-radius:var(--lg);margin:40px 0;border-left:4px solid var(--red)">
-        <h3 style="font-size:16px;font-weight:800;margin-bottom:12px">Why Local Processing Matters</h3>
-        <p style="color:var(--muted);line-height:1.7">Cloud-based DLP tools read your data before deciding to block. That means it's already uploaded. We process everything on your device before anything leaves. Your credit card, API key, or passport never touches our servers — because we don't have any.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- PRIVACY -->
-  <section class="section" id="privacy">
-    <div class="page">
-      <div class="section-label">Privacy & Trust</div>
-      <h2>What we actually do with your data</h2>
-
-      <div class="privacy-section">
-        <h3>Short Version</h3>
-        <p><strong>We don't collect your data.</strong> We don't send it anywhere. We don't sell it. We don't use it to train models. We're a browser extension. We live on your device. That's it.</p>
-
-        <h3>What We See</h3>
-        <ul>
-          <li><strong>No content scanning:</strong> We don't read your emails, documents, or private messages. Only what you paste into web forms or upload to services.</li>
-          <li><strong>No persistent logging:</strong> We keep a local audit trail on your device (so you can prove we blocked something). That log never leaves your computer.</li>
-          <li><strong>No IP tracking:</strong> We don't log your IP address, location, or browsing history.</li>
-          <li><strong>No cookies:</strong> We use zero third-party cookies or trackers.</li>
-        </ul>
-
-        <h3>Open Source & Auditable</h3>
-        <p>Our detection engine is open-source. Any security researcher can inspect our code, verify our claims, and submit improvements. <a href="https://github.com/Al-Adnane/Kasbah-Core">View it on GitHub.</a></p>
-
-        <h3>Money</h3>
-        <p>The free extension is free forever. We plan to offer a paid "Founders Club" ($297 one-time) and "Team Plan" ($29/mo) for teams. The paid versions will add team dashboards and audit trails — but still process everything locally on each user's device.</p>
-
-        <h3>Your Audit Trail</h3>
-        <p>When Kasbah blocks something, we store a cryptographically signed record <strong>on your device</strong>. This proves what was blocked, when, and on which site. It's your proof of protection. We never see it.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- FINAL CTA -->
-  <div class="install-section">
-    <div class="page">
-      <h2>Five seconds to protect yourself</h2>
-      <p>No account. No credit card. No setup. Install now and your data is protected on every site.</p>
-      <a href="https://chrome.google.com/webstore/detail/kasbah-guard" class="btn-install-dark">→ Add to Chrome (Free)</a>
-    </div>
-  </div>
 
   <footer>
     <div class="page">
       <p>© 2026 Kasbah Guard · Built for people who care about privacy.</p>
       <p style="margin-top:12px">
-        <a href="https://github.com/Al-Adnane/Kasbah-Core">GitHub (Open Source)</a>
-        <a href="mailto:yo@bekasbah.com">yo@bekasbah.com</a>
+        <a href="https://github.com/Al-Adnane/Kasbah-Core">GitHub</a> ·
+        <a href="mailto:yo@bekasbah.com">Email</a> ·
         <a href="https://chrome.google.com/webstore/detail/kasbah-guard">Chrome Web Store</a>
       </p>
     </div>
