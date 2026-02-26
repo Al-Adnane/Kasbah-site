@@ -570,11 +570,21 @@ function handleWaitlist(e) {
   const navLabel = document.getElementById('nav-label');
 
   if (pIcon) pIcon.innerHTML = icon(22);
-  if (pMain) pMain.textContent = `Add to ${name}`;
-  if (pBtn && url !== '#') pBtn.href = url;
+  if (url === '#') {
+    // Coming soon (Firefox, Safari) — scroll to waitlist instead of bouncing to Chrome store
+    if (pMain) pMain.textContent = `Notify me for ${name}`;
+    const pSub = document.getElementById('btn-sub');
+    if (pSub) pSub.textContent = "We'll email when it's ready";
+    if (pBtn) pBtn.href = '#waitlist';
+    if (navLabel) navLabel.textContent = 'Get notified';
+    if (navCta) navCta.href = '#waitlist';
+  } else {
+    if (pMain) pMain.textContent = `Add to ${name}`;
+    if (pBtn) pBtn.href = url;
+    if (navLabel) navLabel.textContent = `Add to ${name}`;
+    if (navCta) navCta.href = url;
+  }
   if (navIcon) navIcon.outerHTML = icon(14).replace('<svg ', '<svg id="nav-icon" ');
-  if (navLabel) navLabel.textContent = `Add to ${name}`;
-  if (navCta && url !== '#') navCta.href = url;
 
   // Highlight detected browser pill
   const pillMap = { Chrome:'pill-chrome', Edge:'pill-edge', Brave:'pill-brave', Arc:'pill-arc' };
