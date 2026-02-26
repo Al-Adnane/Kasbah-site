@@ -3,116 +3,154 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Who Uses Kasbah — Real Problems, Real Protection</title>
+  <title>Who Kasbah is for — Kasbah Guard</title>
+  <meta name="description" content="Consultants, freelancers, founders, and teams who use AI daily. Real scenarios where one paste puts everything at risk.">
+  <link rel="icon" href="/logo-200.png"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root{--red:#C1440E;--dark:#0F172A;--text:#3f3f46;--muted:#71717a;--border:#e4e4e7;--bg:#fafaf9;--subtle:#a1a1aa}
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--text);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
-    .container{max-width:900px;margin:0 auto;padding:48px 24px 80px}
-    .back{display:inline-block;margin-bottom:32px;font-size:13px;font-weight:700;color:var(--muted);text-decoration:none}
-    .back:hover{color:var(--dark)}
-    h1{font-size:32px;font-weight:900;margin-bottom:12px;color:var(--dark)}
-    .subtitle{font-size:16px;color:var(--muted);margin-bottom:48px}
-    .personas{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:32px;margin-top:40px}
-    .persona-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:32px;transition:all .2s}
-    .persona-card:hover{border-color:var(--red);box-shadow:0 8px 24px rgba(193,68,14,.08)}
-    .persona-icon{width:56px;height:56px;border-radius:12px;background:rgba(193,68,14,.1);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:16px}
-    .persona-card h2{font-size:20px;font-weight:800;margin-bottom:8px;color:var(--dark)}
-    .persona-title{font-size:13px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px}
-    .persona-card p{font-size:14px;color:var(--text);margin-bottom:12px;line-height:1.8}
-    .problem{background:rgba(193,68,14,.05);border-left:3px solid var(--red);padding:12px 16px;margin:18px 0;border-radius:4px;font-size:13px;font-weight:600;color:#65350b}
-    .solution-list{list-style:none;margin:18px 0;padding:0}
-    .solution-list li{font-size:13px;color:var(--text);margin-bottom:8px;padding-left:20px;position:relative}
-    .solution-list li:before{content:'✓';position:absolute;left:0;color:var(--red);font-weight:bold}
-    .cta-link{display:inline-block;margin-top:16px;padding:10px 18px;background:linear-gradient(135deg,var(--red),#9a350b);color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700;transition:all .2s}
-    .cta-link:hover{opacity:.9;transform:translateY(-1px)}
+    :root{--red:#C1440E;--red-light:rgba(193,68,14,.1);--red-glow:rgba(193,68,14,.2);--dark:#0F172A;--bg:#FEFCFA;--text:#0F172A;--muted:#64748B;--subtle:#94A3B8;--border:#E2DDD7;--radius:12px}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+    ::selection{background:var(--red);color:#fff}
+
+    nav{border-bottom:1px solid var(--border);padding:14px 0;background:rgba(254,252,250,.92);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100}
+    .nav-in{max-width:1120px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
+    .n-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:900;font-size:15px}
+    .n-brand img{width:32px;height:32px;border-radius:8px}
+    .n-links{display:flex;gap:24px;align-items:center}
+    .n-links a{color:var(--muted);font-size:14px;font-weight:500;text-decoration:none;transition:color .2s}
+    .n-links a:hover{color:var(--text)}
+    .n-links a.active{color:var(--text);font-weight:700}
+    .btn-nav{background:var(--red);color:#fff !important;padding:8px 18px;border-radius:var(--radius);font-size:12px;font-weight:800;transition:all .2s}
+    .btn-nav:hover{opacity:.9}
+
+    .wrap{max-width:760px;margin:0 auto;padding:72px 28px 100px}
+
+    h1{font-size:40px;font-weight:900;letter-spacing:-.03em;line-height:1.15;margin-bottom:16px;color:var(--dark)}
+    .lede{font-size:18px;color:var(--muted);line-height:1.7;margin-bottom:64px;max-width:600px}
+
+    .scenario{margin-bottom:80px}
+    .scenario-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--red);margin-bottom:12px}
+    .scenario h2{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:20px;color:var(--dark)}
+    .scenario p{font-size:16px;color:#334155;line-height:1.8;margin-bottom:16px}
+    .scenario p:last-child{margin-bottom:0}
+
+    .moment{background:#fff;border:1px solid var(--border);border-left:3px solid var(--red);border-radius:0 var(--radius) var(--radius) 0;padding:20px 24px;margin:28px 0;font-size:15px;color:#1e293b;line-height:1.7;font-style:italic}
+
+    .kasbah-catch{background:var(--red-light);border:1px solid var(--red-glow);border-radius:var(--radius);padding:20px 24px;margin-top:24px;font-size:14px;color:#7c2d12;line-height:1.7}
+    .kasbah-catch strong{display:block;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--red);margin-bottom:6px}
+
+    .divider{border:none;border-top:1px solid var(--border);margin:0}
+
+    .install-bar{background:var(--dark);color:#fff;border-radius:16px;padding:40px;margin-top:72px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+    .install-bar h3{font-size:22px;font-weight:800}
+    .install-bar p{font-size:14px;color:#94a3b8;margin-top:6px}
+    .btn-install{display:inline-block;background:var(--red);color:#fff;padding:14px 28px;border-radius:var(--radius);font-weight:800;font-size:14px;text-decoration:none;white-space:nowrap;transition:all .2s}
+    .btn-install:hover{opacity:.9;transform:translateY(-1px)}
+
+    footer{padding:32px 0;text-align:center;color:var(--subtle);font-size:12px;border-top:1px solid var(--border);margin-top:0}
+    footer a{color:var(--muted);text-decoration:none}
+    footer a:hover{color:var(--red)}
+
     @media(max-width:700px){
-      .container{padding:32px 16px 60px}
-      h1{font-size:24px}
-      .personas{grid-template-columns:1fr;gap:24px}
-      .persona-card{padding:24px}
+      .wrap{padding:48px 20px 80px}
+      h1{font-size:28px}
+      .lede{font-size:16px;margin-bottom:48px}
+      .scenario h2{font-size:22px}
+      .scenario p{font-size:15px}
+      .install-bar{flex-direction:column;padding:28px}
+      .nav-in{gap:16px}
+      .n-links{gap:16px}
+      .n-links a:not(.btn-nav){display:none}
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <a class="back" href="/">&larr; Back to Kasbah</a>
-  <h1>Who Kasbah Protects</h1>
-  <p class="subtitle">Real people, real risks, real solutions</p>
 
-  <div class="personas">
-    <!-- Consultants -->
-    <div class="persona-card">
-      <div class="persona-icon">🤝</div>
-      <p class="persona-title">Consultant</p>
-      <h2>Protect Client Confidentiality</h2>
-      <p>You manage sensitive client data — strategy documents, financial projections, competitive analysis. Clients trust you completely.</p>
-      <div class="problem">Risk: One careless paste into ChatGPT exposes your client's roadmap to everyone in that conversation, plus OpenAI's training data.</div>
-      <ul class="solution-list">
-        <li>Safely use AI research tools without leaking confidential documents</li>
-        <li>Work with large datasets without accidental wholesale exposure</li>
-        <li>Maintain attorney-client privilege (if you're legal counsel)</li>
-        <li>Sleep knowing client data stays encrypted locally</li>
-      </ul>
-      <a href="https://chrome.google.com/webstore/detail/kasbah-guard" class="cta-link">Install Kasbah Free</a>
+<nav>
+  <div class="nav-in">
+    <a class="n-brand" href="/"><img src="/logo-200.png" alt="Kasbah">Kasbah Guard</a>
+    <div class="n-links">
+      <a href="/personas" class="active">Who it's for</a>
+      <a href="/how-it-works">How it works</a>
+      <a href="/benchmark">Benchmark</a>
+      <a href="/privacy">Privacy</a>
+      <a class="btn-nav" href="https://chrome.google.com/webstore/detail/kasbah-guard">Add to Chrome</a>
     </div>
+  </div>
+</nav>
 
-    <!-- Freelancers -->
-    <div class="persona-card">
-      <div class="persona-icon">💼</div>
-      <p class="persona-title">Freelancer</p>
-      <h2>Work Safely With Client Code</h2>
-      <p>You're a developer, designer, writer, or contractor. Clients send you their source code, design files, or proprietary content. You're responsible for protecting it.</p>
-      <div class="problem">Risk: You paste client code into Claude to speed up debugging, Claude learns it, client's secret sauce becomes public training data.</div>
-      <ul class="solution-list">
-        <li>Use AI tools for debugging without exposing client IP</li>
-        <li>Collaborate safely on projects with NDAs</li>
-        <li>Keep your professional reputation intact</li>
-        <li>No breach = no angry clients = no legal liability</li>
-      </ul>
-      <a href="https://chrome.google.com/webstore/detail/kasbah-guard" class="cta-link">Install Kasbah Free</a>
-    </div>
+<div class="wrap">
+  <h1>The moment you don't think about</h1>
+  <p class="lede">Most data leaks to AI aren't malicious. They're moments of convenience — a quick paste, a helpful context dump, a file dragged in to speed things up. Kasbah is for people who want to use AI freely without that nagging "wait, should I have shared that?"</p>
 
-    <!-- Founders -->
-    <div class="persona-card">
-      <div class="persona-icon">🚀</div>
-      <p class="persona-title">Founder</p>
-      <h2>Protect Your Business Strategy</h2>
-      <p>You're building something valuable. Your roadmap, investor terms, financial metrics, and technical architecture are competitive advantages.</p>
-      <div class="problem">Risk: Using AI for market research or hiring insights? One paste of your cap table or growth metrics leaks your valuation to competitors.</div>
-      <ul class="solution-list">
-        <li>Research competitors and markets freely</li>
-        <li>Ask AI for financial/legal advice without exposing your numbers</li>
-        <li>Keep your fundraising strategy confidential</li>
-        <li>Maintain your valuation momentum (no public disclosure)</li>
-      </ul>
-      <a href="https://chrome.google.com/webstore/detail/kasbah-guard" class="cta-link">Install Kasbah Free</a>
-    </div>
-
-    <!-- Teams -->
-    <div class="persona-card">
-      <div class="persona-icon">👥</div>
-      <p class="persona-title">Team Lead</p>
-      <h2>Protect Your Entire Team</h2>
-      <p>Your team uses AI tools daily: ChatGPT, Claude, Gemini. They're smart, but they're not thinking about data protection when they're under deadline pressure.</p>
-      <div class="problem">Risk: A junior engineer pastes a SQL query with credentials. A product manager shares the roadmap. A sales rep copies customer data. One mistake = company breach.</div>
-      <ul class="solution-list">
-        <li>Give your team freedom to use AI without fear</li>
-        <li>Prevent data leaks at the human layer (before they happen)</li>
-        <li>See what's being flagged in your audit trail</li>
-        <li>Sleep at night knowing it's all local, no third-party monitoring</li>
-      </ul>
-      <a href="https://chrome.google.com/webstore/detail/kasbah-guard" class="cta-link">Install Kasbah Free</a>
+  <div class="scenario">
+    <p class="scenario-label">Consultant</p>
+    <h2>You work with clients who trust you completely</h2>
+    <p>Your day is built around context-switching. Acquisition target on Monday, restructuring deck on Tuesday, competitive analysis by Thursday. You use AI to think faster — and it genuinely helps.</p>
+    <div class="moment">"I copied the slide deck from the client's board meeting to ask Claude to write an executive summary. I've done this a hundred times. This time the deck had the M&amp;A target's non-public financials. The NDA I signed almost certainly covered this. Claude's training might too."</div>
+    <p>You probably didn't intend to break anything. You were under deadline. The risk was invisible until it wasn't.</p>
+    <div class="kasbah-catch">
+      <strong>What Kasbah does</strong>
+      Sees the financial figures, flags it as high-risk before the send. One modal: "This looks like sensitive financial data. Block it?" You click Block. The client never knows. You keep the account.
     </div>
   </div>
 
-  <div style="margin-top:60px;padding:28px;background:#fff;border:1px solid var(--border);border-radius:16px">
-    <h2 style="font-size:18px;font-weight:800;margin-bottom:16px;color:var(--dark)">The Common Thread</h2>
-    <p style="font-size:14px;color:var(--text);margin-bottom:12px">Every Kasbah user shares one belief: <strong>their data is their responsibility.</strong></p>
-    <p style="font-size:14px;color:var(--text)">Kasbah doesn't require training, doesn't slow you down, and doesn't spy on you. It just watches for risky moments and says "hey, maybe reconsider" when you're about to leak something valuable. Then it gets out of your way.</p>
+  <hr class="divider">
+
+  <div class="scenario" style="margin-top:80px">
+    <p class="scenario-label">Freelancer</p>
+    <h2>You're accountable for data that isn't yours</h2>
+    <p>Clients send you things — database dumps, design files, source code with comments that say "don't share this." You sign NDAs and mean it. But debugging goes faster with AI help, and that's where the habit forms.</p>
+    <div class="moment">"A client sent me database credentials over Slack to fix a production query. I pasted them into ChatGPT to debug it. Ten minutes later, done. The credentials were probably fine — but I don't know what OpenAI does with inputs. And I definitely didn't think about it in the moment."</div>
+    <p>You're not careless. You're efficient. The problem is that "efficient" and "secure" stopped meaning the same thing when AI entered the workflow.</p>
+    <div class="kasbah-catch">
+      <strong>What Kasbah does</strong>
+      Recognizes the credential format (connection string, API key pattern) before you paste it. Block modal appears. You realize what you were about to do. Thirty seconds later you're using the AI differently — asking about the query pattern without including the credentials. Same result, no exposure.
+    </div>
   </div>
 
+  <hr class="divider">
+
+  <div class="scenario" style="margin-top:80px">
+    <p class="scenario-label">Founder</p>
+    <h2>You're building something you haven't announced yet</h2>
+    <p>You ask AI for help constantly — competitive research, investor language, team feedback, financial modeling. It accelerates everything. The problem is that AI doesn't know what's public and what isn't.</p>
+    <div class="moment">"I pasted my financial model into Claude to help write the investor memo. ARR, burn, cap table — everything a competitor would want. The round hadn't closed. I didn't think about it as a risk because I was thinking about the memo."</div>
+    <p>The goal wasn't to expose your numbers. The goal was a better memo. Kasbah is for the gap between what you intended and what you sent.</p>
+    <div class="kasbah-catch">
+      <strong>What Kasbah does</strong>
+      Catches the financial figures and structured data. Flags it before it sends. You can still write the memo — just without pasting the actual model. The information stays on your machine.
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="scenario" style="margin-top:80px">
+    <p class="scenario-label">Teams</p>
+    <h2>You've given your team freedom — now what?</h2>
+    <p>You told your team to use AI tools. ChatGPT, Claude, Gemini — whatever helps. They're good people who work fast and mean well. But twelve people making independent decisions about what's okay to share is twelve chances for something to go wrong.</p>
+    <div class="moment">"A junior engineer on the team pasted a .env file to debug a config issue. He fixed the bug in two minutes. Nobody told me. I found out three weeks later in a code review when I noticed the file had been modified. By then it didn't matter anymore — the damage was theoretical but the exposure was real."</div>
+    <p>There's no training that fixes this at scale. The moment of paste happens too fast, too casually, too often. You need something that works at the habit layer.</p>
+    <div class="kasbah-catch">
+      <strong>What Kasbah does</strong>
+      Runs locally on every machine. Catches environment variables, credentials, and API keys before they're sent. The engineer gets a block modal. They fix the habit once. You get an audit trail — not surveillance, just enough to know what's happening.
+    </div>
+  </div>
+
+  <div class="install-bar">
+    <div>
+      <h3>Free for individuals. Always.</h3>
+      <p>Install in 5 seconds. No account required to start.</p>
+    </div>
+    <a class="btn-install" href="https://chrome.google.com/webstore/detail/kasbah-guard">Add to Chrome — Free</a>
+  </div>
 </div>
+
+<footer>
+  <p>© 2026 Kasbah Guard · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/benchmark">Benchmark</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
+</footer>
+
 </body>
 </html>

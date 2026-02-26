@@ -3,169 +3,221 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>How Kasbah Guard Works — Silent, Local, Always On</title>
+  <title>How Kasbah works — Kasbah Guard</title>
+  <meta name="description" content="Kasbah runs locally on your device. It intercepts actions before they happen and scores the content. No cloud. No delay. Here's exactly how.">
+  <link rel="icon" href="/logo-200.png"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root{--red:#C1440E;--dark:#0F172A;--text:#3f3f46;--muted:#71717a;--border:#e4e4e7;--bg:#fafaf9;--green:#065F46}
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--text);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
-    .container{max-width:900px;margin:0 auto;padding:48px 24px 80px}
-    .back{display:inline-block;margin-bottom:32px;font-size:13px;font-weight:700;color:var(--muted);text-decoration:none}
-    .back:hover{color:var(--dark)}
-    h1{font-size:32px;font-weight:900;margin-bottom:12px;color:var(--dark)}
-    .subtitle{font-size:16px;color:var(--muted);margin-bottom:48px}
-    h2{font-size:20px;font-weight:800;margin-top:40px;margin-bottom:16px;color:var(--dark)}
-    p{font-size:14px;color:var(--text);margin-bottom:14px;line-height:1.8}
-    .highlight{background:rgba(193,68,14,.05);border-left:3px solid var(--red);padding:16px;margin:24px 0;border-radius:4px}
-    .highlight p{margin:0;font-weight:500;color:#65350b}
-    .step-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin:32px 0}
-    .step-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:24px}
-    .step-card h3{font-size:16px;font-weight:800;margin-bottom:12px;color:var(--dark);display:flex;align-items:center;gap:10px}
-    .step-num{width:32px;height:32px;background:linear-gradient(135deg,var(--red),#9a350b);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
-    .step-card p{font-size:13px;color:var(--text);margin:0}
-    .tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin:32px 0}
-    .tier-card{background:#fff;border:2px solid var(--border);border-radius:12px;padding:28px}
-    .tier-card.silent{border-color:var(--green)}
-    .tier-card.silent .tier-label{color:var(--green)}
-    .tier-card.silent .tier-score{background:rgba(6,95,70,.1);color:var(--green)}
-    .tier-card.warning{border-color:#d97706}
-    .tier-card.warning .tier-label{color:#b45309}
-    .tier-card.warning .tier-score{background:rgba(217,119,6,.1);color:#b45309}
-    .tier-card.block{border-color:var(--red)}
-    .tier-card.block .tier-label{color:var(--red)}
-    .tier-card.block .tier-score{background:rgba(193,68,14,.1);color:#65350b}
-    .tier-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-    .tier-score{display:inline-block;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;margin-bottom:16px}
-    .tier-card h3{font-size:16px;font-weight:800;margin-bottom:12px;color:var(--dark)}
-    .tier-card p{font-size:13px;color:var(--text);margin-bottom:10px;line-height:1.7}
-    .tier-card ul{list-style:none;padding:0;margin:12px 0 0 0}
-    .tier-card li{font-size:13px;color:var(--text);margin-bottom:6px;padding-left:18px;position:relative}
-    .tier-card li:before{content:'•';position:absolute;left:8px;font-weight:bold}
-    .patterns{background:#fff;border:1px solid var(--border);border-radius:12px;padding:28px;margin:32px 0}
-    .patterns h3{font-size:16px;font-weight:800;margin-bottom:16px;color:var(--dark)}
-    .pattern-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
-    .pattern-item{font-size:13px;padding:10px 12px;background:#f9fafb;border-radius:6px;border:1px solid var(--border)}
-    .pattern-item strong{color:var(--red)}
+    :root{--red:#C1440E;--red-light:rgba(193,68,14,.1);--red-glow:rgba(193,68,14,.2);--dark:#0F172A;--bg:#FEFCFA;--text:#0F172A;--muted:#64748B;--subtle:#94A3B8;--border:#E2DDD7;--radius:12px}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+    ::selection{background:var(--red);color:#fff}
+
+    nav{border-bottom:1px solid var(--border);padding:14px 0;background:rgba(254,252,250,.92);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100}
+    .nav-in{max-width:1120px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
+    .n-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:900;font-size:15px}
+    .n-brand img{width:32px;height:32px;border-radius:8px}
+    .n-links{display:flex;gap:24px;align-items:center}
+    .n-links a{color:var(--muted);font-size:14px;font-weight:500;text-decoration:none;transition:color .2s}
+    .n-links a:hover{color:var(--text)}
+    .n-links a.active{color:var(--text);font-weight:700}
+    .btn-nav{background:var(--red);color:#fff !important;padding:8px 18px;border-radius:var(--radius);font-size:12px;font-weight:800;transition:all .2s}
+    .btn-nav:hover{opacity:.9}
+
+    .wrap{max-width:760px;margin:0 auto;padding:72px 28px 100px}
+    h1{font-size:40px;font-weight:900;letter-spacing:-.03em;line-height:1.15;margin-bottom:16px;color:var(--dark)}
+    .lede{font-size:18px;color:var(--muted);line-height:1.7;margin-bottom:64px;max-width:600px}
+
+    h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:16px;color:var(--dark);margin-top:56px}
+    p{font-size:16px;color:#334155;line-height:1.8;margin-bottom:16px}
+    p:last-child{margin-bottom:0}
+
+    .step-list{margin:32px 0;display:flex;flex-direction:column;gap:0}
+    .step{display:flex;gap:24px;padding:28px 0;border-bottom:1px solid var(--border)}
+    .step:last-child{border-bottom:none}
+    .step-n{flex-shrink:0;width:40px;height:40px;background:var(--dark);color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;margin-top:2px}
+    .step-body h3{font-size:18px;font-weight:800;margin-bottom:10px;color:var(--dark)}
+    .step-body p{font-size:15px;color:#334155;margin:0}
+
+    .tier-list{margin:32px 0;display:flex;flex-direction:column;gap:16px}
+    .tier{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;display:flex;gap:20px;align-items:flex-start}
+    .tier-dot{flex-shrink:0;width:12px;height:12px;border-radius:50%;margin-top:6px}
+    .tier-dot.silent{background:#16a34a}
+    .tier-dot.warn{background:#d97706}
+    .tier-dot.block{background:var(--red)}
+    .tier-body h3{font-size:16px;font-weight:800;margin-bottom:6px;color:var(--dark)}
+    .tier-body p{font-size:14px;color:#475569;line-height:1.7;margin:0}
+    .tier-score{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px}
+
+    .detects{margin:32px 0;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:28px}
+    .detects h3{font-size:16px;font-weight:800;margin-bottom:20px;color:var(--dark)}
+    .detect-row{display:flex;flex-wrap:wrap;gap:10px}
+    .detect-tag{padding:6px 14px;background:var(--bg);border:1px solid var(--border);border-radius:999px;font-size:13px;color:#475569;font-weight:500}
+    .detect-tag.high{border-color:var(--red-glow);background:var(--red-light);color:#7c2d12;font-weight:600}
+
+    .note{background:var(--red-light);border:1px solid var(--red-glow);border-radius:var(--radius);padding:20px 24px;margin:28px 0;font-size:14px;color:#7c2d12;line-height:1.7}
+    .note strong{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--red);margin-bottom:6px}
+
+    .faq{margin-top:16px}
+    .faq-q{font-size:16px;font-weight:700;color:var(--dark);margin-bottom:6px;margin-top:28px}
+    .faq-a{font-size:15px;color:#475569;line-height:1.7}
+
+    footer{padding:32px 0;text-align:center;color:var(--subtle);font-size:12px;border-top:1px solid var(--border);margin-top:0}
+    footer a{color:var(--muted);text-decoration:none}
+    footer a:hover{color:var(--red)}
+
     @media(max-width:700px){
-      .container{padding:32px 16px 60px}
-      h1{font-size:24px}
-      .step-grid{grid-template-columns:1fr}
-      .tier-grid{grid-template-columns:1fr}
+      .wrap{padding:48px 20px 80px}
+      h1{font-size:28px}
+      .lede{font-size:16px;margin-bottom:48px}
+      h2{font-size:20px}
+      p,.step-body p,.tier-body p{font-size:14px}
+      .nav-in{gap:16px}
+      .n-links{gap:16px}
+      .n-links a:not(.btn-nav){display:none}
+      .step{gap:16px}
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <a class="back" href="/">&larr; Back to Kasbah</a>
-  <h1>How Kasbah Works</h1>
-  <p class="subtitle">Invisible protection. On your device. No cloud, no exceptions.</p>
 
-  <h2>Three Simple Steps</h2>
-  <div class="step-grid">
-    <div class="step-card">
-      <h3><span class="step-num">1</span> Watch</h3>
-      <p>Kasbah watches for 6 critical moments: sending emails, pasting into fields, uploading files, editing forms, browsing with secrets in URLs, and downloading files.</p>
+<nav>
+  <div class="nav-in">
+    <a class="n-brand" href="/"><img src="/logo-200.png" alt="Kasbah">Kasbah Guard</a>
+    <div class="n-links">
+      <a href="/personas">Who it's for</a>
+      <a href="/how-it-works" class="active">How it works</a>
+      <a href="/benchmark">Benchmark</a>
+      <a href="/privacy">Privacy</a>
+      <a class="btn-nav" href="https://chrome.google.com/webstore/detail/kasbah-guard">Add to Chrome</a>
     </div>
-    <div class="step-card">
-      <h3><span class="step-num">2</span> Analyze</h3>
-      <p>When you try to do any of these actions, Kasbah analyzes the content locally on your device. No data leaves your computer.</p>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>How it actually works</h1>
+  <p class="lede">Kasbah is a Chrome extension with a local background process. Nothing leaves your machine. Here's the full picture — no marketing, just how it works.</p>
+
+  <h2>The basic flow</h2>
+
+  <div class="step-list">
+    <div class="step">
+      <div class="step-n">1</div>
+      <div class="step-body">
+        <h3>You install the extension</h3>
+        <p>Chrome extension + a small desktop app that runs locally on <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">127.0.0.1:8788</code>. The extension is what you interact with. The desktop app is the detection engine. They talk to each other. Nothing else does.</p>
+      </div>
     </div>
-    <div class="step-card">
-      <h3><span class="step-num">3</span> Decide</h3>
-      <p>Based on the risk level, Kasbah either lets you proceed silently, warns you with a toast, or blocks with a modal. You always have control.</p>
+    <div class="step">
+      <div class="step-n">2</div>
+      <div class="step-body">
+        <h3>Kasbah watches for actions</h3>
+        <p>When you're about to send a message, paste something, upload a file, or submit a form — the extension intercepts it before the action completes. Six action types: send, paste, upload, edit, browse, download. That's it.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">3</div>
+      <div class="step-body">
+        <h3>The content gets scored locally</h3>
+        <p>The text or file gets sent to <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">localhost</code> — your own machine — where the detection engine runs. It assigns a risk score from 0 to 100. Under 10ms. Nothing is logged externally. The score comes back and determines what happens next.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">4</div>
+      <div class="step-body">
+        <h3>You see nothing, a toast, or a block</h3>
+        <p>Low risk: the action goes through silently. Medium risk: a small toast appears so you're aware. High risk: a modal stops the action and shows you exactly what was found. You decide. Always.</p>
+      </div>
     </div>
   </div>
 
-  <div class="highlight">
-    <p>✓ All analysis happens on your device. ✓ No content ever leaves your computer. ✓ No servers see your data. ✓ Fully auditable and transparent.</p>
-  </div>
+  <h2>The three responses</h2>
+  <p>Kasbah doesn't interrupt you for everything. It scales its response to the actual risk level.</p>
 
-  <h2>Three-Tier Protection</h2>
-  <p>Kasbah doesn't interrupt you for everything. It scales its response based on actual risk:</p>
-
-  <div class="tier-grid">
-    <div class="tier-card silent">
-      <p class="tier-label">Tier 1</p>
-      <div class="tier-score">Risk &lt; 40</div>
-      <h3>SILENT — Let It Through</h3>
-      <p>Low-risk content. You paste "hello world" or your team name into ChatGPT — Kasbah says nothing and gets out of your way.</p>
-      <ul>
-        <li>Zero interruption</li>
-        <li>Action proceeds instantly</li>
-        <li>All logged for your audit trail</li>
-      </ul>
+  <div class="tier-list">
+    <div class="tier">
+      <div class="tier-dot silent"></div>
+      <div class="tier-body">
+        <p class="tier-score">Score 0–39</p>
+        <h3>Silent — action goes through</h3>
+        <p>You paste a question into ChatGPT or type out a task. Kasbah sees it, checks it, and gets out of your way. Nothing appears. Everything works. This is the most common outcome by far.</p>
+      </div>
     </div>
-
-    <div class="tier-card warning">
-      <p class="tier-label">Tier 2</p>
-      <div class="tier-score">Risk 40-69</div>
-      <h3>WARNING — Quick Heads-Up</h3>
-      <p>Medium-risk content. You paste something that looks like a credential but isn't quite certain. Kasbah shows a light toast: "Heads up: possible API key."</p>
-      <ul>
-        <li>Inline toast (not blocking)</li>
-        <li>You see the warning and decide</li>
-        <li>Action proceeds after you click or dismiss</li>
-      </ul>
+    <div class="tier">
+      <div class="tier-dot warn"></div>
+      <div class="tier-body">
+        <p class="tier-score">Score 40–69</p>
+        <h3>Toast — heads-up, you decide</h3>
+        <p>Something borderline — partial credentials, high-entropy strings, keyword patterns that could be sensitive. A small notification appears in the corner: what was found, a suggestion. The action still proceeds unless you stop it. Non-blocking, informational.</p>
+      </div>
     </div>
-
-    <div class="tier-card block">
-      <p class="tier-label">Tier 3</p>
-      <div class="tier-score">Risk ≥ 70</div>
-      <h3>BLOCK — Stop & Confirm</h3>
-      <p>High-risk content. Credit card, API key, SSN, private key, or passport detected. Kasbah shows a modal: "Blocked. Your sensitive data stayed on your device."</p>
-      <ul>
-        <li>Full modal appears</li>
-        <li>Shows what was detected</li>
-        <li>You can "Block" (recommended) or "Proceed Anyway"</li>
-      </ul>
+    <div class="tier">
+      <div class="tier-dot block"></div>
+      <div class="tier-body">
+        <p class="tier-score">Score 70–100</p>
+        <h3>Block — modal stops the action</h3>
+        <p>A credit card number, API key, SSN, private key, database credentials. The action is held. A modal shows exactly what was found ("Found: credit card number; AWS access key"). Two buttons: Block (stay safe) or Proceed Anyway. You always have final say.</p>
+      </div>
     </div>
   </div>
 
-  <h2>What Kasbah Detects</h2>
-  <div class="patterns">
-    <h3>100+ Patterns Across Categories</h3>
-    <div class="pattern-cols">
-      <div class="pattern-item"><strong>Payment:</strong> Credit cards (Visa, Mastercard, Amex, Discover)</div>
-      <div class="pattern-item"><strong>ID:</strong> Social Security Numbers, Passports, Driver Licenses</div>
-      <div class="pattern-item"><strong>API Keys:</strong> OpenAI, GitHub, AWS, Bearer tokens</div>
-      <div class="pattern-item"><strong>Encryption:</strong> Private keys (PEM, RSA), SSH keys</div>
-      <div class="pattern-item"><strong>Databases:</strong> MongoDB, PostgreSQL, MySQL connection strings</div>
-      <div class="pattern-item"><strong>Tokens:</strong> JWT tokens, OAuth tokens</div>
-      <div class="pattern-item"><strong>Passwords:</strong> Assignment patterns (password=, api_key:, SECRET_=)</div>
-      <div class="pattern-item"><strong>Dangerous:</strong> Prompt injection, shell commands (rm -rf, drop table)</div>
-      <div class="pattern-item"><strong>Documents:</strong> Filenames in 9 languages (passport.jpg, DNI.pdf, etc.)</div>
-      <div class="pattern-item"><strong>Environmental:</strong> Config files with secrets (.env, secret=, TOKEN=)</div>
+  <h2>What it looks for</h2>
+  <p>The detection engine combines entropy analysis, pattern matching, and keyword scoring. These are the categories it covers:</p>
+
+  <div class="detects">
+    <h3>High-risk — triggers a block</h3>
+    <div class="detect-row" style="margin-bottom:20px">
+      <span class="detect-tag high">Credit cards</span>
+      <span class="detect-tag high">Social Security Numbers</span>
+      <span class="detect-tag high">API keys (AWS, GitHub, OpenAI)</span>
+      <span class="detect-tag high">Private keys (RSA, PEM, SSH)</span>
+      <span class="detect-tag high">Database connection strings</span>
+      <span class="detect-tag high">JWT tokens</span>
+      <span class="detect-tag high">Passport files</span>
+    </div>
+    <h3>Medium-risk — triggers a toast</h3>
+    <div class="detect-row">
+      <span class="detect-tag">Phone numbers</span>
+      <span class="detect-tag">Email addresses in bulk</span>
+      <span class="detect-tag">Password assignment patterns</span>
+      <span class="detect-tag">High-entropy strings</span>
+      <span class="detect-tag">Bearer tokens</span>
+      <span class="detect-tag">Prompt injection attempts</span>
+      <span class="detect-tag">Shell commands (rm -rf, DROP TABLE)</span>
+      <span class="detect-tag">Sensitive filenames (9 languages)</span>
     </div>
   </div>
 
-  <h2>The Detection Engine</h2>
-  <p>Kasbah combines multiple techniques to catch real leaks while avoiding false alarms:</p>
-  <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:28px;margin:24px 0">
-    <ul style="list-style:none;padding:0;margin:0">
-      <li style="margin-bottom:16px;padding-left:24px;position:relative"><strong style="color:var(--red)">Shannon Entropy Analysis</strong> — Measures randomness (tokens are random, names aren't)<span style="position:absolute;left:0">🔍</span></li>
-      <li style="margin-bottom:16px;padding-left:24px;position:relative"><strong style="color:var(--red)">Pattern Recognition</strong> — 100+ regex patterns for structured data (CC numbers, API keys, etc.)<span style="position:absolute;left:0">🎯</span></li>
-      <li style="margin-bottom:16px;padding-left:24px;position:relative"><strong style="color:var(--red)">Keyword Density</strong> — Detects language patterns (password=, secret:, api_key, etc.)<span style="position:absolute;left:0">📝</span></li>
-      <li style="margin-bottom:16px;padding-left:24px;position:relative"><strong style="color:var(--red)">Character Analysis</strong> — Ratio of special chars, digits, uppercase (credentials look different)<span style="position:absolute;left:0">🔤</span></li>
-      <li style="margin-bottom:16px;padding-left:24px;position:relative"><strong style="color:var(--red)">Adversarial Resistance</strong> — Detects obfuscation (zero-width chars, encoding, unicode tricks)<span style="position:absolute;left:0">🛡️</span></li>
-      <li style="padding-left:24px;position:relative"><strong style="color:var(--red)">Risk Scoring</strong> — Combines all signals into 0-100 risk score. Tuned to 91/100 accuracy.<span style="position:absolute;left:0">📊</span></li>
-    </ul>
+  <div class="note">
+    <strong>What Kasbah doesn't do</strong>
+    It doesn't read your screen, log keystrokes, monitor browsing history, or send anything to our servers. The only content it ever sees is the text or file you're about to submit — and only at that moment. Audit logs are stored locally, encrypted, owned by you.
   </div>
 
-  <h2>Privacy & Security</h2>
-  <p><strong>100% Local:</strong> The extension analyzes content on your machine using Kasbah Guard, a desktop app running locally on 127.0.0.1:8788. No content is sent anywhere.</p>
-  <p><strong>Audit Trail:</strong> All decisions are logged locally with SHA-256 hash chain integrity. You own your logs. We never see them.</p>
-  <p><strong>No Tracking:</strong> The extension doesn't call home. No telemetry, no crash reporting, no cloud processing.</p>
-  <p><strong>Open Source:</strong> Core detection engine is auditable. You can verify exactly what patterns we're looking for.</p>
+  <h2>Common questions</h2>
 
-  <h2>Installation</h2>
-  <p style="margin-bottom:24px">Kasbah Guard works on:</p>
-  <ul style="list-style:none;padding:0;margin:0 0 32px 0">
-    <li style="margin-bottom:10px;padding-left:20px;position:relative">✓ <strong>All AI platforms:</strong> ChatGPT, Claude, Gemini, Copilot, Llama, etc.<span style="position:absolute;left:0"></span></li>
-    <li style="margin-bottom:10px;padding-left:20px;position:relative">✓ <strong>Productivity tools:</strong> Gmail, Slack, Notion, Google Drive, GitHub, etc.<span style="position:absolute;left:0"></span></li>
-    <li style="margin-bottom:10px;padding-left:20px;position:relative">✓ <strong>Any website:</strong> Works anywhere you browse (permissions are minimal)<span style="position:absolute;left:0"></span></li>
-    <li style="padding-left:20px;position:relative">✓ <strong>Works offline:</strong> No internet required (unless you use cloud AI)<span style="position:absolute;left:0"></span></li>
-  </ul>
+  <div class="faq">
+    <p class="faq-q">Does Kasbah slow things down?</p>
+    <p class="faq-a">No. Detection runs in under 10ms on-device. You won't notice any delay, even with long inputs. It was built specifically for zero-latency interception.</p>
+
+    <p class="faq-q">What if it blocks something that's fine?</p>
+    <p class="faq-a">You can always click "Proceed Anyway." Kasbah doesn't lock you out. It asks a question. You have the final answer.</p>
+
+    <p class="faq-q">Does it work when I'm offline?</p>
+    <p class="faq-a">Yes. All detection is local. You don't need an internet connection for Kasbah to work. (You do need one to actually use a cloud AI tool, of course.)</p>
+
+    <p class="faq-q">Which sites does it cover?</p>
+    <p class="faq-a">ChatGPT, Claude, Gemini, Copilot, and most AI tools by default. It also works on Gmail, Slack, Notion, GitHub — essentially any site you paste into. You can configure which sites it watches.</p>
+
+    <p class="faq-q">What's the desktop app for?</p>
+    <p class="faq-a">The detection engine runs as a small background process (the desktop app). The Chrome extension calls it over localhost. This keeps heavy processing off the browser thread and means you can update the detection engine without reinstalling the extension.</p>
+  </div>
 
 </div>
+
+<footer>
+  <p>© 2026 Kasbah Guard · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/benchmark">Benchmark</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
+</footer>
+
 </body>
 </html>
