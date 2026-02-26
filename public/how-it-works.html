@@ -135,6 +135,44 @@
   <h2>The three responses</h2>
   <p>Kasbah doesn't interrupt you for everything. It scales its response to the actual risk level.</p>
 
+  <!-- Visual notification mockups -->
+  <div style="background:#1e293b;border-radius:14px;padding:28px;margin:28px 0;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#475569">How each response looks</span>
+    </div>
+    <!-- Silent: nothing -->
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="width:10px;height:10px;border-radius:50%;background:#16a34a;flex-shrink:0"></div>
+      <div style="flex:1;background:#0f172a;border-radius:8px;padding:10px 16px;font-size:13px;color:#64748b;font-family:monospace">Hello, can you help me write a cover letter?</div>
+      <div style="font-size:12px;color:#16a34a;font-weight:600;white-space:nowrap">→ silent</div>
+    </div>
+    <!-- Warning toast -->
+    <div style="display:flex;align-items:flex-start;gap:16px">
+      <div style="width:10px;height:10px;border-radius:50%;background:#d97706;flex-shrink:0;margin-top:12px"></div>
+      <div style="flex:1">
+        <div style="background:#0f172a;border-radius:8px;padding:10px 16px;font-size:13px;color:#64748b;font-family:monospace;margin-bottom:8px">My phone is 555-382-9021, can you add it to the doc?</div>
+        <div style="background:#451a03;border:1px solid #92400e;border-radius:8px;padding:10px 14px;font-size:12px;color:#fcd34d;display:inline-flex;align-items:center;gap:8px">
+          <span>⚠</span> Heads up — possible phone number. Proceeding.
+        </div>
+      </div>
+    </div>
+    <!-- Block modal -->
+    <div style="display:flex;align-items:flex-start;gap:16px">
+      <div style="width:10px;height:10px;border-radius:50%;background:#C1440E;flex-shrink:0;margin-top:12px"></div>
+      <div style="flex:1">
+        <div style="background:#0f172a;border-radius:8px;padding:10px 16px;font-size:13px;color:#64748b;font-family:monospace;margin-bottom:8px">AKIA4HFKS82JDKSL93PQ — debug this S3 config</div>
+        <div style="background:#fff;border-radius:10px;padding:16px;max-width:320px">
+          <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:4px">🛡 Kasbah blocked this</div>
+          <div style="font-size:12px;color:#dc2626;font-family:monospace;background:#fef2f2;padding:6px 10px;border-radius:6px;margin-bottom:12px">Found: AWS access key</div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;padding:7px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;color:#64748b;text-align:center">Proceed anyway</div>
+            <div style="flex:1;padding:7px;background:#C1440E;border-radius:6px;font-size:12px;font-weight:700;color:#fff;text-align:center">Block — Stay Safe</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="tier-list">
     <div class="tier">
       <div class="tier-dot silent"></div>

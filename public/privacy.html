@@ -3,88 +3,147 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Privacy Policy — Kasbah Guard</title>
+  <title>Privacy — Kasbah Guard</title>
+  <meta name="description" content="Kasbah processes everything locally. We never see your prompts, pastes, or files. Here's exactly what we do and don't collect.">
+  <link rel="icon" href="/logo-200.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root{--midnight:#18181b;--muted:#71717a;--border:#e4e4e7;--bg:#fafaf9}
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--midnight);background:var(--bg);line-height:1.7}
-    .container{max-width:680px;margin:0 auto;padding:48px 24px 80px}
-    h1{font-size:28px;font-weight:900;margin-bottom:8px}
-    .updated{font-size:13px;color:var(--muted);margin-bottom:32px}
-    h2{font-size:18px;font-weight:800;margin-top:28px;margin-bottom:8px}
-    p,ul{font-size:14px;color:#3f3f46;margin-bottom:14px}
-    ul{padding-left:20px}
-    li{margin-bottom:6px}
-    a{color:var(--midnight);text-decoration:underline}
-    .back{display:inline-block;margin-bottom:24px;font-size:13px;font-weight:700;color:var(--muted);text-decoration:none}
-    .back:hover{color:var(--midnight)}
-    strong{font-weight:700}
-    .highlight{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:10px;padding:14px;margin-bottom:18px}
-    .highlight p{color:#166534;margin:0;font-weight:600}
+    :root{--red:#C1440E;--red-light:rgba(193,68,14,.1);--red-glow:rgba(193,68,14,.2);--dark:#0F172A;--bg:#FEFCFA;--text:#0F172A;--muted:#64748B;--subtle:#94A3B8;--border:#E2DDD7;--radius:12px}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+    ::selection{background:var(--red);color:#fff}
+
+    nav{border-bottom:1px solid var(--border);padding:14px 0;background:rgba(254,252,250,.92);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100}
+    .nav-in{max-width:1120px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
+    .n-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:900;font-size:15px}
+    .n-brand img{width:32px;height:32px;border-radius:8px}
+    .n-links{display:flex;gap:24px;align-items:center}
+    .n-links a{color:var(--muted);font-size:14px;font-weight:500;text-decoration:none;transition:color .2s}
+    .n-links a:hover{color:var(--text)}
+    .n-links a.active{color:var(--text);font-weight:700}
+    .btn-nav{background:var(--red);color:#fff !important;padding:8px 18px;border-radius:var(--radius);font-size:12px;font-weight:800;transition:all .2s}
+    .btn-nav:hover{opacity:.9}
+
+    .wrap{max-width:680px;margin:0 auto;padding:72px 28px 100px}
+    h1{font-size:40px;font-weight:900;letter-spacing:-.03em;line-height:1.15;margin-bottom:16px;color:var(--dark)}
+    .lede{font-size:18px;color:var(--muted);margin-bottom:16px;line-height:1.7}
+    .updated{font-size:13px;color:var(--subtle);margin-bottom:56px}
+
+    h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-top:48px;margin-bottom:14px;color:var(--dark)}
+    p{font-size:15px;color:#334155;line-height:1.8;margin-bottom:14px}
+    ul{list-style:none;padding:0;margin-bottom:14px}
+    ul li{font-size:15px;color:#334155;padding-left:20px;position:relative;margin-bottom:8px;line-height:1.7}
+    ul li:before{content:'–';position:absolute;left:0;color:var(--subtle)}
+    strong{font-weight:700;color:var(--dark)}
+    a{color:var(--red);text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    .guarantee{background:var(--red-light);border:1px solid var(--red-glow);border-radius:var(--radius);padding:24px 28px;margin-bottom:48px}
+    .guarantee p{font-size:16px;font-weight:600;color:#7c2d12;margin:0;line-height:1.6}
+
+    .never-list{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;margin:20px 0}
+    .never-list li:before{content:'✕';color:#dc2626;font-weight:800}
+    .do-list{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;margin:20px 0}
+    .do-list li:before{content:'✓';color:#16a34a;font-weight:800}
+
+    footer{padding:32px 0;text-align:center;color:var(--subtle);font-size:12px;border-top:1px solid var(--border)}
+    footer a{color:var(--muted);text-decoration:none}
+    footer a:hover{color:var(--red)}
+
+    @media(max-width:700px){
+      .wrap{padding:48px 20px 80px}
+      h1{font-size:28px}
+      .lede{font-size:16px}
+      .n-links a:not(.btn-nav){display:none}
+    }
   </style>
 </head>
 <body>
-<div class="container">
-  <a class="back" href="/">&larr; Back to Kasbah</a>
-  <h1>Privacy Policy</h1>
-  <p class="updated">Last updated: February 24, 2026</p>
 
-  <div class="highlight">
-    <p>Kasbah Guard processes everything locally on your device. We never see, collect, or transmit the content you type, paste, or upload into AI tools.</p>
+<nav>
+  <div class="nav-in">
+    <a class="n-brand" href="/"><img src="/logo-200.png" alt="Kasbah">Kasbah Guard</a>
+    <div class="n-links">
+      <a href="/personas">Who it's for</a>
+      <a href="/how-it-works">How it works</a>
+      <a href="/benchmark">Benchmark</a>
+      <a href="/privacy" class="active">Privacy</a>
+      <a class="btn-nav" href="https://chrome.google.com/webstore/detail/kasbah-guard">Add to Chrome</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>Privacy</h1>
+  <p class="lede">The short version: we never see what you type, paste, or upload. Everything is analyzed on your machine.</p>
+  <p class="updated">Last updated: February 26, 2026</p>
+
+  <div class="guarantee">
+    <p>Kasbah Guard processes all content locally. Your prompts, pastes, files, and clipboard contents never leave your device. Not to our servers. Not to anyone's.</p>
   </div>
 
-  <h2>What Kasbah Guard does</h2>
-  <p>Kasbah Guard is a local-first data loss prevention tool. It intercepts actions (send, paste, upload, download, edit, browse) on AI chat platforms and analyzes them for sensitive content — entirely on your machine.</p>
-
-  <h2>Data we do NOT collect</h2>
-  <ul>
-    <li>Your prompts, messages, or clipboard content</li>
+  <h2>What we never collect</h2>
+  <ul class="never-list">
+    <li>The content of your prompts or messages to AI tools</li>
+    <li>Text you paste into any field</li>
     <li>Files you upload or download</li>
-    <li>AI responses or conversations</li>
-    <li>Screenshots, keystrokes, or browsing history outside AI platforms</li>
-    <li>Personal information beyond what you provide during account creation</li>
+    <li>Your clipboard</li>
+    <li>Screenshots, keystrokes, or browser history</li>
+    <li>AI responses or conversation history</li>
+    <li>The results of any risk analysis</li>
   </ul>
 
-  <h2>Data we collect</h2>
-  <ul>
-    <li><strong>Account data:</strong> Email address, hashed password (PBKDF2). Stored in Cloudflare KV. Used for authentication only.</li>
-    <li><strong>Extension telemetry:</strong> None. The extension communicates exclusively with your local Guard instance on 127.0.0.1:8788.</li>
-    <li><strong>Crash reports:</strong> None currently. If we add crash reporting, it will never include content data.</li>
+  <h2>What we do collect</h2>
+  <ul class="do-list">
+    <li><strong>Email address</strong> — when you create an account. Stored in Cloudflare KV. Used only for authentication.</li>
+    <li><strong>Hashed password</strong> — PBKDF2, we never see the plaintext.</li>
+    <li>Nothing else.</li>
   </ul>
 
-  <h2>Zero Data Egress</h2>
-  <p>All risk analysis, decision-making, and audit logging happens on your device. The Guard desktop app runs an HTTP server on localhost (127.0.0.1:8788). No content data is ever sent to our servers or any third party. Your audit trail is stored locally in SQLite and secured with a SHA-256 hash chain.</p>
+  <h2>How the extension works</h2>
+  <p>When you're about to send, paste, or upload something, the extension sends that content to a local HTTP server running on your machine at <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">127.0.0.1:8788</code>. That server (the desktop app) analyzes it and returns a risk score. Nothing is transmitted outside your device during this process.</p>
+  <p>The extension communicates with one external service: our API at <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">api.bekasbah.com</code> — only for authentication. Not for content analysis.</p>
+
+  <h2>Your audit trail</h2>
+  <p>Every decision Kasbah makes is logged locally in a SQLite database on your machine, secured with a SHA-256 hash chain for integrity. You own this data entirely. We have no access to it. You can delete it at any time by removing the application data directory.</p>
 
   <h2>Browser extension permissions</h2>
   <ul>
-    <li><strong>activeTab:</strong> To read the text you're about to send to an AI tool — only on supported AI platforms.</li>
-    <li><strong>storage:</strong> To persist your extension preferences locally in your browser.</li>
-    <li><strong>host_permissions:</strong> To communicate with your local Guard instance and match supported AI platform URLs.</li>
+    <li><strong>activeTab</strong> — to read content you're about to send on supported sites.</li>
+    <li><strong>storage</strong> — to save your preferences locally in your browser.</li>
+    <li><strong>host_permissions</strong> — to communicate with the local Guard process and to run on AI platform pages.</li>
   </ul>
+  <p>We request the minimum permissions required. We don't request permissions to read all tabs, your history, or your bookmarks.</p>
 
   <h2>Desktop application</h2>
   <ul>
-    <li><strong>Clipboard monitoring:</strong> Scans clipboard content for sensitive data. Content is analyzed locally and never transmitted.</li>
-    <li><strong>File watching:</strong> Monitors specified directories for sensitive files. Content is analyzed locally.</li>
-    <li><strong>Audit trail:</strong> All decisions are logged locally with SHA-256 hash chain integrity. You control deletion.</li>
-    <li><strong>Session data:</strong> Stored in macOS Keychain and local JSON file. Never transmitted.</li>
+    <li><strong>Clipboard monitoring</strong> — optional. Scans clipboard locally. Content is never transmitted.</li>
+    <li><strong>File watching</strong> — optional. Monitors specified directories. Local only.</li>
+    <li><strong>Session data</strong> — stored in macOS Keychain and a local JSON file. Never transmitted.</li>
   </ul>
 
   <h2>Third-party services</h2>
   <ul>
-    <li><strong>Cloudflare:</strong> Hosts our website and API worker. Processes only authentication requests.</li>
-    <li><strong>Resend:</strong> Sends verification emails during registration.</li>
+    <li><strong>Cloudflare</strong> — hosts our website and API. Processes authentication requests only.</li>
+    <li><strong>Resend</strong> — sends verification emails at registration.</li>
   </ul>
+  <p>Neither service sees your content. Neither service participates in analysis.</p>
 
   <h2>Data retention</h2>
-  <p>Account data is retained as long as your account is active. Local audit logs are retained indefinitely on your device — you control deletion. We have no access to your local data.</p>
+  <p>Account data stays as long as your account is active. Delete your account and it's gone. Local audit logs exist on your machine under your control — we have no copies and no access.</p>
 
   <h2>Your rights</h2>
-  <p>You can delete your account at any time. You can delete local audit data by removing the Kasbah Guard application data directory. Under GDPR, CCPA, and equivalent regulations, you have the right to access, correct, and delete your personal data.</p>
+  <p>Under GDPR, CCPA, and similar laws, you can request access to, correction of, or deletion of your account data at any time. Email <a href="mailto:privacy@bekasbah.com">privacy@bekasbah.com</a>.</p>
 
   <h2>Contact</h2>
-  <p>For privacy questions: <a href="mailto:privacy@bekasbah.com">privacy@bekasbah.com</a></p>
-  <p>Security vulnerabilities: <a href="mailto:security@bekasbah.com">security@bekasbah.com</a></p>
+  <p>Privacy questions: <a href="mailto:privacy@bekasbah.com">privacy@bekasbah.com</a><br>
+  Security issues: <a href="mailto:security@bekasbah.com">security@bekasbah.com</a></p>
 </div>
+
+<footer>
+  <p>© 2026 Kasbah Guard · <a href="/">Home</a> · <a href="/how-it-works">How it works</a> · <a href="/benchmark">Benchmark</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
+</footer>
+
 </body>
 </html>

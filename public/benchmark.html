@@ -100,27 +100,48 @@
   <h1>How we compare</h1>
   <p class="lede">We ran 100 real-world data leak scenarios against Kasbah and three enterprise tools. Here's what each one caught — and what it missed.</p>
 
-  <div class="score-row">
-    <div class="score-card winner">
-      <p class="score-label">Kasbah Guard</p>
-      <p class="score-num">91</p>
-      <p class="score-sub">out of 100 scenarios caught</p>
+  <!-- Visual bar chart -->
+  <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin-bottom:48px">
+    <p style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:24px">Detection accuracy — 100 real-world scenarios</p>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:14px;font-weight:700;color:var(--dark)">Kasbah Guard</span>
+          <span style="font-size:20px;font-weight:900;color:var(--red)">91</span>
+        </div>
+        <div style="height:10px;background:#f1f5f9;border-radius:999px;overflow:hidden">
+          <div style="height:100%;width:91%;background:var(--red);border-radius:999px"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:14px;font-weight:600;color:#475569">CrowdStrike Falcon DLP</span>
+          <span style="font-size:20px;font-weight:800;color:#475569">73</span>
+        </div>
+        <div style="height:10px;background:#f1f5f9;border-radius:999px;overflow:hidden">
+          <div style="height:100%;width:73%;background:#94a3b8;border-radius:999px"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:14px;font-weight:600;color:#475569">Nightfall AI</span>
+          <span style="font-size:20px;font-weight:800;color:#475569">70</span>
+        </div>
+        <div style="height:10px;background:#f1f5f9;border-radius:999px;overflow:hidden">
+          <div style="height:100%;width:70%;background:#94a3b8;border-radius:999px"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:14px;font-weight:600;color:#475569">Microsoft Purview DLP</span>
+          <span style="font-size:20px;font-weight:800;color:#475569">70</span>
+        </div>
+        <div style="height:10px;background:#f1f5f9;border-radius:999px;overflow:hidden">
+          <div style="height:100%;width:70%;background:#94a3b8;border-radius:999px"></div>
+        </div>
+      </div>
     </div>
-    <div class="score-card">
-      <p class="score-label">CrowdStrike Falcon DLP</p>
-      <p class="score-num">73</p>
-      <p class="score-sub">out of 100 scenarios caught</p>
-    </div>
-    <div class="score-card">
-      <p class="score-label">Nightfall AI</p>
-      <p class="score-num">70</p>
-      <p class="score-sub">out of 100 scenarios caught</p>
-    </div>
-    <div class="score-card">
-      <p class="score-label">Microsoft Purview DLP</p>
-      <p class="score-num">70</p>
-      <p class="score-sub">out of 100 scenarios caught</p>
-    </div>
+    <p style="margin-top:20px;font-size:12px;color:var(--subtle)">Enterprise scores are estimated — they don't publish accuracy numbers. See methodology below.</p>
   </div>
 
   <h2>Feature comparison</h2>
