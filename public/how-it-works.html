@@ -90,44 +90,44 @@
       <a href="/how-it-works" class="active">How it works</a>
       <a href="/benchmark">Benchmark</a>
       <a href="/privacy">Privacy</a>
-      <a class="btn-nav" href="https://chrome.google.com/webstore/detail/kasbah-guard">Add to Chrome</a>
+      <a class="btn-nav" href="https://chromewebstore.google.com/detail/kasbah-guard/idikjiajiomhekkkpfkhnpfepfgknokc">Add to Browser</a>
     </div>
   </div>
 </nav>
 
 <div class="wrap">
-  <h1>How it actually works</h1>
-  <p class="lede">Kasbah is a Chrome extension with a local background process. Nothing leaves your machine. Here's the full picture — no marketing, just how it works.</p>
+  <h1>How it works</h1>
+  <p class="lede">Kasbah is a browser extension backed by a local detection engine. Everything happens on your device. Nothing leaves.</p>
 
-  <h2>The basic flow</h2>
+  <h2>The flow, start to finish</h2>
 
   <div class="step-list">
     <div class="step">
       <div class="step-n">1</div>
       <div class="step-body">
-        <h3>You install the extension</h3>
-        <p>Chrome extension + a small desktop app that runs locally on <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">127.0.0.1:8788</code>. The extension is what you interact with. The desktop app is the detection engine. They talk to each other. Nothing else does.</p>
+        <h3>Install the extension</h3>
+        <p>You add Kasbah to your browser, plus a small background app that runs on your machine at <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">127.0.0.1:8788</code>. The extension watches. The app analyses. They talk only to each other — nothing external.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-n">2</div>
       <div class="step-body">
-        <h3>Kasbah watches for actions</h3>
-        <p>When you're about to send a message, paste something, upload a file, or submit a form — the extension intercepts it before the action completes. Six action types: send, paste, upload, edit, browse, download. That's it.</p>
+        <h3>You work normally</h3>
+        <p>ChatGPT, Claude, Gemini, Gmail, Notion — everything behaves exactly as before. Kasbah sits silently in the background watching for 6 moments: <strong>send, paste, upload, edit, browse, download.</strong></p>
       </div>
     </div>
     <div class="step">
       <div class="step-n">3</div>
       <div class="step-body">
-        <h3>The content gets scored locally</h3>
-        <p>The text or file gets sent to <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">localhost</code> — your own machine — where the detection engine runs. It assigns a risk score from 0 to 100. Under 10ms. Nothing is logged externally. The score comes back and determines what happens next.</p>
+        <h3>Something risky happens</h3>
+        <p>You're about to paste database credentials into ChatGPT. The extension intercepts the action — before it completes — and sends the content to your local app for analysis. This takes under 10ms. The text never leaves your machine.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-n">4</div>
       <div class="step-body">
-        <h3>You see nothing, a toast, or a block</h3>
-        <p>Low risk: the action goes through silently. Medium risk: a small toast appears so you're aware. High risk: a modal stops the action and shows you exactly what was found. You decide. Always.</p>
+        <h3>You get a response</h3>
+        <p>The app returns a risk score from 0–100. Under 40: silent, action goes through. 40–69: small warning toast. 70+: a modal stops the action and shows exactly what was found. You decide what happens next. Always.</p>
       </div>
     </div>
   </div>
@@ -254,7 +254,7 @@
 </div>
 
 <footer>
-  <p>© 2026 Kasbah Guard · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/benchmark">Benchmark</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
+  <p>© 2026 Kasbah Guard · Detection engine v2.1 · <a href="/changelog.html">What changed</a> · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/benchmark">Benchmark</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
 </footer>
 
 </body>

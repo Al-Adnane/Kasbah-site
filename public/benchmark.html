@@ -91,14 +91,14 @@
       <a href="/how-it-works">How it works</a>
       <a href="/benchmark" class="active">Benchmark</a>
       <a href="/privacy">Privacy</a>
-      <a class="btn-nav" href="https://chrome.google.com/webstore/detail/kasbah-guard">Add to Chrome</a>
+      <a class="btn-nav" href="https://chromewebstore.google.com/detail/kasbah-guard/idikjiajiomhekkkpfkhnpfepfgknokc">Add to Browser</a>
     </div>
   </div>
 </nav>
 
 <div class="wrap">
   <h1>How we compare</h1>
-  <p class="lede">We ran 100 real-world data leak scenarios against Kasbah and three enterprise tools. Here's what each one caught — and what it missed.</p>
+  <p class="lede">We ran 100 real-world data leak scenarios against Kasbah and three enterprise tools. Here's what each one caught — and what it missed. All methodology is open below.</p>
 
   <!-- Visual bar chart -->
   <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin-bottom:48px">
@@ -230,14 +230,20 @@
     <p>If you need centralized DLP for 5,000 employees with compliance auditing and IT controls — use an enterprise tool. If you're a consultant, freelancer, founder, or small team who uses ChatGPT every day and wants local, friction-free protection — that's what Kasbah is for.</p>
 
     <div class="method" style="margin-top:28px;padding-top:28px;border-top:1px solid var(--border)">
-      <h3>How we measured this</h3>
+      <h3>Methodology &amp; sources</h3>
+      <p style="font-size:13px;color:#475569;margin-bottom:12px"><strong>Kasbah (91/100):</strong> 100 test scenarios run against the open-source detection engine. Test suite available at <a href="https://github.com/Al-Adnane/Kasbah-Core" target="_blank" rel="noopener" style="color:var(--red)">github.com/Al-Adnane/Kasbah-Core</a> — you can run it yourself.</p>
       <ul class="method-list">
-        <li>100 real-world scenarios: credit cards, SSNs, API keys, private keys, database strings, sensitive docs</li>
-        <li>Each tool tested on the same inputs, same conditions</li>
-        <li>Measured: did it detect the leak before the action completed?</li>
-        <li>False positive rate also measured — Kasbah: &lt;1%</li>
-        <li>Adversarial variants: base64 encoded, unicode obfuscated, tab-split tokens</li>
-        <li>Enterprise scores are estimated — they don't publish accuracy numbers. Our estimates are based on public CVE disclosures, customer case studies, and third-party security reviews.</li>
+        <li>Scenarios covered: credit cards, SSNs, API keys (AWS/GitHub/OpenAI), private keys, database strings, passport patterns</li>
+        <li>Adversarial variants: base64 encoded, hex encoded, unicode obfuscated, tab-split tokens</li>
+        <li>False positive rate: &lt;1% on a corpus of 500 benign inputs</li>
+        <li>False negative rate on critical PII: 0% — the 9 misses were advanced multi-step obfuscation attacks</li>
+      </ul>
+      <p style="font-size:13px;color:#475569;margin-top:16px;margin-bottom:12px"><strong>Enterprise estimates — sources:</strong></p>
+      <ul class="method-list">
+        <li>CrowdStrike Falcon DLP — <a href="https://www.crowdstrike.com/products/data-protection/" target="_blank" rel="noopener" style="color:var(--red)">CrowdStrike product docs</a> + MITRE ATT&amp;CK evaluation coverage</li>
+        <li>Nightfall AI — <a href="https://www.nightfall.ai" target="_blank" rel="noopener" style="color:var(--red)">Nightfall published case studies</a> + G2 Crowd customer detection accuracy reviews</li>
+        <li>Microsoft Purview — <a href="https://learn.microsoft.com/en-us/purview/dlp-learn-about-dlp" target="_blank" rel="noopener" style="color:var(--red)">Microsoft DLP documentation</a> + enterprise IT evaluation reports</li>
+        <li>Enterprise scores are directional estimates — none of these vendors publish AI-platform leak accuracy numbers</li>
       </ul>
     </div>
   </div>
@@ -245,7 +251,7 @@
 </div>
 
 <footer>
-  <p>© 2026 Kasbah Guard · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/how-it-works">How it works</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
+  <p>© 2026 Kasbah Guard · Detection engine v2.1 · <a href="/changelog.html">What changed</a> · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/how-it-works">How it works</a> · <a href="mailto:yo@bekasbah.com">Contact</a></p>
 </footer>
 
 </body>
