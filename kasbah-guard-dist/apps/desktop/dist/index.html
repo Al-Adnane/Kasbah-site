@@ -324,7 +324,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
 .stat-card:hover::after{opacity:1}
 
 /* ── Dashboard Pulse Layout ── */
-.dash-pulse{display:grid;grid-template-columns:200px 1fr;gap:16px;margin-bottom:20px}
+.dash-pulse{display:grid;grid-template-columns:180px 1fr;gap:16px;margin-bottom:20px}
 .hero-stat{background:var(--card);border:2px solid var(--red);border-radius:var(--radius-lg);padding:28px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .3s}
 .hero-stat:hover{box-shadow:0 0 32px var(--red-glow)}
 .hero-stat-val{font-size:52px;font-weight:900;color:var(--red);letter-spacing:-.03em;line-height:1}
@@ -647,6 +647,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
       <!-- Simple pages — what a normal user sees -->
       <button class="sb-item active" data-page="dashboard"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> Overview</button>
       <button class="sb-item" data-page="scanner"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span> Scan Text</button>
+      <button class="sb-item" data-page="audit"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span> Audit Trail</button>
       <button class="sb-item" data-page="settings"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span> Settings</button>
 
       <!-- Everything else under Developer toggle -->
@@ -657,7 +658,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
       <div class="sb-advanced-section" id="advancedSection">
         <button class="sb-item" data-page="policies"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Rules</button>
         <button class="sb-item" data-page="authority"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span> Authority</button>
-        <button class="sb-item" data-page="audit"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span> Audit Trail</button>
         <button class="sb-item" data-page="selftest"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> System Check</button>
         <!-- Enterprise (hidden by default, toggled via "enterprise" command) -->
         <div id="enterpriseSidebar" style="display:none">
@@ -666,7 +666,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
           <button class="sb-item" data-page="ueba"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> UEBA</button>
           <button class="sb-item" data-page="processes"><span class="icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg></span> Processes</button>
         </div>
-        <div style="padding:6px 16px"><input id="devInput" type="text" placeholder="command..." style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:10px;font-family:var(--font);background:var(--bg);color:var(--muted);outline:none" autocomplete="off"/></div>
       </div>
     </div>
     <div class="sb-guard">
@@ -702,11 +701,30 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
         </div>
       </div>
 
-      <!-- Numbers -->
-      <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
-        <div class="stat-card"><div class="stat-label">Saves</div><div class="stat-val green" id="dHeroSaves">0</div></div>
-        <div class="stat-card"><div class="stat-label">Scanned</div><div class="stat-val" id="dTotal">0</div></div>
-        <div class="stat-card"><div class="stat-label">Blocked</div><div class="stat-val red" id="dDenied">0</div></div>
+      <!-- Score Ring + Numbers -->
+      <div class="dash-pulse" style="grid-template-columns:180px 1fr;gap:16px;margin-bottom:20px">
+        <div class="score-ring-wrap">
+          <div class="score-ring">
+            <svg width="110" height="110" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" class="score-ring-bg"/>
+              <circle cx="50" cy="50" r="45" class="score-ring-fill" id="scoreRingFill" stroke="var(--green)" stroke-dasharray="283" stroke-dashoffset="283"/>
+            </svg>
+            <div class="score-ring-center">
+              <div class="score-ring-val" id="dHeroSaves">0</div>
+              <div class="score-ring-label">saves</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;justify-content:center">
+          <div class="stats-row" style="margin-bottom:0">
+            <div class="stat-card"><div class="stat-label">Scanned</div><div class="stat-val" id="dTotal">0</div></div>
+            <div class="stat-card"><div class="stat-label">Blocked</div><div class="stat-val red" id="dDenied">0</div></div>
+            <div class="stat-card"><div class="stat-label">Secrets</div><div class="stat-val amber" id="dSecretsDash">0</div></div>
+          </div>
+          <div id="dailySummary" style="font-size:12px;color:var(--muted);padding:0 4px;display:none">
+            <span id="dailySummaryText"></span>
+          </div>
+        </div>
       </div>
 
       <!-- Verbs — shows after first real activity -->
@@ -735,25 +753,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
         </div>
       </div>
 
-      <!-- Hidden compat (never visible) -->
-      <div style="display:none !important;position:absolute;height:0;overflow:hidden" aria-hidden="true">
-        <span id="notifBell"></span><span id="notifBadge">0</span><div id="notifDrop"><div id="notifList"></div></div><span id="notifClear"></span>
-        <span id="btnRefreshEvents"></span>
-        <span id="dSecrets">0</span><span id="dAllowed">0</span><span id="dDaysProtected">0</span><span id="dCompFrameworks">0</span><span id="dUebaRisk">0</span>
-        <span id="barTotal"></span><span id="barAllowed"></span><span id="barDenied"></span><span id="barSecrets"></span><span id="scoreRingFill"></span>
-        <span id="dTickets">0</span><span id="dClipScans">0</span><span id="dClipFlags">0</span><span id="dFsScans">0</span><span id="dFsFlags">0</span>
-        <span id="psBarScore">0</span><span id="psBarFill"></span><span id="psBarTier"></span><span id="psBarHint"></span><span id="privacyBar"></span>
-        <span id="psScore">0</span><span id="psRingFill"></span><span id="psTier"></span><span id="psDesc"></span>
-        <span id="psGuard" data-pts="15"></span><span id="psExtension" data-pts="15"></span><span id="psAuthority" data-pts="15"></span>
-        <span id="psClipboard" data-pts="10"></span><span id="psFsWatch" data-pts="10"></span><span id="psRules" data-pts="10"></span>
-        <span id="psAudit" data-pts="10"></span><span id="psSelftest" data-pts="10"></span><span id="psScan" data-pts="5"></span>
-        <span id="psActive7d"></span><span id="psChecklist"></span><span id="psPassportRow"></span><span id="btnPassport"></span><span id="privacyScoreCard"></span>
-        <span id="rtCurrentTier"></span><span id="rtTrackFill"></span>
-        <span id="rtN0"></span><span id="rtN1"></span><span id="rtN2"></span><span id="rtN3"></span><span id="rtN4"></span>
-        <span id="rtP0" data-tier="0"></span><span id="rtP1" data-tier="1"></span><span id="rtP2" data-tier="2"></span><span id="rtP3" data-tier="3"></span><span id="rtP4" data-tier="4"></span>
-        <span id="rtUpgradeRow"></span><span id="rtUpgradeText"></span><span id="rtUpgradeSub"></span>
-        <span id="insightsCard"></span><span id="inBlocked"></span><span id="inSaved"></span><span id="inDecisions"></span><span id="inAccuracy"></span><span id="insightMessage"></span>
-      </div>
     </div>
 
     <!-- Scan Text (User-friendly classifier) -->
@@ -827,15 +826,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
       </div>
 
       <!-- Notification Preferences -->
-      <div class="setting-group">
-        <div class="setting-group-title">Notifications</div>
-        <div class="setting-row"><div><div class="setting-label">Alert on flagged files</div><div class="setting-desc">Show a dialog when the file watcher detects sensitive content</div></div><div class="toggle active" id="notifFlaggedToggle" title="Toggle flagged file alerts"></div></div>
+      <div class="setting-group collapsible-setting">
+        <div class="setting-group-header" onclick="this.parentElement.classList.toggle('collapsed')"><div class="setting-group-title" style="margin-bottom:0">Notifications</div><span class="sg-chevron">&#9660;</span></div>
+        <div class="setting-group-body">
+        <div class="setting-row" style="margin-top:12px"><div><div class="setting-label">Alert on flagged files</div><div class="setting-desc">Show a dialog when the file watcher detects sensitive content</div></div><div class="toggle active" id="notifFlaggedToggle" title="Toggle flagged file alerts"></div></div>
         <div class="setting-row"><div><div class="setting-label">Alert on clean files</div><div class="setting-desc">Show brief notifications for files reviewed with no issues</div></div><div class="toggle" id="notifCleanToggle" title="Toggle clean file alerts"></div></div>
+        </div>
       </div>
 
       <!-- 6 Verbs -->
-      <div class="setting-group">
-        <div class="setting-group-title">6-Verb Protection</div>
+      <div class="setting-group collapsible-setting">
+        <div class="setting-group-header" onclick="this.parentElement.classList.toggle('collapsed')"><div class="setting-group-title" style="margin-bottom:0">6-Verb Protection</div><span class="sg-chevron">&#9660;</span></div>
+        <div class="setting-group-body" style="margin-top:12px">
         <div class="setting-desc" style="margin-bottom:14px;padding:0">Every AI action falls into one of 6 verbs. Kasbah intercepts all of them.</div>
         <div class="setting-row"><div><div class="setting-label">SEND</div><div class="setting-desc">Messages sent to AI chat (ChatGPT, Claude, Gemini, etc.)</div></div><span class="setting-check" style="color:var(--green)">&#10003;</span></div>
         <div class="setting-row"><div><div class="setting-label">PASTE</div><div class="setting-desc">Clipboard content pasted into AI tools</div></div><span class="setting-check" style="color:var(--green)">&#10003;</span></div>
@@ -843,29 +845,35 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
         <div class="setting-row"><div><div class="setting-label">BROWSE</div><div class="setting-desc">URLs and web content shared with AI</div></div><span class="setting-check" style="color:var(--green)">&#10003;</span></div>
         <div class="setting-row"><div><div class="setting-label">DOWNLOAD</div><div class="setting-desc">Content received from AI tools</div></div><span class="setting-check" style="color:var(--green)">&#10003;</span></div>
         <div class="setting-row"><div><div class="setting-label">EDIT</div><div class="setting-desc">File changes made by AI agents (Claude Code, Cursor, etc.)</div></div><span class="setting-check" style="color:var(--green)">&#10003;</span></div>
+        </div>
       </div>
 
       <!-- OS Monitors -->
-      <div class="setting-group">
-        <div class="setting-group-title">OS-Level Monitors</div>
+      <div class="setting-group collapsible-setting">
+        <div class="setting-group-header" onclick="this.parentElement.classList.toggle('collapsed')"><div class="setting-group-title" style="margin-bottom:0">OS-Level Monitors</div><span class="sg-chevron">&#9660;</span></div>
+        <div class="setting-group-body" style="margin-top:12px">
         <div class="setting-row"><div><div class="setting-label">Guard Service</div><div class="setting-desc">Local HTTP engine on port 8788 — processes all decisions on-device</div></div><span class="setting-check" id="guardPortDisplay" style="color:var(--green)">&#10003; Active</span></div>
         <div class="setting-row"><div><div class="setting-label">Clipboard Monitor</div><div class="setting-desc">Scans clipboard every 30ms for passwords, keys, and personal data</div></div><span class="setting-check" id="clipboardStatusDisplay" style="color:var(--green)">&#10003; Active</span></div>
         <div class="setting-row"><div><div class="setting-label">File System Watcher</div><div class="setting-desc">FSEvents watcher on Documents, Desktop, and Downloads</div></div><span class="setting-check" id="fsWatcherStatusDisplay" style="color:var(--green)">&#10003; Active</span></div>
         <div class="setting-row"><div><div class="setting-label">TF-IDF ML Classifier</div><div class="setting-desc">4-class statistical model: benign, PII, secret, injection (97.7% accuracy)</div></div><span class="setting-check" style="color:var(--green)">&#10003; Active</span></div>
+        </div>
       </div>
 
       <!-- Security & Crypto -->
-      <div class="setting-group">
-        <div class="setting-group-title">Security &amp; Cryptography</div>
+      <div class="setting-group collapsible-setting collapsed">
+        <div class="setting-group-header" onclick="this.parentElement.classList.toggle('collapsed')"><div class="setting-group-title" style="margin-bottom:0">Security &amp; Cryptography</div><span class="sg-chevron">&#9660;</span></div>
+        <div class="setting-group-body" style="margin-top:12px">
         <div class="setting-row"><div><div class="setting-label">Ticket Signing</div><div class="setting-desc">HMAC-SHA256 signed tickets — every decision is cryptographically verified</div></div><span class="setting-check" style="color:var(--green)">&#10003; HMAC-SHA256</span></div>
         <div class="setting-row"><div><div class="setting-label">Replay Protection</div><div class="setting-desc">Single-use tickets with DashMap tracking — no ticket can be reused</div></div><span class="setting-check" style="color:var(--green)">&#10003; Enabled</span></div>
         <div class="setting-row"><div><div class="setting-label">Audit Chain</div><div class="setting-desc">Hash-chained SQLite log — tamper-evident, exportable, HMAC-signed</div></div><span class="setting-check" style="color:var(--green)" id="settingsChainStatus">&#10003; Intact</span></div>
         <div class="setting-row"><div><div class="setting-label">Default Policy</div><div class="setting-desc">Fail-closed architecture — unknown actions are DENIED by default</div></div><span class="setting-check" style="color:var(--green)">&#10003; DENY</span></div>
+        </div>
       </div>
 
       <!-- Browser Extensions -->
-      <div class="setting-group">
-        <div class="setting-group-title">Browser Extensions <span style="font-size:10px;color:var(--subtle);font-weight:600;letter-spacing:0;text-transform:none">v1.2.0</span></div>
+      <div class="setting-group collapsible-setting">
+        <div class="setting-group-header" onclick="this.parentElement.classList.toggle('collapsed')"><div class="setting-group-title" style="margin-bottom:0">Browser Extensions <span style="font-size:10px;color:var(--subtle);font-weight:600;letter-spacing:0;text-transform:none">v1.2.0</span></div><span class="sg-chevron">&#9660;</span></div>
+        <div class="setting-group-body" style="margin-top:12px">
         <div class="setting-desc" style="margin-bottom:14px;padding:0">Intercepts 6 verbs on 30+ AI platforms. Install for every browser you use.</div>
         <div class="setting-row">
           <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" fill="none" stroke="#4285F4" stroke-width="1.5"/><circle cx="12" cy="12" r="4" fill="#4285F4"/></svg></div><div><div class="setting-label">Chrome</div><div class="setting-desc">Load Unpacked from chrome://extensions</div></div></div>
@@ -886,22 +894,26 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
         <div style="margin-top:14px;font-size:11px;color:var(--subtle);line-height:1.6">
           <strong style="color:var(--muted)">Covered platforms:</strong> ChatGPT, Claude, Gemini, Grok, Copilot, Perplexity, DeepSeek, Mistral, Poe, Cursor, Windsurf, Codeium, Meta AI, Cohere, HuggingFace, NotebookLM, Manus, You.com, Pi, AI Studio, and more.
         </div>
+        </div>
       </div>
 
       <!-- Data & Privacy -->
-      <div class="setting-group">
-        <div class="setting-group-title">Data &amp; Privacy</div>
+      <div class="setting-group collapsible-setting collapsed">
+        <div class="setting-group-header" onclick="this.parentElement.classList.toggle('collapsed')"><div class="setting-group-title" style="margin-bottom:0">Data &amp; Privacy</div><span class="sg-chevron">&#9660;</span></div>
+        <div class="setting-group-body" style="margin-top:12px">
         <div class="setting-row"><div><div class="setting-label">Data Storage</div><div class="setting-desc">100% on your machine — SQLite database in your app data folder</div></div><span style="font-size:12px;color:var(--muted);font-weight:700">Local Only</span></div>
         <div class="setting-row"><div><div class="setting-label">Network Calls</div><div class="setting-desc">Guard never phones home. Only the auth check goes to api.bekasbah.com</div></div><span style="font-size:12px;color:var(--muted);font-weight:700">Auth Only</span></div>
         <div class="setting-row">
           <div><div class="setting-label">Export Audit Data</div><div class="setting-desc">Download your full activity log as HMAC-signed JSON</div></div>
           <button class="btn btn-ghost" id="btnExportSettings">Export</button>
         </div>
+        </div>
       </div>
 
       <!-- Custom Rules (advanced) -->
-      <div class="setting-group" id="customRuleSection">
-        <div class="setting-group-title">Custom Rule Builder</div>
+      <div class="setting-group collapsible-setting collapsed" id="customRuleSection">
+        <div class="setting-group-header" onclick="this.parentElement.classList.toggle('collapsed')"><div class="setting-group-title" style="margin-bottom:0">Custom Rule Builder</div><span class="sg-chevron">&#9660;</span></div>
+        <div class="setting-group-body" style="margin-top:12px">
         <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">Create a custom pattern rule with full control over action and scope.</div>
         <div class="policy-form">
           <input type="text" id="customPattern" placeholder="Pattern (e.g. AKIA, password=, mongodb://)"/>
@@ -940,6 +952,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);display:flex;
             </optgroup>
           </select>
           <button class="btn btn-red" id="btnAddCustom">Add Rule</button>
+        </div>
         </div>
       </div>
 
@@ -1252,9 +1265,6 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Logout
   document.getElementById('btnLogout').addEventListener('click', doLogout);
-
-  // Dashboard
-  document.getElementById('btnRefreshEvents').addEventListener('click', refreshEvents);
 
   // Authority
   document.getElementById('btnBind').addEventListener('click', bindAuthority);
@@ -1637,7 +1647,7 @@ function enterApp(){
   eventInterval=setInterval(refreshEvents,3000);
   refreshEvents();
   verifyChain();
-  // Initialize Privacy Score posture check
+  // Privacy posture check — computes score for passport but does not render UI
   checkPrivacyPosture();
   // Init kill switch UI state (assume normal — poll will correct)
   killSwitchOn=false;
@@ -1745,27 +1755,23 @@ function pollGuard(){
       var total=d.stats.total||0,allowed=d.stats.allowed||0,denied=d.stats.denied||0,secrets=d.stats.secrets_caught||0;
       var saves=denied+secrets+(d.os_authority?((d.os_authority.fs_flags||0)+(d.os_authority.clipboard_flags||0)):0);
       animateCounter('dHeroSaves',saves);
-      updateInsights(d.stats);
       animateCounter('dTotal',total);
-      animateCounter('dAllowed',allowed);
       animateCounter('dDenied',denied);
-      animateCounter('dSecrets',secrets);
-      // Animate bars
-      var maxBar=Math.max(total,1);
-      var bt=document.getElementById('barTotal');if(bt)bt.style.width=Math.min(100,total/maxBar*100)+'%';
-      var ba=document.getElementById('barAllowed');if(ba)ba.style.width=Math.min(100,allowed/maxBar*100)+'%';
-      var bd=document.getElementById('barDenied');if(bd)bd.style.width=Math.min(100,denied/maxBar*100)+'%';
-      var bs=document.getElementById('barSecrets');if(bs)bs.style.width=Math.min(100,secrets/maxBar*100)+'%';
-    }
-    if(d.os_authority){
-      animateCounter('dFsScans',d.os_authority.fs_scans||0);
-      animateCounter('dFsFlags',d.os_authority.fs_flags||0);
-      animateCounter('dClipScans',d.os_authority.clipboard_scans||0);
-      animateCounter('dClipFlags',d.os_authority.clipboard_flags||0);
+      animateCounter('dSecretsDash',secrets);
+      // Daily summary
+      var ds=document.getElementById('dailySummary');
+      var dst=document.getElementById('dailySummaryText');
+      if(ds&&dst&&total>0){
+        ds.style.display='block';
+        var parts=[];
+        parts.push(total+' scan'+(total!==1?'s':''));
+        if(denied>0)parts.push(denied+' blocked');
+        if(secrets>0)parts.push(secrets+' secret'+(secrets!==1?'s':''));
+        dst.textContent='Today: '+parts.join(' \u00b7 ');
+      }
     }
     // Update Privacy Score posture
     checkPrivacyPosture();
-    if(d.active_tickets!==undefined)animateCounter('dTickets',d.active_tickets);
     if(d.version){document.getElementById('sbVersion').innerHTML='<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle;box-shadow:0 0 4px rgba(6,95,70,.4)"></span>v'+d.version;document.getElementById('settingsVersion').textContent=d.version}
     // Update sidebar monitor indicators
     if(d.os_authority){
@@ -1921,7 +1927,6 @@ function refreshEvents(){
     }
     if(events.length>0)lastSeenEventTs=events[0].ts_ms;
     renderFeed();
-    checkNotifFromEvents();
   }).catch(function(){
     if(guardCheckCount<3)return;
     document.getElementById('feedList').innerHTML='<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div><div class="empty-title">Guard not connected</div><div class="empty-sub">Make sure the guard service is running. Check Settings for details.</div></div>';
@@ -1969,7 +1974,15 @@ function renderFeed(){
 
     var title=friendlyEventKind(kind,ev.data);
     var det=friendlyDetail(ev);
-    html+='<div class="feed-item '+sevClass+'" style="animation:stagger .3s ease both;animation-delay:'+i*50+'ms"><div class="feed-icon '+ic+'">'+sym+'</div><div class="feed-body"><div class="feed-title">'+title+verbBadge+'</div><div class="feed-detail">'+escHtml(det)+'</div></div><div class="feed-time">'+timeAgo(ev.ts_ms)+'</div></div>';
+    // Platform badge (from extension product field)
+    var platformBadge='';
+    var evProduct=ev.data&&ev.data.product;
+    if(evProduct){
+      var pNames={chatgpt:'ChatGPT',claude:'Claude',gemini:'Gemini',grok:'Grok',copilot:'Copilot',perplexity:'Perplexity',deepseek:'DeepSeek',mistral:'Mistral',poe:'Poe',cursor:'Cursor',windsurf:'Windsurf',codeium:'Codeium','meta-ai':'Meta AI',cohere:'Cohere',huggingface:'HuggingFace',notebooklm:'NotebookLM',manus:'Manus','you':'You.com',pi:'Pi',aistudio:'AI Studio',replit:'Replit',v0:'v0',bolt:'Bolt'};
+      var pLabel=pNames[evProduct]||evProduct;
+      platformBadge='<span style="font-size:10px;color:var(--subtle);font-weight:600;margin-left:6px">on '+escHtml(pLabel)+'</span>';
+    }
+    html+='<div class="feed-item '+sevClass+'" style="animation:stagger .3s ease both;animation-delay:'+i*50+'ms"><div class="feed-icon '+ic+'">'+sym+'</div><div class="feed-body"><div class="feed-title">'+title+verbBadge+platformBadge+'</div><div class="feed-detail">'+escHtml(det)+'</div></div><div class="feed-time">'+timeAgo(ev.ts_ms)+'</div></div>';
   }
   if(filtered.length>8&&!feedShowAll){
     html+='<button class="feed-show-more" id="btnShowMore">Show '+(filtered.length-8)+' more &darr;</button>';
@@ -2300,20 +2313,21 @@ function installSafari(){installExtForBrowser('safari','','1. Open the Xcode pro
   if(el)el.textContent=days;
 })();
 
-// ── Enterprise Toggle (dev command) ──
+// ── Enterprise Toggle (triple-click version label) ──
 (function(){
-  var devInput=document.getElementById('devInput');
-  if(!devInput)return;
   // Restore enterprise state
   if(localStorage.getItem('kasbah_enterprise_enabled')==='true'){
     document.getElementById('enterpriseSidebar').style.display='block';
     var es=document.getElementById('enterpriseStats');if(es)es.style.display='grid';
   }
-  devInput.addEventListener('keydown',function(e){
-    if(e.key!=='Enter')return;
-    var cmd=devInput.value.trim().toLowerCase();
-    devInput.value='';
-    if(cmd==='enterprise'){
+  var versionEl=document.getElementById('sbVersion');
+  if(!versionEl)return;
+  var clickCount=0;var clickTimer=null;
+  versionEl.addEventListener('click',function(){
+    clickCount++;
+    if(clickTimer)clearTimeout(clickTimer);
+    if(clickCount>=3){
+      clickCount=0;
       var sidebar=document.getElementById('enterpriseSidebar');
       var stats=document.getElementById('enterpriseStats');
       var isOn=sidebar.style.display==='block';
@@ -2321,6 +2335,8 @@ function installSafari(){installExtForBrowser('safari','','1. Open the Xcode pro
       if(stats)stats.style.display=isOn?'none':'grid';
       localStorage.setItem('kasbah_enterprise_enabled',isOn?'false':'true');
       showToast('info','Enterprise '+(isOn?'Hidden':'Enabled'),(isOn?'Enterprise features hidden':'Enterprise features activated'));
+    } else {
+      clickTimer=setTimeout(function(){clickCount=0},600);
     }
   });
 })();
@@ -2345,72 +2361,9 @@ function privacyTier(score){
 }
 
 function updatePrivacyScoreUI(){
+  // Privacy Score UI is hidden — only store score for passport generation
   var score=computePrivacyScore();
-  var tier=privacyTier(score);
-
-  // Animate score number
-  animateCounter('psScore',score);
-
-  // Ring
-  var ring=document.getElementById('psRingFill');
-  if(ring){
-    var offset=214-(score/100*214);
-    ring.style.strokeDashoffset=offset;
-    ring.style.stroke=tier.color;
-  }
-
-  // Tier text
-  var tierEl=document.getElementById('psTier');
-  if(tierEl){tierEl.textContent=tier.name;tierEl.style.color=tier.color}
-  var descEl=document.getElementById('psDesc');
-  if(descEl)descEl.textContent=tier.desc;
-
-  // Checklist items
-  var items=[
-    {id:'psGuard',key:'guard'},{id:'psExtension',key:'extension'},{id:'psAuthority',key:'authority'},
-    {id:'psClipboard',key:'clipboard'},{id:'psFsWatch',key:'fswatch'},{id:'psRules',key:'rules'},
-    {id:'psAudit',key:'audit'},{id:'psSelftest',key:'selftest'},{id:'psScan',key:'scan'}
-  ];
-  for(var i=0;i<items.length;i++){
-    var el=document.getElementById(items[i].id);
-    if(el){
-      el.className='ps-item '+(psState[items[i].key]?'done':'pending');
-    }
-  }
-
-  // Passport row — show only at 100%
-  var passportRow=document.getElementById('psPassportRow');
-  if(passportRow)passportRow.style.display=score>=100?'flex':'none';
-
-  // Store score for passport generation
   localStorage.setItem('kasbah_privacy_score',score);
-
-  // Also update Reward Tiers
-  updateRewardTiersUI(score);
-
-  // Update compact privacy bar
-  var barScore=document.getElementById('psBarScore');
-  var barFill=document.getElementById('psBarFill');
-  var barTier=document.getElementById('psBarTier');
-  var barHint=document.getElementById('psBarHint');
-  if(barScore){
-    barScore.textContent=score;
-    barScore.style.color=tier.color;
-  }
-  if(barFill){
-    barFill.style.width=score+'%';
-    barFill.style.background=tier.color;
-  }
-  if(barTier){
-    barTier.textContent=tier.name;
-    barTier.style.background=score>=80?'rgba(6,95,70,.08)':score>=60?'rgba(168,85,247,.08)':score>=30?'rgba(6,95,70,.08)':'var(--bg3)';
-    barTier.style.color=tier.color;
-  }
-  if(barHint){
-    var doneCount=0;for(var k in psState){if(psState[k])doneCount++}
-    if(score>=100)barHint.textContent='Full sovereignty achieved — generate your passport';
-    else barHint.textContent=doneCount+'/9 items complete — tap to see checklist';
-  }
 }
 
 // ── Reward Tiers Logic ──
@@ -2431,56 +2384,7 @@ function getRewardTierIndex(score){
 }
 
 function updateRewardTiersUI(score){
-  var idx=getRewardTierIndex(score);
-  var tier=RT_TIERS[idx];
-
-  // Current tier badge
-  var badge=document.getElementById('rtCurrentTier');
-  if(badge){badge.textContent=tier.name;badge.style.background=tier.bg;badge.style.color=tier.color}
-
-  // Track fill bar (progress between nodes)
-  var fill=document.getElementById('rtTrackFill');
-  if(fill){
-    var pct=idx===4?100:(idx*25)+Math.min(25,(score-tier.min)/((RT_TIERS[idx+1]?RT_TIERS[idx+1].min:100)-tier.min)*25);
-    fill.style.width=Math.min(100,pct)+'%';
-    fill.style.background=tier.color;
-  }
-
-  // Node states
-  for(var n=0;n<5;n++){
-    var node=document.getElementById('rtN'+n);
-    if(!node)continue;
-    node.className='rt-node '+(n<idx?'passed':n===idx?'active':'locked');
-  }
-
-  // Perk cards
-  for(var p=0;p<5;p++){
-    var perk=document.getElementById('rtP'+p);
-    if(!perk)continue;
-    var perkTier=parseInt(perk.getAttribute('data-tier'));
-    var isUnlocked=perkTier<=idx;
-    perk.className='rt-perk '+(isUnlocked?'unlocked':'locked');
-    var tag=perk.querySelector('.rt-perk-tag');
-    if(tag)tag.className='rt-perk-tag '+(isUnlocked?'unlocked':'locked');
-    if(isUnlocked&&tag)tag.textContent='Unlocked';
-  }
-
-  // Upgrade prompt
-  var upgradeRow=document.getElementById('rtUpgradeRow');
-  var upgradeText=document.getElementById('rtUpgradeText');
-  var upgradeSub=document.getElementById('rtUpgradeSub');
-  // Upgrade prompt (hidden compat — never show)
-  if(idx<4){
-    var next=RT_TIERS[idx+1];
-    var pts=next.min-score;
-    if(upgradeText)upgradeText.textContent=pts+' points to '+next.name+' tier';
-    if(upgradeSub)upgradeSub.textContent='Complete checklist items above to unlock: '+getNextPerkName(idx+1);
-  }
-}
-
-function getNextPerkName(tierIdx){
-  var names=['Community Access','Threat Intelligence Feed','Priority Detection Updates','Compliance Reports & Export','Sovereignty Passport & API Access'];
-  return names[tierIdx]||'more perks';
+  // Reward Tiers UI is hidden — no-op
 }
 
 var _lastPostureCheck=0;
@@ -2651,33 +2555,7 @@ function pollVerbStats(){
 
 // ── Protection Insights ──
 function updateInsights(stats){
-  if(!stats)return;
-  var total=stats.total||0;
-  var denied=stats.denied||0;
-  var allowed=stats.allowed||0;
-  var saves=denied; // blocks = saves
-  animateCounter('inBlocked',denied);
-  animateCounter('inSaved',saves);
-  animateCounter('inDecisions',total);
-  var accEl=document.getElementById('inAccuracy');
-  if(accEl&&total>0){
-    // Accuracy = (total - false_positives) / total. We approximate it as high since ML-based.
-    var acc=total>10?'98%':total>5?'95%':total>0?'~90%':'--';
-    accEl.textContent=acc;
-  }
-  // Dynamic insight message
-  var msgEl=document.getElementById('insightMessage');
-  if(msgEl){
-    if(total===0){
-      msgEl.textContent='No AI interactions yet. Start using ChatGPT, Claude, or any AI tool — Kasbah will monitor automatically.';
-    } else if(denied===0){
-      msgEl.textContent='All '+total+' interactions were clean. No sensitive data attempted to leave your device.';
-    } else if(denied>0&&denied<5){
-      msgEl.textContent='Kasbah caught '+denied+' sensitive item'+(denied>1?'s':'')+' before '+(denied>1?'they':'it')+' reached AI platforms. Your data stayed under your control.';
-    } else {
-      msgEl.textContent='Strong protection active: '+denied+' threats stopped across '+total+' total decisions. Review your audit trail for details.';
-    }
-  }
+  // Insights UI is hidden — no-op
 }
 
 // ── Notification Center ──
@@ -2891,11 +2769,12 @@ function checkNotifFromEvents(){
   })}
 })();
 
-// ── Update UEBA metrics from guard status ──
+// ── Update UEBA metrics from guard status (enterprise only) ──
 var origPollGuard=pollGuard;
 pollGuard=function(){
   origPollGuard();
-  // Update UEBA behavior bars from status data
+  // Only fetch UEBA data when enterprise mode is active
+  if(!localStorage.getItem('kasbah_enterprise_enabled'))return;
   fetch(GUARD+'/status',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.stats){
       var maxMetric=Math.max(d.stats.total||1,1);

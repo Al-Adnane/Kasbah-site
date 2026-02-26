@@ -116,3 +116,21 @@ fn main() {
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
+
+// Billing Kernel Integration
+use kasbah_kernel::BillingKernel;
+
+fn init_billing() -> BillingKernel {
+    BillingKernel::new("kasbah.db").expect("Failed to initialize billing kernel")
+}
+
+#[allow(dead_code)]
+fn check_and_enforce(user_id: &str, action: &str, receipt_hash: &str) -> Result<String, String> {
+    let billing = init_billing();
+    let (allowed, _reason) = billing.consume_guard(user_id, action, receipt_hash)
+        .map_err(|e| e.to_string())?;
+    if !allowed {
+        return Ok("GUARDS_EXHAUSTED".to_string());
+    }
+    Ok("ENFORCED".to_string())
+}

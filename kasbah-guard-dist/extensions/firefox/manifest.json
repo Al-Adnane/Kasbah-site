@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kasbah Guard",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "Local-first guard that intercepts prompts and actions on AI chat services to prevent leaks and enforce user control.",
   "browser_specific_settings": {
     "gecko": {

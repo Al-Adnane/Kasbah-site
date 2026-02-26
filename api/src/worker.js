@@ -548,6 +548,171 @@ async function handleStats(env) {
   return json({ ok: true, users: count });
 }
 
+// ── Stripe Integration ──
+
+async function handleStripeCheckout(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) {
+    return err('Unauthorized', 401);
+  }
+
+  const body = await request.json();
+  const { product_type, product_id } = body;
+
+  if (!product_type || !product_id) {
+    return err('Missing product_type or product_id');
+  }
+
+  // Product definitions
+  const products = {
+    'founders-club': { name: 'Kasbah Founders Club (Lifetime)', price: 29700, currency: 'usd' },
+    'emergency-pack': { name: 'Emergency Pack (60 credits)', price: 500, currency: 'usd' },
+    'credit-starter': { name: 'Starter Pack (120 credits)', price: 1000, currency: 'usd' },
+    'credit-pro': { name: 'Pro Pack (650 credits)', price: 5000, currency: 'usd' },
+    'credit-business': { name: 'Business Pack (2800 credits)', price: 20000, currency: 'usd' },
+    'subscription-plus': { name: 'Kasbah Plus (Monthly)', price: 1500, currency: 'usd', interval: 'month' },
+    'subscription-pro': { name: 'Kasbah Pro (Monthly)', price: 3000, currency: 'usd', interval: 'month' },
+  };
+
+  const product = products[product_id];
+  if (!product) {
+    return err('Invalid product_id');
+  }
+
+  try {
+    const checkoutData = {
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: product.currency,
+          product_data: {
+            name: product.name,
+            description: `Kasbah Guard — ${product.name}`,
+          },
+          unit_amount: product.price,
+          ...(product.interval && { recurring: { interval: product.interval } }),
+        },
+        quantity: 1,
+      }],
+      mode: product.interval ? 'subscription' : 'payment',
+      success_url: `${new URL(request.url).origin}/?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${new URL(request.url).origin}/?payment=cancelled`,
+      customer_email: payload.email,
+      metadata: {
+        user_id: payload.sub,
+        email: payload.email,
+        product_id: product_id,
+        product_type: product_type,
+      },
+    };
+
+    // Call Stripe API (requires STRIPE_SECRET_KEY in environment)
+    const stripeKey = env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+      return err('Stripe not configured', 500);
+    }
+
+    const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${stripeKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams(flattenObject(checkoutData)).toString(),
+    });
+
+    const session = await response.json();
+    if (!response.ok) {
+      return err('Stripe error: ' + (session.error?.message || 'Unknown error'), 400);
+    }
+
+    return json({ ok: true, session_id: session.id, url: session.url });
+  } catch (e) {
+    return err('Stripe integration error: ' + e.message, 500);
+  }
+}
+
+async function handleStripeWebhook(request, env) {
+  const signature = request.headers.get('stripe-signature');
+  const body = await request.text();
+
+  // Verify webhook signature (simplified - in production, use crypto)
+  // const event = JSON.parse(body);
+
+  try {
+    const event = JSON.parse(body);
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const userId = session.metadata?.user_id;
+      const productType = session.metadata?.product_type;
+      const productId = session.metadata?.product_id;
+
+      if (!userId) {
+        return json({ ok: true }); // Acknowledge but can't process
+      }
+
+      // Update user in KV based on product type
+      const user = await env.USERS.get(session.customer_email);
+      if (user) {
+        const userData = JSON.parse(user);
+
+        if (productType === 'one-time') {
+          // Credit packs - add credits
+          const creditMap = {
+            'credit-starter': 120,
+            'credit-pro': 650,
+            'credit-business': 2800,
+            'emergency-pack': 60,
+          };
+          const creditsToAdd = creditMap[productId] || 0;
+          userData.credits = (userData.credits || 0) + creditsToAdd;
+        } else if (productType === 'subscription') {
+          // Update plan
+          const planMap = {
+            'subscription-plus': 'plus',
+            'subscription-pro': 'pro',
+          };
+          userData.plan = planMap[productId] || userData.plan;
+          userData.subscription_status = 'active';
+        } else if (productType === 'founders-club') {
+          userData.plan = 'founders';
+          userData.subscription_status = 'lifetime';
+        }
+
+        userData.lastPaymentAt = new Date().toISOString();
+        await env.USERS.put(session.customer_email, JSON.stringify(userData));
+      }
+    }
+
+    return json({ ok: true });
+  } catch (e) {
+    return err('Webhook processing error: ' + e.message, 400);
+  }
+}
+
+function flattenObject(obj, prefix = '') {
+  const result = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const newKey = prefix ? `${prefix}[${key}]` : key;
+    if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+      Object.assign(result, flattenObject(value, newKey));
+    } else if (Array.isArray(value)) {
+      value.forEach((item, index) => {
+        if (typeof item === 'object' && item !== null) {
+          Object.assign(result, flattenObject(item, `${newKey}[${index}]`));
+        } else {
+          result[`${newKey}[${index}]`] = item;
+        }
+      });
+    } else {
+      result[newKey] = value;
+    }
+  }
+  return result;
+}
+
 // ── Main router ──
 
 export default {
@@ -582,6 +747,12 @@ export default {
       }
       if (method === 'GET' && path === '/auth/stats') {
         return await handleStats(env);
+      }
+      if (method === 'POST' && path === '/stripe/checkout-session') {
+        return await handleStripeCheckout(request, env);
+      }
+      if (method === 'POST' && path === '/stripe/webhook') {
+        return await handleStripeWebhook(request, env);
       }
       if (method === 'GET' && path === '/health') {
         return json({ ok: true, service: 'kasbah-api', version: '2.0.0' });

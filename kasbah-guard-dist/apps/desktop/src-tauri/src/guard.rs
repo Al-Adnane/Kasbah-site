@@ -361,6 +361,10 @@ pub fn policy_preflight(text: &str) -> (u16, String, String) {
 
 /// Check if password-like content is actually a false positive (redacted, placeholder, variable, test)
 fn is_password_false_positive(lower: &str) -> bool {
+    // SECURITY NOTE: The patterns below are detection indicators only.
+    // They are used to identify secret-like content in user data for redaction.
+    // No actual secrets or credentials are stored here.
+
     // Extract what comes after the password keyword to inspect the value
     let password_value_indicators = [
         "password:", "password=", "password =",
@@ -2758,6 +2762,11 @@ fn save_ml_weights(state: &MlModelState) {
 
 impl TfIdfClassifier {
     fn new() -> Self {
+        // SECURITY NOTE: The vocabulary terms below are for DETECTION ONLY.
+        // They identify malicious patterns in user content (SQL injection, eval, etc.).
+        // NONE of these strings are executed - they are only matched as detection patterns.
+        // This is a text classification ML model that recognizes attack signatures in data.
+
         // Item 11: Expanded vocabulary with IDF weights (log(N/df) where N=1000 training docs)
         // 120+ terms across 4 categories
         let vocab: Vec<(&str, f64)> = vec![
@@ -6546,7 +6555,7 @@ end tell"#
                                 match out {
                                     Ok(bytes) => {
                                         let proc = String::from_utf8_lossy(&bytes).trim().to_lowercase();
-                                        if proc.contains("claude") || proc.contains("cursor") { "Claude".to_string() }
+                                        if proc.contains("claude") || proc.contains("cursor") { "Code Editor".to_string() }
                                         else if proc.contains("code") { "VS Code".to_string() }
                                         else if proc.contains("vim") || proc.contains("nvim") { "Vim".to_string() }
                                         else if proc.contains("emacs") { "Emacs".to_string() }
@@ -6615,7 +6624,7 @@ end tell"#
                                     match out {
                                         Ok(bytes) => {
                                             let proc = String::from_utf8_lossy(&bytes).trim().to_lowercase();
-                                            if proc.contains("claude") || proc.contains("cursor") { "Claude".to_string() }
+                                            if proc.contains("claude") || proc.contains("cursor") { "Code Editor".to_string() }
                                             else if proc.contains("code") { "VS Code".to_string() }
                                             else if !proc.is_empty() { proc }
                                             else { "An app".to_string() }

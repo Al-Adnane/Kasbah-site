@@ -24,6 +24,24 @@
   var FLAG_KEY = "__kasbah_allow__";
   var PASTE_FLAG = "__kasbah_paste_ok__";
 
+  // ── Notification deduplication (prevent browser + app duplicate toasts) ──
+  var __kasbah_last_notification_ms = 0;
+  var __kasbah_notification_debounce_ms = 800; // Don't show same notification within 800ms
+  var __kasbah_last_notification_hash = "";
+
+  function canShowNotification(message) {
+    var now = Date.now();
+    var msgHash = message.slice(0, 20); // Hash of first 20 chars
+    if ((now - __kasbah_last_notification_ms < __kasbah_notification_debounce_ms) &&
+        (msgHash === __kasbah_last_notification_hash)) {
+      console.log("[Kasbah Guard] Notification deduplicated (too recent, same message)");
+      return false;
+    }
+    __kasbah_last_notification_ms = now;
+    __kasbah_last_notification_hash = msgHash;
+    return true;
+  }
+
   // ── L6: Heartbeat fail-closed state ──
   var __kasbah_guard_alive = true;
   var __kasbah_heartbeat_failures = 0;
@@ -132,30 +150,38 @@
     if (document.getElementById('kasbah-ext-styles')) return;
     var style = document.createElement('style');
     style.id = 'kasbah-ext-styles';
-    style.textContent = '@keyframes kasbahSlideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}@keyframes kasbahSlideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}@keyframes kasbahPulse{0%,100%{box-shadow:0 0 0 0 rgba(193,68,14,.2)}50%{box-shadow:0 0 0 8px rgba(193,68,14,0)}}';
+    style.textContent = '@keyframes kasbahSlideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}@keyframes kasbahSlideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}@keyframes kasbahPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.3)}50%{box-shadow:0 0 0 12px rgba(220,38,38,0)}}@keyframes kasbahGlow{0%{background-color:#dc2626}50%{background-color:#991b1b}100%{background-color:#dc2626}}';
     document.head.appendChild(style);
   })();
 
-  // ── Rich toast notification ──
+  // ── Rich toast notification with Kasbah branding ──
   function showToast(message, isError, verb) {
-    var toast = document.createElement("div");
-    var bgColor = isError ? 'rgba(220,38,38,.92)' : 'rgba(24,24,27,.92)';
-    var borderColor = isError ? 'rgba(239,68,68,.3)' : 'rgba(255,255,255,.08)';
-    toast.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:2147483646;padding:14px 18px;border-radius:14px;font:13px/1.4 system-ui,-apple-system,sans-serif;box-shadow:0 8px 32px rgba(0,0,0,.24);max-width:380px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:" + bgColor + ";color:#fff;border:1px solid " + borderColor + ";animation:kasbahSlideIn .3s ease both";
+    // Deduplicate notifications (prevent browser + app duplicate toasts)
+    if (!canShowNotification(message)) {
+      return;
+    }
 
-    // Shield icon
+    var toast = document.createElement("div");
+    var bgColor = isError ? 'rgba(220,38,38,.96)' : 'rgba(24,24,27,.96)';
+    var borderColor = isError ? 'rgba(239,68,68,.4)' : 'rgba(255,255,255,.1)';
+    var shadowColor = isError ? 'rgba(220,38,38,.3)' : 'rgba(0,0,0,.3)';
+    toast.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:2147483646;padding:16px 20px;border-radius:12px;font:13px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 12px 40px " + shadowColor + ";max-width:400px;display:flex;align-items:flex-start;gap:12px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:" + bgColor + ";color:#fff;border:1px solid " + borderColor + ";animation:kasbahSlideIn .3s cubic-bezier(0.34,1.56,0.64,1) both";
+
+    // Kasbah fortress logo with brand colors
     var icon = document.createElement("div");
-    icon.style.cssText = "width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:" + (isError ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.1)');
-    icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+    var iconBg = isError ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.15)';
+    icon.style.cssText = "width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:" + iconBg + ";color:#fff;padding:4px";
+    // Kasbah fortress SVG logo (matches brand identity)
+    icon.innerHTML = '<svg viewBox="0 0 100 100" width="24" height="24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g><path d="M 20 40 L 30 20 L 40 35 L 40 55"/><path d="M 50 30 L 60 12 L 70 30 L 70 55"/><path d="M 80 40 L 90 20 L 98 35 L 98 55"/><path d="M 15 58 L 98 58 L 98 75 L 15 75 Z"/><line x1="35" y1="58" x2="35" y2="75"/><line x1="55" y1="58" x2="55" y2="75"/><line x1="75" y1="58" x2="75" y2="75"/></g></svg>';
     toast.appendChild(icon);
 
     var textWrap = document.createElement("div");
     textWrap.style.cssText = "flex:1;min-width:0";
     var title = document.createElement("div");
-    title.style.cssText = "font-size:12px;font-weight:800;margin-bottom:1px";
-    title.textContent = isError ? 'Kasbah blocked' + (verb ? ' ' + verb : '') : 'Kasbah';
+    title.style.cssText = "font-size:13px;font-weight:800;margin-bottom:2px;letter-spacing:-.3px";
+    title.textContent = isError ? 'Kasbah blocked' : 'Kasbah protected';
     var detail = document.createElement("div");
-    detail.style.cssText = "font-size:11px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
+    detail.style.cssText = "font-size:12px;opacity:.85;line-height:1.4";
     detail.textContent = message;
     textWrap.appendChild(title);
     textWrap.appendChild(detail);
@@ -165,7 +191,7 @@
     setTimeout(function () {
       toast.style.animation = 'kasbahSlideOut .3s ease forwards';
       setTimeout(function () { if (toast.parentNode) toast.remove(); }, 300);
-    }, 4500);
+    }, isError ? 5500 : 4000);
   }
 
   // ── Helpers ──
@@ -315,9 +341,9 @@
     var onBlock = opts.onBlock;
 
     var colors = {
-      high:   { bg: "#fef2f2", border: "#fecaca", text: "#991b1b", badge: "#dc2626" },
-      medium: { bg: "#fffbeb", border: "#fde68a", text: "#92400e", badge: "#d97706" },
-      low:    { bg: "#f0fdf4", border: "#bbf7d0", text: "#166534", badge: "#16a34a" },
+      high:   { bg: "#fef2f2", border: "#fed7d7", text: "#7f1d1d", badge: "#dc2626", badgeBg: "rgba(220,38,38,.1)" },
+      medium: { bg: "#fffbeb", border: "#fed3b7", text: "#78350f", badge: "#d97706", badgeBg: "rgba(217,119,6,.1)" },
+      low:    { bg: "#f0fdf4", border: "#a7f3d0", text: "#166534", badge: "#16a34a", badgeBg: "rgba(34,197,94,.1)" },
     };
     var c = colors[risk] || colors.low;
 
@@ -331,36 +357,37 @@
     };
 
     var overlay = document.createElement("div");
-    overlay.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;backdrop-filter:blur(2px)";
+    overlay.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)";
 
     var card = document.createElement("div");
-    card.style.cssText = "width:min(480px,94vw);background:#fafaf9;border:1px solid #e4e4e7;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.18);overflow:hidden";
+    card.style.cssText = "width:min(520px,94vw);background:#fafaf9;border:1px solid #e4e4e7;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.2),0 0 1px rgba(0,0,0,.1);overflow:hidden";
 
-    // Header
+    // Header with Kasbah fortress red accent
     var header = document.createElement("div");
-    header.style.cssText = "padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e4e4e7";
+    header.style.cssText = "padding:18px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid #ede8e3;background:linear-gradient(135deg,rgba(193,68,14,.02),rgba(212,197,185,.02))";
     var brand = document.createElement("div");
-    brand.style.cssText = "display:flex;align-items:center;gap:8px";
+    brand.style.cssText = "display:flex;align-items:center;gap:10px";
+
+    // Kasbah fortress logo (SVG)
     var mark = document.createElement("div");
-    mark.style.cssText = "width:22px;height:22px;border-radius:6px;background:#18181b;display:grid;place-items:center";
-    var markI = document.createElement("div");
-    markI.style.cssText = "width:10px;height:10px;border-radius:3px;background:#fafaf9";
-    mark.appendChild(markI);
-    var bname = document.createElement("span");
-    bname.style.cssText = "font-weight:800;font-size:13px;color:#18181b";
-    bname.textContent = "Kasbah Guard";
+    mark.style.cssText = "width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#dc2626,#991b1b);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;padding:4px;box-shadow:0 2px 8px rgba(220,38,38,.3)";
+    mark.innerHTML = '<svg viewBox="0 0 100 100" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><g><path d="M 20 40 L 30 20 L 40 35 L 40 55"/><path d="M 50 30 L 60 12 L 70 30 L 70 55"/><path d="M 80 40 L 90 20 L 98 35 L 98 55"/><path d="M 15 58 L 98 58 L 98 75 L 15 75 Z"/><line x1="35" y1="58" x2="35" y2="75"/><line x1="55" y1="58" x2="55" y2="75"/><line x1="75" y1="58" x2="75" y2="75"/></g></svg>';
     brand.appendChild(mark);
+
+    var bname = document.createElement("span");
+    bname.style.cssText = "font-weight:900;font-size:14px;color:#18181b;letter-spacing:-.4px";
+    bname.textContent = "Kasbah Guard";
     brand.appendChild(bname);
 
     // Verb tag
     var verbTag = document.createElement("span");
-    verbTag.style.cssText = "font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;background:#f4f4f5;color:#52525b;margin-left:8px;text-transform:uppercase";
+    verbTag.style.cssText = "font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:" + c.badgeBg + ";color:" + c.badge + ";margin-left:8px;text-transform:uppercase;letter-spacing:.5px";
     verbTag.textContent = verb;
     brand.appendChild(verbTag);
 
     var badge = document.createElement("span");
-    badge.style.cssText = "font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;color:#fff;background:" + c.badge;
-    badge.textContent = risk === "high" ? "Needs review" : risk === "medium" ? "Quick check" : "Looks good";
+    badge.style.cssText = "font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;color:#fff;background:" + c.badge + ";flex-shrink:0";
+    badge.textContent = risk === "high" ? "⚠️ Needs review" : risk === "medium" ? "⏸️ Quick check" : "✓ Looks good";
     header.appendChild(brand);
     header.appendChild(badge);
 
@@ -368,18 +395,24 @@
     var body = document.createElement("div");
     body.style.cssText = "padding:16px";
 
-    // Alert
+    // Alert with improved styling
     if (secrets.length > 0 || risk !== "low") {
       var alert = document.createElement("div");
-      alert.style.cssText = "background:" + c.bg + ";border:1px solid " + c.border + ";border-radius:10px;padding:12px;margin-bottom:12px";
+      alert.style.cssText = "background:" + c.bg + ";border:1.5px solid " + c.border + ";border-radius:12px;padding:14px;margin-bottom:14px";
       var alertTitle = document.createElement("div");
-      alertTitle.style.cssText = "font-size:13px;font-weight:800;color:" + c.text + ";margin-bottom:3px";
-      alertTitle.textContent = secrets.length > 0 ? "Heads up" : "Quick check";
+      alertTitle.style.cssText = "font-size:14px;font-weight:800;color:" + c.text + ";margin-bottom:4px;display:flex;align-items:center;gap:6px";
+      var alertIcon = document.createElement("span");
+      alertIcon.style.cssText = "font-size:16px";
+      alertIcon.textContent = secrets.length > 0 ? "🔐" : "⚠️";
+      alertTitle.appendChild(alertIcon);
+      var alertTitleText = document.createElement("span");
+      alertTitleText.textContent = secrets.length > 0 ? "Sensitive information detected" : "Review recommended";
+      alertTitle.appendChild(alertTitleText);
       var alertDesc = document.createElement("div");
-      alertDesc.style.cssText = "font-size:12px;color:" + c.text + ";line-height:1.45";
+      alertDesc.style.cssText = "font-size:13px;color:" + c.text + ";line-height:1.5;opacity:.9";
       alertDesc.textContent = secrets.length > 0
-        ? "This may contain personal info. Your call."
-        : "Review this before continuing — just to be safe.";
+        ? "This content may contain personal or sensitive information."
+        : "This content may need a second look before sharing.";
       alert.appendChild(alertTitle);
       alert.appendChild(alertDesc);
 
@@ -416,22 +449,26 @@
 
     // Message
     var msg = document.createElement("div");
-    msg.style.cssText = "font-size:12px;color:#71717a;line-height:1.5;margin-bottom:14px";
-    msg.textContent = (verbLabels[verb] || "Action") + " on " + product().toUpperCase() + " — you decide.";
+    msg.style.cssText = "font-size:13px;color:#64748b;line-height:1.6;margin-bottom:16px";
+    msg.textContent = (verbLabels[verb] || "Action") + " on " + product().toUpperCase() + ". Kasbah protects your data — you decide what happens next.";
     body.appendChild(msg);
 
     // Buttons
     var row = document.createElement("div");
-    row.style.cssText = "display:flex;gap:8px;justify-content:flex-end";
+    row.style.cssText = "display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #ede8e3";
 
     var verbCap = verb.charAt(0).toUpperCase() + verb.slice(1);
     var blockBtn = document.createElement("button");
-    blockBtn.textContent = "Block " + verbCap;
-    blockBtn.style.cssText = "font:700 12px system-ui;padding:9px 16px;border-radius:999px;cursor:pointer;border:1.5px solid #dc2626;background:rgba(220,38,38,.06);color:#dc2626;transition:all .15s";
+    blockBtn.textContent = "🚫 Block " + verbCap;
+    blockBtn.style.cssText = "font:700 13px system-ui;padding:10px 18px;border-radius:10px;cursor:pointer;border:1.5px solid #dc2626;background:rgba(220,38,38,.08);color:#dc2626;transition:all .2s;hover-scale:1.02";
+    blockBtn.onmouseover = function() { blockBtn.style.background = "rgba(220,38,38,.14)"; blockBtn.style.borderColor = "#991b1b"; };
+    blockBtn.onmouseout = function() { blockBtn.style.background = "rgba(220,38,38,.08)"; blockBtn.style.borderColor = "#dc2626"; };
 
     var allowBtn = document.createElement("button");
-    allowBtn.textContent = risk === "high" ? "Allow " + verbCap + " anyway" : "Allow " + verbCap;
-    allowBtn.style.cssText = "font:700 12px system-ui;padding:9px 16px;border-radius:999px;cursor:pointer;border:0;background:#18181b;color:#fafaf9;transition:all .15s";
+    allowBtn.textContent = "✓ Allow " + verbCap;
+    allowBtn.style.cssText = "font:700 13px system-ui;padding:10px 18px;border-radius:10px;cursor:pointer;border:0;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;transition:all .2s;box-shadow:0 2px 8px rgba(220,38,38,.2)";
+    allowBtn.onmouseover = function() { allowBtn.style.background = "linear-gradient(135deg,#b91c1c,#991b1b)"; allowBtn.style.boxShadow = "0 4px 12px rgba(220,38,38,.3)"; };
+    allowBtn.onmouseout = function() { allowBtn.style.background = "linear-gradient(135deg,#dc2626,#b91c1c)"; allowBtn.style.boxShadow = "0 2px 8px rgba(220,38,38,.2)"; };
     var hasCritical = false; // kept for logging
 
     blockBtn.onmousedown = function () { blockBtn.style.transform = "scale(.96)"; };
@@ -609,9 +646,13 @@
       data = ev.dataTransfer.getData("text/plain") || ev.dataTransfer.getData("text") || "";
     }
 
-    // Only trigger for substantial content with detected secrets
-    if (data.length < 100) return;
+    // Check for secrets FIRST (any length)
     var secrets = scanSecrets(data);
+
+    // Only trigger if secrets found OR substantial content
+    if (secrets.length === 0 && data.length < 100) return;
+
+    // If no secrets AND we got here (must be >100 chars), allow it
     if (secrets.length === 0) return;
 
     // This is a programmatic insertion with secrets — block it
@@ -1307,5 +1348,10 @@
   );
 
   // ── Startup notification ──
-  console.log("[Kasbah Guard] Extension v1.2.0 loaded on " + product().toUpperCase() + " — intercepting: send, paste, upload, browse, download, edit — PII + secret detection active");
+  var detectedProduct = product();
+  console.log("[Kasbah Guard] Extension v1.2.0 initialized");
+  console.log("[Kasbah Guard] Platform: " + host() + " → Product: " + detectedProduct.toUpperCase());
+  console.log("[Kasbah Guard] Guard API: " + GUARD);
+  console.log("[Kasbah Guard] Active interceptors: send, paste, upload, browse, download, edit");
+  console.log("[Kasbah Guard] Security: PII detection, secret scanning, sandbox mode (first 10 blocks)");
 })();

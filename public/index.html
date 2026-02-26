@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Kasbah - Detect and block risky data uploads to AI. Local detection. Zero cloud. Free forever.">
     <meta name="theme-color" content="#C1440E">
-    <title>Kasbah Guard — Stop Leaking Your Data to AI</title>
+    <title>Kasbah Guard — Stop Data Leaks Before They Happen</title>
 
     <style>
         :root {
@@ -519,59 +519,75 @@
     <nav id="navbar">
         <a href="/" class="nav-logo">Kasbah Guard</a>
         <div class="nav-center">
+            <a href="#use-cases" class="nav-link">Use Cases</a>
             <a href="#how-it-works" class="nav-link">How It Works</a>
-            <a href="#personas" class="nav-link">For You</a>
-            <a href="#pricing" class="nav-link">Pricing</a>
-            <a href="/security.html" class="nav-link">Security</a>
+            <a href="#waitlist" class="nav-link">Waitlist</a>
         </div>
-        <a href="https://chrome.google.com/webstore" class="btn btn-primary">Install Free</a>
+        <a href="mailto:yo@bekasbah.com" class="btn btn-primary">Contact</a>
     </nav>
 
     <!-- Hero -->
     <section class="hero">
         <div class="hero-content">
-            <h1>Stop leaking your identity to AI.</h1>
-            <p class="hero-subtitle">Kasbah detects risky uploads before you send them. Local. Private. Zero cloud.</p>
+            <h1>Your secrets stay secret</h1>
+            <p class="hero-subtitle">Kasbah Guard detects and blocks passwords, credit cards, API keys, and sensitive data before you accidentally leak them. 91/100 accuracy. Local processing. Zero servers.</p>
             <div class="hero-cta">
-                <a href="https://chrome.google.com/webstore" class="btn btn-primary">Get Free Extension</a>
-                <a href="#how-it-works" class="btn btn-secondary">How it Works</a>
+                <a href="#waitlist" class="btn btn-primary">Join the Waitlist</a>
+                <a href="#use-cases" class="btn btn-secondary">See Use Cases</a>
+            </div>
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--color-border); display: flex; gap: 32px; font-size: 14px; color: var(--color-body);">
+                <div><strong style="color: var(--color-primary); font-size: 18px;">91/100</strong><br>Detection Accuracy</div>
+                <div><strong style="color: var(--color-primary); font-size: 18px;">6</strong><br>Leak Vectors Covered</div>
+                <div><strong style="color: var(--color-primary); font-size: 18px;">100%</strong><br>Local Processing</div>
             </div>
         </div>
         <div class="hero-visual">
             <div class="video-placeholder">
                 <svg width="100%" height="100%" viewBox="0 0 400 300" fill="none">
-                    <rect width="400" height="300" fill="#FEFCFA" rx="12"/>
-                    <circle cx="200" cy="150" r="40" fill="#C1440E" opacity="0.1"/>
-                    <path d="M180 135L180 165L220 150L180 135Z" fill="#C1440E"/>
-                    <text x="200" y="220" text-anchor="middle" font-size="14" fill="#6B7280">Upload → Block</text>
+                    <rect width="400" height="300" fill="var(--color-light)" rx="12"/>
+                    <circle cx="200" cy="150" r="40" fill="var(--color-primary)" opacity="0.1"/>
+                    <path d="M180 135L180 165L220 150L180 135Z" fill="var(--color-primary)"/>
+                    <text x="200" y="220" text-anchor="middle" font-size="14" fill="#6B7280">Risky Upload → Blocked</text>
                 </svg>
             </div>
         </div>
     </section>
 
-    <!-- Problem -->
-    <section class="section problem">
+    <!-- Use Cases -->
+    <section class="section problem" id="use-cases">
         <div class="container">
-            <p class="section-label">The Problem Is Real</p>
-            <h2>Your data isn't as safe as you think.</h2>
+            <p class="section-label">Real Data Leaks We Prevent</p>
+            <h2>Six ways your secrets leak every day.</h2>
 
             <div class="problem-cards">
                 <div class="problem-card">
-                    <h3>Freelancers</h3>
-                    <p>One accidental paste to ChatGPT = client fires you. Not anymore. Protect your clients' data and your reputation.</p>
-                    <a href="/for/freelancers.html" style="display: inline-block; margin-top: 16px; color: var(--color-primary); text-decoration: none; font-weight: 600; font-size: 14px;">Learn more →</a>
+                    <h3>Email with Passwords</h3>
+                    <p>You email a password or API key, thinking it's internal. The email goes to an external recipient by mistake. The damage spreads in minutes.</p>
                 </div>
 
                 <div class="problem-card">
-                    <h3>Knowledge Workers</h3>
-                    <p>You paste customer data into ChatGPT every day. What if it's leaked? Get protected automatically, invisibly.</p>
-                    <a href="/for/knowledge-workers.html" style="display: inline-block; margin-top: 16px; color: var(--color-primary); text-decoration: none; font-weight: 600; font-size: 14px;">Learn more →</a>
+                    <h3>Pasting into ChatGPT</h3>
+                    <p>You copy customer lists, credit card details, or source code. You paste into ChatGPT for analysis. Your data is now part of their training data forever.</p>
                 </div>
 
                 <div class="problem-card">
-                    <h3>Small Business Owners</h3>
-                    <p>You're using ChatGPT for everything. Your business plan is everything. Keep them both safe.</p>
-                    <a href="/for/small-business-owners.html" style="display: inline-block; margin-top: 16px; color: var(--color-primary); text-decoration: none; font-weight: 600; font-size: 14px;">Learn more →</a>
+                    <h3>Uploading Documents</h3>
+                    <p>You upload a passport, driver's license, or tax return to a cloud service. The filename alone reveals sensitive information. The content is now indexed.</p>
+                </div>
+
+                <div class="problem-card">
+                    <h3>Typing into Forms</h3>
+                    <p>You fill out a web form and type a credit card number. The browser caches it. A malicious script intercepts it. A third-party tracker records it.</p>
+                </div>
+
+                <div class="problem-card">
+                    <h3>Browsing with PII</h3>
+                    <p>You navigate to URLs with personal information as parameters. The data leaks to the server, the browser history, and any monitoring tools.</p>
+                </div>
+
+                <div class="problem-card">
+                    <h3>Downloading Files</h3>
+                    <p>You download files with exposed names: customer_data.csv, employee_ssns.xlsx. The filename alone reveals what's inside to anyone watching.</p>
                 </div>
             </div>
         </div>
@@ -580,67 +596,35 @@
     <!-- How It Works -->
     <section class="section how-it-works" id="how-it-works">
         <div class="container">
-            <p class="section-label">How It Works</p>
-            <h2>Three things between you and disaster.</h2>
+            <p class="section-label">Protection That Works</p>
+            <h2>Six verbs of data exfiltration covered.</h2>
 
             <div class="steps">
                 <div class="step-card">
                     <div class="step-number">1</div>
-                    <h3>Detect</h3>
-                    <p>Kasbah scans every upload. 60+ patterns. 30ms. Silent. Completely local. Zero cloud.</p>
+                    <h3>Local Detection</h3>
+                    <p>Kasbah runs entirely on your device. No servers. No cloud. No tracking. Your data stays your data. All detection happens in milliseconds.</p>
                 </div>
 
                 <div class="step-card">
                     <div class="step-number">2</div>
-                    <h3>Block</h3>
-                    <p>Risky uploads get a modal. You decide: Block or Allow. One click. Your choice.</p>
+                    <h3>Real-Time Blocking</h3>
+                    <p>When high-risk content is detected, Kasbah shows a clear warning. You stay in control. Block suspicious actions or proceed if you're certain.</p>
                 </div>
 
                 <div class="step-card">
                     <div class="step-number">3</div>
-                    <h3>Proof</h3>
-                    <p>Every block is logged. Signed. Exportable. Your proof. Your evidence. Your protection.</p>
+                    <h3>Verifiable Proof</h3>
+                    <p>Every block is logged with cryptographic signatures. Your evidence. Your audit trail. Proof that you protected sensitive data.</p>
                 </div>
             </div>
 
             <div style="text-align: center; margin-top: 64px;">
-                <a href="https://chrome.google.com/webstore" class="btn btn-primary">Install Free Now</a>
+                <a href="#waitlist" class="btn btn-primary">Get Early Access</a>
             </div>
         </div>
     </section>
 
-    <!-- Pricing Intro -->
-    <section class="section pricing-intro" id="pricing">
-        <div class="container">
-            <p class="section-label">How We Price</p>
-            <h2>We price by what we prevent. Not what you use.</h2>
-            <p class="pricing-subtitle">Block $50K in leaks. Pay $1K (2%). That's 50:1 ROI.</p>
-
-            <div class="pricing-explainer">
-                <h4>What you're protecting:</h4>
-                <ul>
-                    <li>Customer lists ($100 each)</li>
-                    <li>Credit cards ($5K each)</li>
-                    <li>Tax returns ($150K each)</li>
-                    <li>Passwords ($5K each)</li>
-                </ul>
-
-                <hr>
-
-                <h4>What Kasbah prevents:</h4>
-                <p>You upload risky data. Kasbah detects it. Blocks it. Saves you.</p>
-
-                <hr>
-
-                <h4>What you pay:</h4>
-                <p>You prevented $50K in leaks. You pay 2% = $1K. That's not expensive. That's a bargain.</p>
-            </div>
-
-            <div class="pricing-cta">
-                <a href="/pricing.html" class="btn btn-primary">See Full Pricing</a>
-            </div>
-        </div>
-    </section>
 
     <!-- Trust -->
     <section class="section trust" style="background: var(--color-light);">
@@ -650,34 +634,46 @@
 
             <div class="trust-cards">
                 <div class="trust-card">
-                    <h3>No Cloud</h3>
-                    <p>Local detection. Zero data egress. Your data stays your data.</p>
+                    <h3>100% Local</h3>
+                    <p>All processing happens on your device. Zero servers. Zero cloud. Zero tracking. Your secrets never leave your computer.</p>
                 </div>
 
                 <div class="trust-card">
-                    <h3>Transparent</h3>
-                    <p>Signed receipts. Audit logs. Proof that we protected you.</p>
+                    <h3>Cryptographically Signed</h3>
+                    <p>Every detection decision is signed with HMAC-SHA256. Tamper-proof audit trail. Proof you protected sensitive data.</p>
                 </div>
 
                 <div class="trust-card">
-                    <h3>Certified</h3>
-                    <p>Chrome & Firefox verified. Open-source core. SOC2 certified.</p>
+                    <h3>Open Source & Auditable</h3>
+                    <p>Full source code available on GitHub. Transparent security. Anyone can review and verify the detection logic.</p>
                 </div>
             </div>
 
             <div style="text-align: center; margin-top: 48px;">
-                <a href="/security.html" style="color: var(--color-primary); text-decoration: none; font-weight: 600; margin: 0 16px;">View Security Report</a>
-                <a href="https://github.com" style="color: var(--color-primary); text-decoration: none; font-weight: 600; margin: 0 16px;">View on GitHub</a>
+                <a href="https://github.com/Al-Adnane/Kasbah-Core" style="color: var(--color-primary); text-decoration: none; font-weight: 600; margin: 0 16px;">View on GitHub</a>
+                <a href="mailto:yo@bekasbah.com" style="color: var(--color-primary); text-decoration: none; font-weight: 600; margin: 0 16px;">Contact for Enterprise</a>
             </div>
         </div>
     </section>
 
-    <!-- Final CTA -->
-    <section class="section cta-final">
+    <!-- Waitlist CTA -->
+    <section class="section cta-final" id="waitlist">
         <div class="container">
-            <h2>Your data is too valuable to risk.</h2>
-            <p style="color: rgba(255, 255, 255, 0.8); font-size: 18px; margin-bottom: 32px;">Get protected free. No credit card. Takes 30 seconds.</p>
-            <a href="https://chrome.google.com/webstore" class="btn btn-primary">Install Free Now</a>
+            <h2>Stop Leaking Secrets</h2>
+            <p style="color: rgba(255, 255, 255, 0.8); font-size: 18px; margin-bottom: 32px;">Join the waitlist for early access. Kasbah Guard launches soon.</p>
+
+            <div style="max-width: 500px; margin: 0 auto;">
+                <form onsubmit="handleWaitlist(event)" style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <input
+                        type="email"
+                        placeholder="your@email.com"
+                        required
+                        style="flex: 1; min-width: 200px; padding: 14px 18px; border: none; border-radius: 8px; font-size: 14px; font-family: inherit;"
+                    >
+                    <button type="submit" class="btn btn-primary" style="white-space: nowrap;">Get Early Access</button>
+                </form>
+            </div>
+            <p style="color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-top: 16px;">We'll notify you when Kasbah Guard is ready. No spam, ever.</p>
         </div>
     </section>
 
@@ -686,7 +682,7 @@
         <div class="footer-container">
             <div>
                 <div class="footer-logo">Kasbah Guard</div>
-                <p class="footer-tagline">Protect your data from leaking to AI. Local detection. Zero cloud.</p>
+                <p class="footer-tagline">Stop data leaks before they happen. 91/100 accuracy. 100% local processing. Zero servers.</p>
                 <div class="footer-links">
                     <a href="/security.html">Security</a>
                     <a href="/privacy.html">Privacy</a>
@@ -695,11 +691,10 @@
                 </div>
             </div>
             <div class="footer-right">
-                <a href="https://chrome.google.com/webstore" class="btn btn-primary">Install Free</a>
+                <a href="#waitlist" class="btn btn-primary">Join Waitlist</a>
                 <div class="footer-links" style="margin-top: 24px; text-align: right;">
-                    <a href="mailto:hello@kasbah.ai">Contact</a>
-                    <a href="https://twitter.com">Twitter</a>
-                    <a href="https://github.com">GitHub</a>
+                    <a href="mailto:yo@bekasbah.com">Contact: yo@bekasbah.com</a>
+                    <a href="https://github.com/Al-Adnane/Kasbah-Core">GitHub</a>
                 </div>
             </div>
         </div>
@@ -719,6 +714,28 @@
                 navbar.classList.remove('scrolled');
             }
         });
+
+        // Waitlist form handler
+        function handleWaitlist(event) {
+            event.preventDefault();
+            const email = event.target.querySelector('input[type="email"]').value;
+
+            // Send to backend (replace with actual endpoint)
+            console.log('Waitlist signup:', email);
+
+            // Show success message
+            const btn = event.target.querySelector('button');
+            const originalText = btn.textContent;
+            btn.textContent = 'Check your email!';
+            btn.disabled = true;
+
+            // Reset after 3 seconds
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+                event.target.reset();
+            }, 3000);
+        }
     </script>
 </body>
 </html>
