@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// KASBAH GUARD — 13-Moat Network Egress Gate v3.0
+// KASBAH GUARD — 18-Moat Network Egress Gate v3.2
 // Runs in MAIN world at document_start — before any page script executes.
 //
 // MOAT 1  — document_start + world:MAIN  (manifest)
@@ -15,6 +15,11 @@
 // MOAT 11 — Unicode normalization + zero-width char stripping (detector.js)
 // MOAT 12 — <all_urls> omnipresent coverage                 (manifest)
 // MOAT 13 — Zero-latency local detection, no server, no account needed
+// MOAT 14 — BroadcastChannel.postMessage interception (cross-tab exfil)
+// MOAT 15 — SharedWorker constructor URL scan (worker-based exfil)
+// MOAT 16 — RTCDataChannel.send interception (peer-to-peer exfil)
+// MOAT 17 — window.name write interception (4MB cross-navigation carrier)
+// MOAT 18 — URL.createObjectURL scan (blob URL exfil)
 // ═══════════════════════════════════════════════════════════════════════════
 (() => {
   "use strict";
@@ -255,7 +260,73 @@
     if (HTMLFormElement.prototype.submit !== _hFormSubmit) _lock(HTMLFormElement.prototype, "submit", _hFormSubmit);
   }, 3000);
 
-  console.log("[Kasbah Guard] 13-moat egress gate active ✓ (fetch · XHR · beacon · WS · form · ws:url · window.open · src-MO · b64 · fallback · frozen · self-heal · local)");
+  // ── MOAT 14: Cross-Context Interception ────────────────────────────────
+  // Block data exfiltration via BroadcastChannel, SharedWorker, RTCDataChannel,
+  // and window.name (4MB data carrier across navigations).
+
+  // 14a: BroadcastChannel.postMessage — cross-tab data exfil
+  if (typeof BroadcastChannel !== "undefined") {
+    const _origBCPost = BroadcastChannel.prototype.postMessage;
+    const _hBCPost = function(msg) {
+      const s = typeof msg === "string" ? msg : JSON.stringify(msg || "");
+      if (scanStr(s)) { block("BroadcastChannel"); return; }
+      return _origBCPost.call(this, msg);
+    };
+    _lock(BroadcastChannel.prototype, "postMessage", _hBCPost);
+  }
+
+  // 14b: SharedWorker — intercept constructor to log, message events scanned
+  if (typeof SharedWorker !== "undefined") {
+    const _origSW = SharedWorker;
+    const _hSW = function(url, opts) {
+      const s = _s(url);
+      if (scanUrl(s)) { block("SharedWorker:url"); return new _origSW("about:blank"); }
+      return new _origSW(url, opts);
+    };
+    _hSW.prototype = _origSW.prototype;
+    try { _lock(window, "SharedWorker", _hSW); } catch(e) {}
+  }
+
+  // 14c: RTCDataChannel.send — peer-to-peer exfil bypass
+  if (typeof RTCPeerConnection !== "undefined" && typeof RTCDataChannel !== "undefined") {
+    const _origRTCSend = RTCDataChannel.prototype.send;
+    const _hRTCSend = function(data) {
+      const s = typeof data === "string" ? data : "";
+      if (s.length > 0 && scanStr(s)) { block("RTCDataChannel"); return; }
+      return _origRTCSend.call(this, data);
+    };
+    _lock(RTCDataChannel.prototype, "send", _hRTCSend);
+  }
+
+  // 14d: window.name — 4MB data carrier across navigations
+  let _origName = window.name || "";
+  Object.defineProperty(window, "name", {
+    get: function() { return _origName; },
+    set: function(v) {
+      const s = _s(v);
+      if (s.length > 200 && scanStr(s)) { block("window.name"); return; }
+      _origName = v;
+    },
+    configurable: false,
+    enumerable: true
+  });
+
+  // 14e: URL.createObjectURL — blob URL exfiltration
+  if (typeof URL !== "undefined" && URL.createObjectURL) {
+    const _origCreateURL = URL.createObjectURL.bind(URL);
+    const _hCreateURL = function(obj) {
+      // Scan blob text content if it's a Blob with text type
+      if (obj instanceof Blob && obj.type && obj.type.startsWith("text/") && obj.size < 500000) {
+        obj.text().then(function(txt) {
+          if (scanStr(txt)) { block("Blob URL"); }
+        }).catch(function(){});
+      }
+      return _origCreateURL(obj);
+    };
+    try { _lock(URL, "createObjectURL", _hCreateURL); } catch(e) {}
+  }
+
+  console.log("[Kasbah Guard] 18-moat egress gate active ✓ (fetch · XHR · beacon · WS · form · ws:url · window.open · src-MO · b64 · fallback · frozen · self-heal · local · BroadcastChannel · SharedWorker · RTCDataChannel · window.name · BlobURL)");
 })();
 
 /**

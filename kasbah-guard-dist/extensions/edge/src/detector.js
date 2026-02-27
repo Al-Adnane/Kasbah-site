@@ -1,6 +1,6 @@
 /**
- * Kasbah Detection Engine v3.1 — UNBEATABLE MOAT
- * 10-Layer Defense Architecture (from UNBEATABLE_MOAT_V2)
+ * Kasbah Detection Engine v3.2 — FRONTIER DEFENSE
+ * 10-Layer Defense Architecture + Frontier Anti-Bypass
  *
  * Layer 0: Quantum-Resistant Hybrid Hash (djb2 XOR FNV-1a)
  * Layer 1: AI-Powered Pattern Stats (confidence tracking)
@@ -9,20 +9,29 @@
  * Layer 4: Anti-Reverse-Engineering (decoys + constant-time)
  * Layer 5: Platform Fingerprinting (10 AI platforms)
  * Layer 6: Versioned Patterns + Integrity Verification
- * Layer 7: Formal Verification — Runtime Self-Test (11 invariants)
+ * Layer 7: Formal Verification — Runtime Self-Test (14 invariants)
  * Layer 8: Zero-Knowledge Detection (proofs without content)
  * Layer 9: Efficiency Optimizations (early exit, score cap)
+ * Layer 10: Frontier Normalization (homoglyph, NFKC, Zalgo, Unicode digits)
+ * Layer 11: Behavioral Paste Tracking (burst detection)
  *
  * v3.1.0: Luhn validation, bulk email detection, connection string regex,
  *         decision mode (ENFORCED/SIMULATED), structured proof reports,
  *         enhanced entropy threshold for unknown secrets
+ * v3.2.0: Homoglyph normalization (Cyrillic/Greek/Arabic lookalikes),
+ *         Unicode digit normalization (Arabic-Indic/Devanagari/Fullwidth),
+ *         NFKC, Zalgo stripping, smart quote/dash normalization,
+ *         variation selector removal, behavioral paste tracking
  */
 
 // ══════════════════════════════════════════════════════════════
 // LAYER 6: Pattern Version + Integrity Tracking
 // ══════════════════════════════════════════════════════════════
-var PATTERN_VERSION = "3.1.0";
-var PATTERN_EPOCH = 1740700800; // 2025-02-28
+var PATTERN_VERSION = "3.2.0";
+var PATTERN_EPOCH = 1772236800; // 2026-02-27
+
+// Feature flags for backward-compatible return objects
+var FEATURES = ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral"];
 
 // ══════════════════════════════════════════════════════════════
 // Decision Mode — ENFORCED (production) or SIMULATED (testing)
@@ -65,6 +74,105 @@ function luhnCheck(numStr) {
     sum += n;
   }
   return (sum % 10) === 0;
+}
+
+// ══════════════════════════════════════════════════════════════
+// LAYER 10: Frontier Normalization — Homoglyph + Unicode Anti-Bypass
+// Defeats: Cyrillic/Greek lookalike substitution, Unicode digit
+//          obfuscation, Zalgo text, smart quotes, variation selectors.
+// ══════════════════════════════════════════════════════════════
+var HOMOGLYPH_MAP = {
+  // Cyrillic lowercase → Latin
+  '\u0430':'a','\u0435':'e','\u043e':'o','\u0440':'p','\u0441':'c',
+  '\u0443':'y','\u0445':'x','\u0456':'i','\u0451':'e','\u0457':'yi',
+  // Cyrillic uppercase → Latin
+  '\u0410':'A','\u0412':'B','\u0415':'E','\u041a':'K','\u041c':'M',
+  '\u041d':'H','\u041e':'O','\u0420':'P','\u0421':'C','\u0422':'T','\u0425':'X',
+  // Greek lowercase → Latin
+  '\u03b1':'a','\u03b2':'b','\u03b5':'e','\u03b7':'n','\u03b9':'i',
+  '\u03ba':'k','\u03bd':'v','\u03bf':'o','\u03c1':'p','\u03c4':'t','\u03c7':'x',
+  // Greek uppercase → Latin
+  '\u0391':'A','\u0392':'B','\u0395':'E','\u0396':'Z','\u0397':'H',
+  '\u0399':'I','\u039a':'K','\u039c':'M','\u039d':'N','\u039f':'O',
+  '\u03a1':'P','\u03a4':'T','\u03a7':'X','\u03a5':'Y',
+  // Arabic-Indic digits → ASCII
+  '\u0660':'0','\u0661':'1','\u0662':'2','\u0663':'3','\u0664':'4',
+  '\u0665':'5','\u0666':'6','\u0667':'7','\u0668':'8','\u0669':'9',
+  // Extended Arabic-Indic digits → ASCII
+  '\u06f0':'0','\u06f1':'1','\u06f2':'2','\u06f3':'3','\u06f4':'4',
+  '\u06f5':'5','\u06f6':'6','\u06f7':'7','\u06f8':'8','\u06f9':'9',
+  // Devanagari digits → ASCII
+  '\u0966':'0','\u0967':'1','\u0968':'2','\u0969':'3','\u096a':'4',
+  '\u096b':'5','\u096c':'6','\u096d':'7','\u096e':'8','\u096f':'9',
+  // Fullwidth digits → ASCII
+  '\uff10':'0','\uff11':'1','\uff12':'2','\uff13':'3','\uff14':'4',
+  '\uff15':'5','\uff16':'6','\uff17':'7','\uff18':'8','\uff19':'9',
+  // Other lookalikes
+  '\u2113':'l','\u2205':'0','\u2160':'I','\u2164':'V','\u2169':'X'
+};
+
+function normalizeHomoglyphs(text) {
+  // Step 1: NFKC normalization (decompose ligatures, fullwidth, compatibility)
+  if (typeof text.normalize === 'function') {
+    text = text.normalize('NFKC');
+  }
+  // Step 2: Character-by-character homoglyph + digit replacement
+  var result = '';
+  for (var i = 0; i < text.length; i++) {
+    var ch = text[i];
+    result += HOMOGLYPH_MAP[ch] || ch;
+  }
+  // Step 3: Strip variation selectors (invisible modifiers U+FE00-FE0F)
+  result = result.replace(/[\ufe00-\ufe0f]/g, '');
+  // Step 4: Strip combining diacritical marks (Zalgo text U+0300-036F)
+  result = result.replace(/[\u0300-\u036f]/g, '');
+  // Step 5: Normalize smart quotes and dashes
+  result = result
+    .replace(/[\u2018\u2019\u201a\u201b]/g, "'")
+    .replace(/[\u201c\u201d\u201e\u201f]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-');
+  // Step 6: Normalize exotic whitespace to regular space
+  result = result.replace(/[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]/g, ' ');
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════════
+// LAYER 11: Behavioral Paste Tracking (burst detection)
+// Detects rapid high-risk exfiltration patterns.
+// ══════════════════════════════════════════════════════════════
+var _pasteHistory = [];
+var _PASTE_WINDOW_MS = 30000; // 30-second sliding window
+var _PASTE_BURST_THRESHOLD = 10;
+
+function checkBehavioral(score) {
+  var now = Date.now();
+  _pasteHistory.push({ ts: now, risk: score });
+  // Prune entries older than window
+  while (_pasteHistory.length > 0 && now - _pasteHistory[0].ts > _PASTE_WINDOW_MS) {
+    _pasteHistory.shift();
+  }
+  // Cap history size to prevent memory leak
+  if (_pasteHistory.length > 200) { _pasteHistory = _pasteHistory.slice(-100); }
+  // Check for high-risk burst (10+ high-risk pastes in 30s)
+  var highRiskCount = 0;
+  for (var i = 0; i < _pasteHistory.length; i++) {
+    if (_pasteHistory[i].risk >= 70) highRiskCount++;
+  }
+  if (highRiskCount >= _PASTE_BURST_THRESHOLD) {
+    return { anomaly: true, reason: "rapid high-risk burst (" + highRiskCount + " in 30s)", severity: "high" };
+  }
+  // Check for risk escalation (last 5 all increasing)
+  if (_pasteHistory.length >= 5) {
+    var last5 = _pasteHistory.slice(-5);
+    var escalating = true;
+    for (var j = 1; j < last5.length; j++) {
+      if (last5[j].risk < last5[j - 1].risk * 0.8) { escalating = false; break; }
+    }
+    if (escalating && last5[last5.length - 1].risk >= 50) {
+      return { anomaly: true, reason: "escalating risk pattern", severity: "medium" };
+    }
+  }
+  return { anomaly: false, severity: "none" };
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -206,23 +314,25 @@ function classify(text) {
   if (!text || text.length === 0) {
     return { risk: 0, decision: "ALLOW", reason: "Empty text", content_hash: hybridHash(""),
       decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
-      features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr"] };
+      features: FEATURES };
   }
   if (text.length < 5) {
     return { risk: 0, decision: "ALLOW", reason: "Too short", content_hash: hybridHash(text),
       decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
-      features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr"] };
+      features: FEATURES };
   }
   if (!/[a-zA-Z0-9]/.test(text)) {
     return { risk: 0, decision: "ALLOW", reason: "No alphanumeric", content_hash: hybridHash(text),
       decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
-      features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr"] };
+      features: FEATURES };
   }
 
   var t = text;
 
-  // ── Text normalization for bypass resistance ──
-  var tn = t
+  // ── LAYER 10: Frontier normalization for bypass resistance ──
+  // Homoglyphs, NFKC, Zalgo, Unicode digits, smart quotes, then zero-width
+  var tn = normalizeHomoglyphs(t);
+  tn = tn
     .replace(/[\u200b-\u200d\ufeff\u00ad\u2060-\u206f]/g, '')
     .replace(/\t/g, ' ');
   var tc = tn.replace(/[\n\r]+/g, '');
@@ -414,6 +524,13 @@ function classify(text) {
   var tier_count = Object.keys(unique_tiers).length;
   if (tier_count >= 2) { score += 5; reasons.push("multi-tier corroboration"); }
 
+  // ── LAYER 11: Behavioral burst detection ──
+  var behavioral = checkBehavioral(score);
+  if (behavioral.anomaly) {
+    if (behavioral.severity === "high") { score += 20; reasons.push(behavioral.reason); }
+    else if (behavioral.severity === "medium") { score += 10; reasons.push(behavioral.reason); }
+  }
+
   // Normalize to 0-100
   score = Math.max(0, Math.min(100, score));
 
@@ -443,13 +560,13 @@ function classify(text) {
     tiers: tiers_triggered,
     proof: proof,
     version: PATTERN_VERSION,
-    features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr"]
+    features: FEATURES
   };
 }
 
 // ══════════════════════════════════════════════════════════════
 // LAYER 7: Formal Verification — Runtime Self-Test
-// 11 invariants that MUST hold. Run on load or on-demand.
+// 14 invariants that MUST hold. Run on load or on-demand.
 // ══════════════════════════════════════════════════════════════
 function selfTest() {
   var results = [];
@@ -479,6 +596,15 @@ function selfTest() {
   // v3.1: Decision mode present
   var t11 = classify("SSN: 123-45-6789");
   results.push({ name: "decision_mode", pass: t11.decision_mode === "ENFORCED" });
+  // v3.2: Homoglyph bypass resistance — Cyrillic а (U+0430) and о (U+043E) in "passport"
+  var t12 = classify("p\u0430ssp\u043ert No AB1234567");
+  results.push({ name: "homoglyph_bypass", pass: t12.decision === "DENY" });
+  // v3.2: Unicode digit normalization — Arabic-Indic digits in CC number
+  var t13 = classify("4111\u0661\u0661\u0661\u066111111111");
+  results.push({ name: "unicode_digit_cc", pass: t13.decision === "DENY" });
+  // v3.2: Zalgo text bypass resistance — combining marks stripped
+  var t14 = classify("SSN\u0336:\u0336 123\u0336-45\u0336-6789");
+  results.push({ name: "zalgo_bypass", pass: t14.decision === "DENY" });
   return {
     passed: results.filter(function(r) { return r.pass; }).length,
     total: results.length,
@@ -503,7 +629,7 @@ if (typeof module !== 'undefined' && module.exports) {
     classify, getRisk, getDecision, hashContent, hybridHash,
     djb2Hash, fnv1aHash, generateDetectionProof, constantTimeEqual,
     detectPlatform, getPatternStats, computePatternHash,
-    verifyPatternIntegrity, selfTest, luhnCheck,
-    PATTERN_VERSION, DECISION_MODE
+    verifyPatternIntegrity, selfTest, luhnCheck, normalizeHomoglyphs,
+    checkBehavioral, PATTERN_VERSION, DECISION_MODE, FEATURES
   };
 }
