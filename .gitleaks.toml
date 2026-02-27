@@ -10,56 +10,27 @@ useDefault = true
 [allowlist]
 description = "Ignore build artifacts, test fixtures, and known demo patterns"
 
-# Directories that are either compiled binaries or intentional demo data
+# Directories that are compiled binaries or intentional demo data
 paths = [
-  '''target/''',
-  '''node_modules/''',
-  '''public/proof/''',
-  '''kasbah-guard-dist/target/''',
-  '''kasbah-guard-dist/apps/desktop/src-tauri/target/''',
-  '''kasbah-guard-dist/chrome-store-screenshots/''',
-  '''\.rlib$''',
-  '''\.dylib$''',
-  '''\.rmeta$''',
-  '''\.rcgu\.o$''',
-  '''\.o$''',
+  "target/",
+  "node_modules/",
+  "public/proof/",
+  "kasbah-guard-dist/target/",
+  ".rlib$",
+  ".dylib$",
+  ".rmeta$",
+  ".rcgu.o$",
 ]
 
-# Known intentional test/demo strings (NEVER real credentials)
+# Known intentional test/demo strings — never real credentials
 regexes = [
-  # Gauntlet test secret — explicit demo value used across all tests
-  '''sk-proj-1234567890abcdefghijklmnopqrstuvwxyz''',
-
-  # AWS public example key (from AWS docs, widely known)
-  '''AKIAIOSFODNN7EXAMPLE''',
-
-  # Well-known public Slack test token format
-  '''xoxb-123456789012''',
-
-  # Standard "hunter2" password used in all security examples
-  '''hunter2''',
-
-  # jwt.io playground tokens
-  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJzdWIiOiJ1c2VyMTIzIn0\.''',
-
-  # Stripe test/example placeholder patterns in benchmark/demo files
-  '''sk_live_REALKEY''',
-  '''sk_live_51234567890''',
-  '''sk_test_EXAMPLE''',
-
-  # Multi-language test secrets from gauntlet v2
-  '''sk-proj-中文测试密钥''',
-  '''sk-proj-اختبار-عربي''',
-  '''sk-proj-тест-ключ''',
-  '''sk-proj-emoji-test''',
-
-  # Dummy private key headers used as test data in detector unit tests
-  '''-----BEGIN PRIVATE KEY-----\nMIIE\.\.\.fake\.\.\.',
-
-  # Postgres/Mongo connection strings used in load_test.js (demo only)
-  '''mongodb://admin:hunter2@''',
-  '''postgres://testuser:testpass@''',
-
-  # Standard security benchmark SSN format
-  '''123-45-6789''',
+  "sk-proj-1234567890abcdefghijklmnopqrstuvwxyz",
+  "AKIAIOSFODNN7EXAMPLE",
+  "xoxb-123456789012",
+  "hunter2",
+  "sk_live_REALKEY",
+  "sk_live_51234567890",
+  "sk_test_EXAMPLE",
+  "123-45-6789",
+  "mongodb://admin:hunter2@",
 ]
