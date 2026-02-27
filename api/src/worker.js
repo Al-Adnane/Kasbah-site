@@ -244,13 +244,22 @@ async function handleRegister(request, env) {
 
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
-  const name = (body.name || '').trim() || email.split('@')[0];
+  const name = (body.name || '').trim().slice(0, 100) || email.split('@')[0];
 
   if (!email || !email.includes('@') || !email.includes('.')) {
     return err('Valid email required');
   }
+  if (email.length > 254) {
+    return err('Email too long');
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    return err('Invalid email format');
+  }
   if (password.length < 6) {
     return err('Password must be at least 6 characters');
+  }
+  if (password.length > 128) {
+    return err('Password too long');
   }
 
   // Check if user exists
@@ -478,6 +487,10 @@ async function handleLogin(request, env) {
 
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
+
+  if (!email || email.length > 254 || password.length > 128) {
+    return err('Invalid credentials', 401);
+  }
 
   // Rate-limit: max 5 failed attempts per 15 minutes
   const rateCheck = await checkLoginRateLimit(env, email);

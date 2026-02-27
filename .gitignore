@@ -44,8 +44,10 @@ Cargo.lock
 # Backup files
 *.bak
 *.bak_*
+*.backup
 **/*.bak
 **/*.bak_*
+**/*.backup
 
 # Wrangler build cache
 .wrangler/

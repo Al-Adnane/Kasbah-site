@@ -269,7 +269,7 @@
     const _origBCPost = BroadcastChannel.prototype.postMessage;
     const _hBCPost = function(msg) {
       const s = typeof msg === "string" ? msg : JSON.stringify(msg || "");
-      if (scanStr(s)) { block("BroadcastChannel"); return; }
+      if (_isDeny(s)) { block("BroadcastChannel"); return; }
       return _origBCPost.call(this, msg);
     };
     _lock(BroadcastChannel.prototype, "postMessage", _hBCPost);
@@ -292,7 +292,7 @@
     const _origRTCSend = RTCDataChannel.prototype.send;
     const _hRTCSend = function(data) {
       const s = typeof data === "string" ? data : "";
-      if (s.length > 0 && scanStr(s)) { block("RTCDataChannel"); return; }
+      if (s.length > 0 && _isDeny(s)) { block("RTCDataChannel"); return; }
       return _origRTCSend.call(this, data);
     };
     _lock(RTCDataChannel.prototype, "send", _hRTCSend);
@@ -304,7 +304,7 @@
     get: function() { return _origName; },
     set: function(v) {
       const s = _s(v);
-      if (s.length > 200 && scanStr(s)) { block("window.name"); return; }
+      if (s.length > 200 && _isDeny(s)) { block("window.name"); return; }
       _origName = v;
     },
     configurable: false,
@@ -314,14 +314,21 @@
   // 14e: URL.createObjectURL — blob URL exfiltration
   if (typeof URL !== "undefined" && URL.createObjectURL) {
     const _origCreateURL = URL.createObjectURL.bind(URL);
+    let _lastBlobUrl = "";
     const _hCreateURL = function(obj) {
       // Scan blob text content if it's a Blob with text type
       if (obj instanceof Blob && obj.type && obj.type.startsWith("text/") && obj.size < 500000) {
         obj.text().then(function(txt) {
-          if (scanStr(txt)) { block("Blob URL"); }
+          if (_isDeny(txt)) {
+            // Revoke the URL to prevent exfiltration (async but best-effort)
+            try { URL.revokeObjectURL(_lastBlobUrl); } catch(e2) {}
+            console.warn("[Kasbah Guard] Blocked blob URL exfiltration");
+          }
         }).catch(function(){});
       }
-      return _origCreateURL(obj);
+      const url = _origCreateURL(obj);
+      _lastBlobUrl = url;
+      return url;
     };
     try { _lock(URL, "createObjectURL", _hCreateURL); } catch(e) {}
   }
@@ -351,15 +358,6 @@
 (function () {
   "use strict";
 
-  // Kasbah now uses local detection - no HTTP endpoint needed
-  // Stub GUARD object for backward compatibility with remaining /health, /events calls
-  var GUARD = {
-    __stub: true,
-    "/health": "http://stub/health",
-    "/events": "http://stub/events"
-  };
-  GUARD[""] = "";  // For string concatenation
-
   var FLAG_KEY = "__kasbah_allow__";
   var PASTE_FLAG = "__kasbah_paste_ok__";
 
@@ -381,10 +379,8 @@
     return true;
   }
 
-  // ── L6: Heartbeat fail-closed state ──
+  // Guard is always alive in local-only mode (no server dependency)
   var __kasbah_guard_alive = true;
-  var __kasbah_heartbeat_failures = 0;
-  var HEARTBEAT_MAX_FAILURES = 3;
 
   // ── Secret detection (runs in-browser for instant feedback) ──
   var PATTERNS = [
@@ -739,21 +735,6 @@
     return false;
   }
 
-  function postJson(url, body) {
-    return fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }).then(function (r) {
-      return r.text().then(function (t) {
-        var j;
-        try { j = JSON.parse(t); } catch (e) { j = { raw: t }; }
-        if (!r.ok) throw new Error("HTTP " + r.status + ": " + t);
-        return j;
-      });
-    });
-  }
-
   // ── Modal UI ──
   function createModal(opts) {
     var risk = opts.risk || "low";
@@ -764,11 +745,12 @@
     var onBlock = opts.onBlock;
 
     var colors = {
+      critical: { bg: "#fef2f2", border: "#fca5a5", text: "#7f1d1d", badge: "#991b1b", badgeBg: "rgba(153,27,27,.15)" },
       high:   { bg: "#fef2f2", border: "#fed7d7", text: "#7f1d1d", badge: "#dc2626", badgeBg: "rgba(220,38,38,.1)" },
       medium: { bg: "#fffbeb", border: "#fed3b7", text: "#78350f", badge: "#d97706", badgeBg: "rgba(217,119,6,.1)" },
       low:    { bg: "#f0fdf4", border: "#a7f3d0", text: "#166534", badge: "#16a34a", badgeBg: "rgba(34,197,94,.1)" },
     };
-    var c = colors[risk] || colors.low;
+    var c = colors[risk] || colors.high;
 
     var verbLabels = {
       send: "Sending message",
@@ -1040,54 +1022,8 @@
     }
   }
 
-  // ═══════════════════════════════════════════════════
-  // L6: HEARTBEAT — Poll guard health every 5s, fail-closed after 3 failures
-  // ═══════════════════════════════════════════════════
-  function heartbeatPoll() {
-    // Stub: Guard health check disabled for local-only mode
-  if (false) fetch("http://stub", { method: "GET", cache: "no-store" })
-      .then(function (r) {
-        if (r.ok) {
-          __kasbah_guard_alive = true;
-          __kasbah_heartbeat_failures = 0;
-        } else {
-          __kasbah_heartbeat_failures++;
-          if (__kasbah_heartbeat_failures >= HEARTBEAT_MAX_FAILURES) {
-            __kasbah_guard_alive = false;
-          }
-        }
-      })
-      .catch(function () {
-        __kasbah_heartbeat_failures++;
-        if (__kasbah_heartbeat_failures >= HEARTBEAT_MAX_FAILURES) {
-          __kasbah_guard_alive = false;
-        }
-      });
-  }
-  // Start heartbeat
-  heartbeatPoll();
-  setInterval(heartbeatPoll, 5000);
-
-  // If guard heartbeat is lost, let user know but still give them the choice
-  function failClosedCheck(verb, onBlock) {
-    if (!__kasbah_guard_alive) {
-      createModal({
-        risk: "medium",
-        secrets: ["Guard not connected"],
-        preview: "Kasbah Guard isn't responding right now.\n\nOpen the app for full protection, or continue at your discretion.",
-        verb: verb,
-        onAllow: function () {
-          showToast("Continuing without guard protection", false);
-        },
-        onBlock: function () {
-          showToast("Action stopped", false);
-          if (onBlock) onBlock();
-        },
-      });
-      return true; // show modal
-    }
-    return false; // OK to proceed normally
-  }
+  // Guard is always local — no heartbeat needed (zero server dependency)
+  function failClosedCheck() { return false; }
 
   // ═══════════════════════════════════════════════════
   // L1: BEFOREINPUT — Intercept programmatic text insertion
@@ -1113,20 +1049,6 @@
     // This is a programmatic insertion with secrets — block it
     ev.preventDefault();
     ev.stopPropagation();
-
-    // Log to guard
-    try {
-      // Stub: postJson(GUARD + "/events", {
-      //   kind: "L1_BEFOREINPUT",
-      //   data: {
-      //     input_type: ev.inputType,
-      //     secrets_detected: secrets,
-      //     length: data.length,
-      //     product: product(),
-      //     host: host(),
-      //   },
-      // });
-    } catch (e) { /* ignore */ }
 
     showToast("Kasbah Guard caught a paste with personal info — review before sharing", false);
   }, true);
@@ -1160,19 +1082,6 @@
         var secrets = scanSecrets(text);
         if (secrets.length === 0) continue;
 
-        // Log potential programmatic injection to guard
-        try {
-          // Stub: postJson(GUARD + "/events", {
-          //   kind: "L1_MUTATION",
-          //   data: {
-          //     mutation_type: mutation.type,
-          //     secrets_detected: secrets,
-          //     length: text.length,
-          //     product: product(),
-          //     host: host(),
-          //   },
-          // });
-        } catch (e) { /* ignore */ }
       }
     });
 
@@ -1411,9 +1320,18 @@
         if (filesToScan.length > 0) {
           filesToScan.forEach(function (file) {
             var reader = new FileReader();
+            reader.onerror = function () {
+              // File read failed — count as scanned to avoid blocking
+              scannedCount++;
+              if (scannedCount === filesToScan.length) {
+                guardFlow("upload", previewText, extraMeta,
+                  function () { target.__kasbah_allowed = true; target.dispatchEvent(new Event("change", { bubbles: true })); },
+                  function () { target.value = ""; }
+                );
+              }
+            };
             reader.onload = function (e) {
               var content = e.target.result || "";
-              // Use unified classifier for file content analysis
               var fileRes = typeof classify !== 'undefined' ? classify(content) : { decision: "ALLOW", risk: 0, reason: "" };
               if (fileRes.risk > 0) {
                 fileRisks.push({
@@ -1746,9 +1664,6 @@
 
   // ── Startup notification ──
   var detectedProduct = product();
-  console.log("[Kasbah Guard] Extension v1.2.0 initialized");
-  console.log("[Kasbah Guard] Platform: " + host() + " → Product: " + detectedProduct.toUpperCase());
-  console.log("[Kasbah Guard] Guard API: " + GUARD);
-  console.log("[Kasbah Guard] Active interceptors: send, paste, upload, browse, download, edit");
-  console.log("[Kasbah Guard] Security: PII detection, secret scanning, sandbox mode (first 10 blocks)");
+  console.log("[Kasbah Guard] v3.2 initialized — " + host() + " → " + detectedProduct.toUpperCase());
+  console.log("[Kasbah Guard] 6 verbs active: send, paste, upload, browse, download, edit");
 })();

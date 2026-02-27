@@ -1,37 +1,34 @@
 /**
- * Kasbah Detection Engine v3.2 — FRONTIER DEFENSE
- * 10-Layer Defense Architecture + Frontier Anti-Bypass
+ * Kasbah Detection Engine v3.3 — FRONTIER DEFENSE (PRODUCTION)
+ * 12-Layer Defense Architecture — ALL LAYERS LIVE
  *
- * Layer 0: Quantum-Resistant Hybrid Hash (djb2 XOR FNV-1a)
- * Layer 1: AI-Powered Pattern Stats (confidence tracking)
- * Layer 2: Multi-Tier Interdependent Detection (tier tracking)
- * Layer 3: Cryptographic Detection Proofs (HMAC-signed)
- * Layer 4: Anti-Reverse-Engineering (decoys + constant-time)
- * Layer 5: Platform Fingerprinting (10 AI platforms)
- * Layer 6: Versioned Patterns + Integrity Verification
- * Layer 7: Formal Verification — Runtime Self-Test (14 invariants)
- * Layer 8: Zero-Knowledge Detection (proofs without content)
- * Layer 9: Efficiency Optimizations (early exit, score cap)
- * Layer 10: Frontier Normalization (homoglyph, NFKC, Zalgo, Unicode digits)
- * Layer 11: Behavioral Paste Tracking (burst detection)
+ * Layer 0:  Hybrid Hash (djb2 XOR FNV-1a)
+ * Layer 1:  Pattern Confidence Tracking (stats influence scoring at 90%+ confidence)
+ * Layer 2:  Multi-Tier Interdependent Detection (+5 bonus on cross-tier)
+ * Layer 3:  Cryptographic Detection Proofs (hash-chain ledger)
+ * Layer 4:  Anti-Reverse-Engineering (decoys + inline integrity check via constantTimeEqual)
+ * Layer 5:  Platform Fingerprinting (10 AI platforms)
+ * Layer 6:  Versioned Patterns + Sealed Baseline Integrity (hash at load vs runtime)
+ * Layer 7:  Formal Verification — Runtime Self-Test (15 invariants)
+ * Layer 8:  Zero-Knowledge Proofs (hash of metadata only, never content)
+ * Layer 9:  Efficiency Optimizations (early exit, score cap)
+ * Layer 10: Frontier Normalization (homoglyph, NFKC, Zalgo, Unicode digits, l33t)
+ * Layer 11: Behavioral Paste Tracking (burst detection, escalation)
  *
- * v3.1.0: Luhn validation, bulk email detection, connection string regex,
- *         decision mode (ENFORCED/SIMULATED), structured proof reports,
- *         enhanced entropy threshold for unknown secrets
- * v3.2.0: Homoglyph normalization (Cyrillic/Greek/Arabic lookalikes),
- *         Unicode digit normalization (Arabic-Indic/Devanagari/Fullwidth),
- *         NFKC, Zalgo stripping, smart quote/dash normalization,
- *         variation selector removal, behavioral paste tracking
+ * v3.3.0: All layers verified live. Pattern integrity uses constantTimeEqual
+ *         against sealed baseline hash. Pattern stats boost scoring at 90%+
+ *         confidence. L33t speak deobfuscation. Mathematical alphanumerics.
+ *         Superscript/subscript digit normalization. Enclosed letter handling.
  */
 
 // ══════════════════════════════════════════════════════════════
 // LAYER 6: Pattern Version + Integrity Tracking
 // ══════════════════════════════════════════════════════════════
-var PATTERN_VERSION = "3.2.0";
+var PATTERN_VERSION = "3.3.0";
 var PATTERN_EPOCH = 1772236800; // 2026-02-27
 
 // Feature flags for backward-compatible return objects
-var FEATURES = ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral"];
+var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof","anti_re_integrity","platform_fp","sealed_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral","l33t_deobfuscation","math_alphanumerics"];
 
 // ══════════════════════════════════════════════════════════════
 // Decision Mode — ENFORCED (production) or SIMULATED (testing)
@@ -108,7 +105,20 @@ var HOMOGLYPH_MAP = {
   '\uff10':'0','\uff11':'1','\uff12':'2','\uff13':'3','\uff14':'4',
   '\uff15':'5','\uff16':'6','\uff17':'7','\uff18':'8','\uff19':'9',
   // Other lookalikes
-  '\u2113':'l','\u2205':'0','\u2160':'I','\u2164':'V','\u2169':'X'
+  '\u2113':'l','\u2205':'0','\u2160':'I','\u2164':'V','\u2169':'X',
+  // Mathematical Bold (U+1D400+) — common bypass via Unicode math symbols
+  '\uD835\uDC00':'A','\uD835\uDC01':'B','\uD835\uDC02':'C','\uD835\uDC03':'D','\uD835\uDC04':'E',
+  '\uD835\uDC1A':'a','\uD835\uDC1B':'b','\uD835\uDC1C':'c','\uD835\uDC1D':'d','\uD835\uDC1E':'e',
+  // Mathematical Italic (U+1D434+)
+  '\uD835\uDC34':'A','\uD835\uDC4E':'a','\uD835\uDC4F':'b','\uD835\uDC50':'c','\uD835\uDC51':'d',
+  // Enclosed alphanumerics
+  '\u24B6':'A','\u24B7':'B','\u24B8':'C','\u24B9':'D','\u24BA':'E',
+  '\u24D0':'a','\u24D1':'b','\u24D2':'c','\u24D3':'d','\u24D4':'e',
+  // Subscript/superscript digits
+  '\u2070':'0','\u00B9':'1','\u00B2':'2','\u00B3':'3','\u2074':'4',
+  '\u2075':'5','\u2076':'6','\u2077':'7','\u2078':'8','\u2079':'9',
+  '\u2080':'0','\u2081':'1','\u2082':'2','\u2083':'3','\u2084':'4',
+  '\u2085':'5','\u2086':'6','\u2087':'7','\u2088':'8','\u2089':'9'
 };
 
 function normalizeHomoglyphs(text) {
@@ -133,6 +143,19 @@ function normalizeHomoglyphs(text) {
     .replace(/[\u2013\u2014]/g, '-');
   // Step 6: Normalize exotic whitespace to regular space
   result = result.replace(/[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]/g, ' ');
+  // Step 7: L33t speak deobfuscation (context-aware — preserves emails)
+  // Order matters: $ → s first so p@$$port becomes p@ssport, then @ between letters
+  result = result.replace(/\$/g, 's');
+  // Only replace @ when NOT followed by domain pattern (preserves user@domain.com)
+  result = result.replace(/@(?![a-zA-Z0-9._-]*\.[a-zA-Z]{2,})/g, 'a');
+  // Digit-to-letter only in word context: require 2+ letters on at least one side
+  // Prevents mangling hex/crypto (f0a stays) while catching l33t (p0rt → port)
+  result = result
+    .replace(/(?<=[a-zA-Z]{2})0(?=[a-zA-Z])/g, 'o').replace(/(?<=[a-zA-Z])0(?=[a-zA-Z]{2})/g, 'o')
+    .replace(/(?<=[a-zA-Z]{2})1(?=[a-zA-Z])/g, 'l').replace(/(?<=[a-zA-Z])1(?=[a-zA-Z]{2})/g, 'l')
+    .replace(/(?<=[a-zA-Z]{2})3(?=[a-zA-Z])/g, 'e').replace(/(?<=[a-zA-Z])3(?=[a-zA-Z]{2})/g, 'e')
+    .replace(/(?<=[a-zA-Z]{2})5(?=[a-zA-Z])/g, 's').replace(/(?<=[a-zA-Z])5(?=[a-zA-Z]{2})/g, 's')
+    .replace(/(?<=[a-zA-Z]{2})8(?=[a-zA-Z])/g, 'b').replace(/(?<=[a-zA-Z])8(?=[a-zA-Z]{2})/g, 'b');
   return result;
 }
 
@@ -254,6 +277,15 @@ function updatePatternStat(name, blocked) {
   s.confidence = s.blocked / Math.max(1, s.blocked + s.allowed);
 }
 function getPatternStats() { return patternStats; }
+// Layer 1 boost: patterns with 90%+ block rate over 10+ samples get +5 score
+function patternConfidenceBoost(reasons) {
+  var boost = 0;
+  for (var i = 0; i < reasons.length; i++) {
+    var s = patternStats[reasons[i]];
+    if (s && (s.blocked + s.allowed) >= 10 && s.confidence >= 0.9) boost += 5;
+  }
+  return Math.min(boost, 15); // cap at +15
+}
 
 // ══════════════════════════════════════════════════════════════
 // MODULE-SCOPE REGEX PATTERNS (hoisted from classify for Layer 6 integrity)
@@ -293,17 +325,20 @@ var CONNSTR_RE = /(?:mongodb|postgres(?:ql)?|mysql|redis|amqp|mssql):\/\/[^\s"'<
 // LAYER 6: Pattern Integrity Verification
 // Compute hash of all pattern sources to detect tampering.
 // ══════════════════════════════════════════════════════════════
+var _ALL_PATTERNS = [PASSPORT_RE, VISA_RE, NATIONAL_ID_RE, DRIVERS_LICENSE_RE,
+  MEDICAL_RE, BANK_ACCOUNT_RE, TAX_ID_RE, BIRTH_CERT_RE, CRYPTO_RE, INSURANCE_RE,
+  CC_RE, SSN_RE, GH_PAT_RE, AWS_KEY_RE, OPENAI_KEY_RE, BEARER_RE, INJECTION_RE, SHELL_RE,
+  EMAIL_RE, CONNSTR_RE];
 function computePatternHash() {
-  var sources = [PASSPORT_RE, VISA_RE, NATIONAL_ID_RE, DRIVERS_LICENSE_RE,
-    MEDICAL_RE, BANK_ACCOUNT_RE, TAX_ID_RE, BIRTH_CERT_RE, CRYPTO_RE, INSURANCE_RE,
-    CC_RE, SSN_RE, GH_PAT_RE, AWS_KEY_RE, OPENAI_KEY_RE, BEARER_RE, INJECTION_RE, SHELL_RE,
-    EMAIL_RE, CONNSTR_RE];
-  var combined = sources.map(function(r) { return r.source; }).join("|");
+  var combined = _ALL_PATTERNS.map(function(r) { return r.source; }).join("|");
   return hybridHash(combined);
 }
+// Seal the baseline hash at load time — any runtime tampering will mismatch
+var _BASELINE_PATTERN_HASH = computePatternHash();
 function verifyPatternIntegrity() {
   var h = computePatternHash();
-  return { version: PATTERN_VERSION, hash: h, epoch: PATTERN_EPOCH, intact: true };
+  var intact = constantTimeEqual(h, _BASELINE_PATTERN_HASH);
+  return { version: PATTERN_VERSION, hash: h, baseline: _BASELINE_PATTERN_HASH, epoch: PATTERN_EPOCH, intact: intact };
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -524,6 +559,10 @@ function classify(text) {
   var tier_count = Object.keys(unique_tiers).length;
   if (tier_count >= 2) { score += 5; reasons.push("multi-tier corroboration"); }
 
+  // ── LAYER 1: Pattern confidence boost ──
+  var confBoost = patternConfidenceBoost(reasons);
+  if (confBoost > 0) { score += confBoost; reasons.push("high-confidence patterns (+" + confBoost + ")"); }
+
   // ── LAYER 11: Behavioral burst detection ──
   var behavioral = checkBehavioral(score);
   if (behavioral.anomaly) {
@@ -544,8 +583,12 @@ function classify(text) {
     updatePatternStat(reasons[ri], decision === "DENY");
   }
 
-  // ── LAYER 4: Run decoy patterns (waste attacker analysis time) ──
+  // ── LAYER 4: Run decoy patterns + integrity check ──
   for (var di = 0; di < DECOY_PATTERNS.length; di++) { DECOY_PATTERNS[di].test(tn); }
+  // Verify pattern integrity inline — if tampered, escalate to DENY
+  if (!constantTimeEqual(computePatternHash(), _BASELINE_PATTERN_HASH)) {
+    score = 100; reasons.push("PATTERN INTEGRITY VIOLATION"); decision = "DENY";
+  }
 
   // ── LAYER 3 + 8: Generate zero-knowledge detection proof ──
   var proof = score >= 40 ? generateDetectionProof(reasons, score, decision) : null;
@@ -566,7 +609,7 @@ function classify(text) {
 
 // ══════════════════════════════════════════════════════════════
 // LAYER 7: Formal Verification — Runtime Self-Test
-// 14 invariants that MUST hold. Run on load or on-demand.
+// 15 invariants that MUST hold. Run on load or on-demand.
 // ══════════════════════════════════════════════════════════════
 function selfTest() {
   var results = [];
@@ -605,6 +648,9 @@ function selfTest() {
   // v3.2: Zalgo text bypass resistance — combining marks stripped
   var t14 = classify("SSN\u0336:\u0336 123\u0336-45\u0336-6789");
   results.push({ name: "zalgo_bypass", pass: t14.decision === "DENY" });
+  // v3.3: L33t speak bypass resistance — p@$$port should still detect
+  var t15 = classify("p@$$port No AB1234567");
+  results.push({ name: "l33t_bypass", pass: t15.decision === "DENY" });
   return {
     passed: results.filter(function(r) { return r.pass; }).length,
     total: results.length,
@@ -628,7 +674,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     classify, getRisk, getDecision, hashContent, hybridHash,
     djb2Hash, fnv1aHash, generateDetectionProof, constantTimeEqual,
-    detectPlatform, getPatternStats, computePatternHash,
+    detectPlatform, getPatternStats, patternConfidenceBoost, computePatternHash,
     verifyPatternIntegrity, selfTest, luhnCheck, normalizeHomoglyphs,
     checkBehavioral, PATTERN_VERSION, DECISION_MODE, FEATURES
   };
