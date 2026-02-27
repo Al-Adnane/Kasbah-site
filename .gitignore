@@ -18,6 +18,18 @@ target/
 !public/downloads/*.dmg
 !public/downloads/*.zip
 
+# Rust incremental build artifacts (major gitleaks false positive source)
+*.rcgu.o
+**/*.rcgu.o
+*.rmeta
+**/*.rmeta
+*.rlib
+**/*.rlib
+*.dylib
+**/*.dylib
+*.d
+**/*.d
+
 # Package locks (regenerated)
 package-lock.json
 **/package-lock.json
@@ -85,3 +97,12 @@ final_*.sh
 # Logs
 *.log
 *.pid
+
+# Benchmark proof data (contains intentional test secrets for demo)
+public/proof/
+**/benchmark-*.json
+
+# Python gauntlet cache
+__pycache__/
+*.pyc
+*.pyo
