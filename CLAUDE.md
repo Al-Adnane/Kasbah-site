@@ -70,9 +70,9 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 
 ## CURRENT VERSIONS
 
-- detector.js: v3.3.0 (hash: e74c9dc19ca5a7590d8429743068e021)
+- detector.js: v3.3.0 (hash: bedcedf3a5ecee575c2a4bdfe423e591)
 - content.js: hash 26faedf384d2ed41619ab5856550ff08
 - API Worker: v2.0.0
 - Desktop: v1.5.0
-- Fortress Grade: 33/34 (UNBREAKABLE)
+- Fortress Grade: 34/34 (100% — UNBREAKABLE)
 - selfTest: 15/15 invariants PASS

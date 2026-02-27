@@ -427,7 +427,7 @@ function classify(text) {
   var has_bank_account = BANK_ACCOUNT_RE.test(tn);
   var has_tax_id = TAX_ID_RE.test(tn);
   var has_birth_cert = BIRTH_CERT_RE.test(tn);
-  var has_crypto = CRYPTO_RE.test(tn);
+  var has_crypto = CRYPTO_RE.test(tn) || CRYPTO_RE.test(t);
   var has_seed_phrase = SEED_RE.test(tn);
   var has_insurance = INSURANCE_RE.test(tn);
 

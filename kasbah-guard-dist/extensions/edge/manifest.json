@@ -54,12 +54,14 @@
         "https://open-assistant.io/*"
       ],
       "js": [
+        "src/detector.js",
         "src/content.js"
       ],
       "css": [
         "src/styles.css"
       ],
-      "run_at": "document_end"
+      "run_at": "document_start",
+      "world": "MAIN"
     }
   ],
   "action": {
