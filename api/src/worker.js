@@ -447,6 +447,27 @@ async function handleResend(request, env) {
   return json({ ok: true, message: 'Verification code sent. Check your email.' });
 }
 
+async function checkLoginRateLimit(env, email) {
+  const key = 'ratelimit:login:' + email;
+  const data = await env.USERS.get(key);
+  if (!data) return { allowed: true, remaining: 5 };
+  const rec = JSON.parse(data);
+  const elapsed = Date.now() - rec.firstAttempt;
+  if (elapsed > 15 * 60 * 1000) return { allowed: true, remaining: 5 };
+  if (rec.attempts >= 5) return { allowed: false, remaining: 0, retryAfter: Math.ceil((15 * 60 * 1000 - elapsed) / 1000) };
+  return { allowed: true, remaining: 5 - rec.attempts };
+}
+
+async function recordFailedLogin(env, email) {
+  const key = 'ratelimit:login:' + email;
+  const data = await env.USERS.get(key);
+  let rec = data ? JSON.parse(data) : { attempts: 0, firstAttempt: Date.now() };
+  const elapsed = Date.now() - rec.firstAttempt;
+  if (elapsed > 15 * 60 * 1000) rec = { attempts: 0, firstAttempt: Date.now() };
+  rec.attempts++;
+  await env.USERS.put(key, JSON.stringify(rec), { expirationTtl: 900 });
+}
+
 async function handleLogin(request, env) {
   let body;
   try {
@@ -458,8 +479,15 @@ async function handleLogin(request, env) {
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
 
+  // Rate-limit: max 5 failed attempts per 15 minutes
+  const rateCheck = await checkLoginRateLimit(env, email);
+  if (!rateCheck.allowed) {
+    return json({ ok: false, error: 'Too many login attempts. Try again later.', retryAfter: rateCheck.retryAfter }, 429);
+  }
+
   const userData = await env.USERS.get(email);
   if (!userData) {
+    await recordFailedLogin(env, email);
     return err('Invalid credentials', 401);
   }
 
@@ -467,6 +495,7 @@ async function handleLogin(request, env) {
   const attemptHash = await hashPassword(password, user.salt);
 
   if (attemptHash !== user.passwordHash) {
+    await recordFailedLogin(env, email);
     return err('Invalid credentials', 401);
   }
 

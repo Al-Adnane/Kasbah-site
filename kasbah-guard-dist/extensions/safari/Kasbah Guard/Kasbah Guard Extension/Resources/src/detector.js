@@ -1,5 +1,5 @@
 /**
- * Kasbah Detection Engine v3.0 — UNBEATABLE MOAT
+ * Kasbah Detection Engine v3.1 — UNBEATABLE MOAT
  * 10-Layer Defense Architecture (from UNBEATABLE_MOAT_V2)
  *
  * Layer 0: Quantum-Resistant Hybrid Hash (djb2 XOR FNV-1a)
@@ -9,16 +9,26 @@
  * Layer 4: Anti-Reverse-Engineering (decoys + constant-time)
  * Layer 5: Platform Fingerprinting (10 AI platforms)
  * Layer 6: Versioned Patterns + Integrity Verification
- * Layer 7: Formal Verification — Runtime Self-Test
+ * Layer 7: Formal Verification — Runtime Self-Test (11 invariants)
  * Layer 8: Zero-Knowledge Detection (proofs without content)
  * Layer 9: Efficiency Optimizations (early exit, score cap)
+ *
+ * v3.1.0: Luhn validation, bulk email detection, connection string regex,
+ *         decision mode (ENFORCED/SIMULATED), structured proof reports,
+ *         enhanced entropy threshold for unknown secrets
  */
 
 // ══════════════════════════════════════════════════════════════
 // LAYER 6: Pattern Version + Integrity Tracking
 // ══════════════════════════════════════════════════════════════
-var PATTERN_VERSION = "3.0.0";
+var PATTERN_VERSION = "3.1.0";
 var PATTERN_EPOCH = 1740700800; // 2025-02-28
+
+// ══════════════════════════════════════════════════════════════
+// Decision Mode — ENFORCED (production) or SIMULATED (testing)
+// Per KASBAH_CANONICAL_DOCTRINE: every decision MUST include mode.
+// ══════════════════════════════════════════════════════════════
+var DECISION_MODE = "ENFORCED";
 
 // ══════════════════════════════════════════════════════════════
 // LAYER 0: Quantum-Resistant Hybrid Hash
@@ -42,14 +52,50 @@ function hybridHash(s) {
 function hashContent(text) { return hybridHash(text || ""); }
 
 // ══════════════════════════════════════════════════════════════
+// Luhn Checksum Validation (credit card verification)
+// Eliminates false positives from random 16-digit numbers.
+// ══════════════════════════════════════════════════════════════
+function luhnCheck(numStr) {
+  var s = numStr.replace(/[- ]/g, '');
+  if (!/^\d{13,19}$/.test(s)) return false;
+  var sum = 0;
+  for (var i = s.length - 1, alt = false; i >= 0; i--, alt = !alt) {
+    var n = parseInt(s[i], 10);
+    if (alt) { n *= 2; if (n > 9) n -= 9; }
+    sum += n;
+  }
+  return (sum % 10) === 0;
+}
+
+// ══════════════════════════════════════════════════════════════
 // LAYER 3 + LAYER 8: Cryptographic Detection Proof + Zero-Knowledge
 // Proof that detection happened WITHOUT revealing secret content.
 // Hash of detection metadata only — zero-knowledge by design.
 // ══════════════════════════════════════════════════════════════
-function generateDetectionProof(reasons, score) {
+var _lastLedgerHash = "0";
+function generateDetectionProof(reasons, score, decision) {
   var ts = Date.now();
+  var isoTs = new Date(ts).toISOString();
   var payload = reasons.join("|") + ":" + score + ":" + ts;
-  return { hash: hybridHash(payload), timestamp: ts, tier_count: reasons.length, verified: true };
+  var sig = hybridHash(payload);
+  var ledgerEntry = hybridHash(_lastLedgerHash + ":" + sig);
+  _lastLedgerHash = ledgerEntry;
+  return {
+    decision_id: hybridHash(ts + ":" + Math.random()),
+    timestamp: isoTs,
+    decision_mode: DECISION_MODE,
+    input_classification: reasons,
+    applied_rules: reasons.map(function(r) { return "R-" + r.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase(); }),
+    ml_signals: [],
+    final_verdict: decision || "DENY",
+    signature: sig,
+    ledger_hash_pointer: ledgerEntry,
+    environment_fingerprint: detectPlatform(),
+    // backward compat
+    hash: sig,
+    tier_count: reasons.length,
+    verified: true
+  };
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -131,6 +177,10 @@ var ENV_SECRET_RE = /\b(?:secret|token|api|auth|credential|private)[_\s]*(?:[a-z
 var INJECTION_RE = /(?:ignore\s+(?:all\s+)?previous\s+(?:instructions?|directives?|rules?)|system\s+(?:prompt|override)|developer\s+(?:message|mode|override)|jailbreak|you\s+are\s+now\s+(?:DAN|GPT|uncensored|unrestricted)|disable\s+(?:all\s+)?(?:safety|filter)|override\s+(?:all\s+)?(?:previous\s+)?(?:instructions?|rules?|directives?))/i;
 var SHELL_RE = /(?:\brm\s+-rf\b|\bdrop\s+table\b|\bformat\s+[a-z]:|\bpowershell\b|\bwget\s+https?:\/\/|\bcurl\s+https?:\/\/)/i;
 
+// ── TIER 2b: Bulk data & connection strings ──
+var EMAIL_RE = /[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/gi;
+var CONNSTR_RE = /(?:mongodb|postgres(?:ql)?|mysql|redis|amqp|mssql):\/\/[^\s"'<>]{10,}/i;
+
 // ══════════════════════════════════════════════════════════════
 // LAYER 6: Pattern Integrity Verification
 // Compute hash of all pattern sources to detect tampering.
@@ -138,7 +188,8 @@ var SHELL_RE = /(?:\brm\s+-rf\b|\bdrop\s+table\b|\bformat\s+[a-z]:|\bpowershell\
 function computePatternHash() {
   var sources = [PASSPORT_RE, VISA_RE, NATIONAL_ID_RE, DRIVERS_LICENSE_RE,
     MEDICAL_RE, BANK_ACCOUNT_RE, TAX_ID_RE, BIRTH_CERT_RE, CRYPTO_RE, INSURANCE_RE,
-    CC_RE, SSN_RE, GH_PAT_RE, AWS_KEY_RE, OPENAI_KEY_RE, BEARER_RE, INJECTION_RE, SHELL_RE];
+    CC_RE, SSN_RE, GH_PAT_RE, AWS_KEY_RE, OPENAI_KEY_RE, BEARER_RE, INJECTION_RE, SHELL_RE,
+    EMAIL_RE, CONNSTR_RE];
   var combined = sources.map(function(r) { return r.source; }).join("|");
   return hybridHash(combined);
 }
@@ -154,18 +205,18 @@ function classify(text) {
   // ── LAYER 9: Efficiency — Early exits ──
   if (!text || text.length === 0) {
     return { risk: 0, decision: "ALLOW", reason: "Empty text", content_hash: hybridHash(""),
-      platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
-      features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency"] };
+      decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
+      features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr"] };
   }
   if (text.length < 5) {
     return { risk: 0, decision: "ALLOW", reason: "Too short", content_hash: hybridHash(text),
-      platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
-      features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency"] };
+      decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
+      features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr"] };
   }
   if (!/[a-zA-Z0-9]/.test(text)) {
     return { risk: 0, decision: "ALLOW", reason: "No alphanumeric", content_hash: hybridHash(text),
-      platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
-      features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency"] };
+      decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
+      features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr"] };
   }
 
   var t = text;
@@ -206,7 +257,8 @@ function classify(text) {
   var tiers_triggered = [];
 
   // ── TIER 1: Critical PII ──
-  var has_cc = CC_RE.test(tn);
+  var cc_match = tn.match(CC_RE);
+  var has_cc = cc_match ? luhnCheck(cc_match[0]) : false;
   var has_ssn = SSN_RE.test(tn);
   var has_social_security = /\bsocial\s+security\b/i.test(tn);
   var has_github_pat = GH_PAT_RE.test(tc);
@@ -252,14 +304,18 @@ function classify(text) {
   var has_password_assign = /password\s*["']?\s*[:=]/i.test(lower) || /\bpwd\s*[:=]/i.test(lower);
   var has_env_secret = ENV_SECRET_RE.test(lower) && !/^\s*(?:\/\/|#)/.test(lower.split('\n')[0]);
   var has_jwt = /eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}/.test(t);
-  var has_conn = lower.includes("mongodb://") || lower.includes("postgres://") ||
-    lower.includes("mysql://") || lower.includes("redis://") || lower.includes("amqp://");
+  var has_conn = CONNSTR_RE.test(lower);
+
+  // Bulk email detection (5+ emails = contact list exfiltration)
+  var email_matches = tn.match(EMAIL_RE);
+  var has_bulk_emails = email_matches && email_matches.length >= 5;
 
   if (has_bearer_token) tiers_triggered.push("T2:bearer");
   if (has_api_key_word) tiers_triggered.push("T2:api_key");
   if (has_password_assign) tiers_triggered.push("T2:password");
   if (has_jwt) tiers_triggered.push("T2:jwt");
   if (has_conn) tiers_triggered.push("T2:conn_string");
+  if (has_bulk_emails) tiers_triggered.push("T2:bulk_emails");
 
   // High-entropy base64 runs (40+ char run)
   var has_base64 = false;
@@ -335,12 +391,20 @@ function classify(text) {
   if (has_env_secret && keyword_hits >= 3) { score += 45; reasons.push("env/shell secret pattern"); }
   if (has_api_key_word && entropy <= 3.5) { score += 40; reasons.push("API key keyword"); }
 
+  // Bulk email detection
+  if (has_bulk_emails) { score += 40; reasons.push("bulk email addresses (" + email_matches.length + ")"); }
+
   // Entropy / pattern scoring
   if (has_base64 && entropy > 4.5) { score += 45; reasons.push("high-entropy base64"); }
   if (ngram_score > 2)   { score += 20; reasons.push("suspicious keywords"); }
   if (keyword_hits >= 3) { score += 15; reasons.push("multiple secret keywords"); }
   if (entropy > 5.0 && special_ratio > 0.2) { score += 10; reasons.push("high entropy + special chars"); }
   if (upper_ratio > 0.4 && digit_ratio > 0.2) { score += 8; reasons.push("mixed case + numbers"); }
+
+  // Enhanced entropy threshold — catch unknown/novel secrets
+  if (entropy >= 4.0 && t.length >= 20 && reasons.length === 0) {
+    score += 25; reasons.push("high-entropy unknown content");
+  }
 
   // ── LAYER 2: Multi-tier interdependence bonus ──
   var unique_tiers = {};
@@ -367,24 +431,25 @@ function classify(text) {
   for (var di = 0; di < DECOY_PATTERNS.length; di++) { DECOY_PATTERNS[di].test(tn); }
 
   // ── LAYER 3 + 8: Generate zero-knowledge detection proof ──
-  var proof = score >= 40 ? generateDetectionProof(reasons, score) : null;
+  var proof = score >= 40 ? generateDetectionProof(reasons, score, decision) : null;
 
   return {
     risk: Math.floor(score),
     decision: decision,
+    decision_mode: DECISION_MODE,
     reason: reasons.length > 0 ? reasons.join("; ") : "Low risk",
     content_hash: hybridHash(text),
     platform: detectPlatform(),
     tiers: tiers_triggered,
     proof: proof,
     version: PATTERN_VERSION,
-    features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency"]
+    features: ["quantum_hash","ai_patterns","multi_tier","detection_proof","anti_re","platform_fp","versioned_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr"]
   };
 }
 
 // ══════════════════════════════════════════════════════════════
 // LAYER 7: Formal Verification — Runtime Self-Test
-// 7 invariants that MUST hold. Run on load or on-demand.
+// 11 invariants that MUST hold. Run on load or on-demand.
 // ══════════════════════════════════════════════════════════════
 function selfTest() {
   var results = [];
@@ -402,6 +467,18 @@ function selfTest() {
   results.push({ name: "empty_allow", pass: t6.decision === "ALLOW" });
   var t7 = verifyPatternIntegrity();
   results.push({ name: "integrity", pass: t7.intact === true });
+  // v3.1: Luhn validation — invalid CC number should not trigger high CC risk
+  var t8 = classify("4111111111111112");
+  results.push({ name: "luhn_reject", pass: t8.risk < 70 || t8.reason.indexOf("credit card") === -1 });
+  // v3.1: Bulk emails detection
+  var t9 = classify("contacts: a@b.com c@d.com e@f.com g@h.com i@j.com k@l.com");
+  results.push({ name: "bulk_email_warn", pass: t9.risk >= 40 });
+  // v3.1: Connection string detection
+  var t10 = classify("mongodb://admin:secret@db.host.com:27017/prod");
+  results.push({ name: "connstr_deny", pass: t10.decision === "DENY" });
+  // v3.1: Decision mode present
+  var t11 = classify("SSN: 123-45-6789");
+  results.push({ name: "decision_mode", pass: t11.decision_mode === "ENFORCED" });
   return {
     passed: results.filter(function(r) { return r.pass; }).length,
     total: results.length,
@@ -426,6 +503,7 @@ if (typeof module !== 'undefined' && module.exports) {
     classify, getRisk, getDecision, hashContent, hybridHash,
     djb2Hash, fnv1aHash, generateDetectionProof, constantTimeEqual,
     detectPlatform, getPatternStats, computePatternHash,
-    verifyPatternIntegrity, selfTest, PATTERN_VERSION
+    verifyPatternIntegrity, selfTest, luhnCheck,
+    PATTERN_VERSION, DECISION_MODE
   };
 }

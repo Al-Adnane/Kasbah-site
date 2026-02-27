@@ -1160,7 +1160,7 @@
         meta: meta,
       };
 
-      var res = typeof classify !== "undefined" ? classify(text) : { decision: "ALLOW", risk: 0 };
+      var res = typeof classify !== "undefined" ? classify(msg) : { decision: "ALLOW", risk: 0 };
 
       // SILENT/WARN: risk < 70 — let action proceed, maybe show toast
       if (res.decision !== "DENY") {
