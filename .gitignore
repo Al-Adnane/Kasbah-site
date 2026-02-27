@@ -121,6 +121,9 @@ CODE_OF_CONDUCT.md
 CONTRIBUTING.md
 docs/
 
+# Redundant CI (Cloudflare native Git integration handles deploy)
+.github/workflows/deploy-pages.yml
+
 # Secrets & credentials (defensive)
 .env
 .env.*
