@@ -20,6 +20,14 @@ paths = [
   ".dylib$",
   ".rmeta$",
   ".rcgu.o$",
+  "kasbah-guard-dist/audit_reports/",
+  "kasbah-guard-dist/fortress_grade_final_verification.cjs",
+  "kasbah-guard-dist/fortress_grade_v3.0_enhanced_documents.py",
+  "kasbah-guard-dist/fortress_grade_v3.0_ultimate.py",
+  "kasbah-guard-dist/kasbah_redteam_gauntlet_v2.py",
+  "kasbah-guard-dist/tests/",
+  "kasbah-guard-dist/apps/desktop/dist/",
+  "docs/TESTING.md",
 ]
 
 # Known intentional test/demo strings — never real credentials
@@ -30,7 +38,15 @@ regexes = [
   "hunter2",
   "sk_live_REALKEY",
   "sk_live_51234567890",
+  "sk_live_1234567890abcdef",
   "sk_test_EXAMPLE",
+  "sk-1234567890abcdefghijklmnopqrst",
+  "msk-proj-1234567890abcdefghijkl",
   "123-45-6789",
   "mongodb://admin:hunter2@",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+  "BEGIN RSA PRIVATE KEY.*MIIEpAIBAAKCAQEA2a2rwplBQLJQqOyFIpTw",
+  "3aBc7fGhIj9KlMn0OpQrStUvWxYz1AbCdEfGhIjKlMnOpQ",
+  "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2",
+  "sk-1234567890abcdef1234567890",
 ]
