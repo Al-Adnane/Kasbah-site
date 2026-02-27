@@ -10,15 +10,13 @@ target/
 **/target/
 **/gen/
 
-# Compiled binaries (except public downloads)
+# Compiled binaries
 *.app/
 **/*.app/
 *.dmg
 **/*.dmg
-!public/downloads/*.dmg
-!public/downloads/*.zip
 
-# Rust incremental build artifacts (major gitleaks false positive source)
+# Rust incremental build artifacts
 *.rcgu.o
 **/*.rcgu.o
 *.rmeta
@@ -53,17 +51,48 @@ Cargo.lock
 .wrangler/
 **/.wrangler/
 
-# Extension zips (built from source)
-kasbah-guard-dist/kasbah-*.zip
+# ── Non-core (removed from tracking) ──
 
-# Screenshots (dev only)
+# Dev-only: tests, audit reports, fixtures, scripts
+kasbah-guard-dist/tests/
+kasbah-guard-dist/audit_reports/
+kasbah-guard-dist/fixtures/
+kasbah-guard-dist/run_full_audit.sh
 kasbah-guard-dist/chrome-store-screenshots/
 
-# Logo source
-kasbah-guard-dist/logo-source-*.png
+# Legacy crates (v3.0 is browser-only, no desktop daemon)
+kasbah-guard-dist/crates/kasbah-daemon/
+kasbah-guard-dist/crates/kasbah-kernel/
+kasbah-guard-dist/crates/kasbah-wasm/
+kasbah-guard-dist/crates/ebpf-agent/
+kasbah-guard-dist/crates/kernel/
+kasbah-guard-dist/core/
+kasbah-guard-dist/db/
 
-# Old downloads directory at root
-downloads/
+# Dev docs (keep only KASBAH-TECH-SPEC.md + STATE-OF-DEVELOPMENT.md)
+kasbah-guard-dist/docs/future/
+kasbah-guard-dist/docs/EXHAUSTIVE_SENSITIVE_FILES_TEST.md
+kasbah-guard-dist/docs/MULTILINGUAL_DOCUMENT_DETECTION.md
+kasbah-guard-dist/docs/PASSPORT_UPLOAD_FIX.md
+kasbah-guard-dist/docs/TEST_SUITE_COMPLETE_SUMMARY.md
+kasbah-guard-dist/docs/UNBEATABLE_MOAT_V2_IMPLEMENTATION_ROADMAP.md
+kasbah-guard-dist/docs/UPLOAD_DEBUG_GUIDE.md
+
+# Status/analysis docs (live in Notion, not repo)
+kasbah-guard-dist/KASBAH-FULL-STATUS.md
+kasbah-guard-dist/MOAT_ANALYSIS_AND_PRODUCTS.md
+COMPETITIVE_MOATS.md
+
+# Old/stale apps
+kasbah-guard-dist/apps/web/
+kasbah-guard-dist/apps/desktop/install.command
+
+# Logo source (web versions: logo-200.png, og.png)
+kasbah-guard-dist/logo-source-*.png
+public/kasbah-logo.png
+
+# Extension zips (built from source)
+kasbah-guard-dist/kasbah-*.zip
 
 # Tauri generated
 kasbah-guard-dist/apps/desktop/src-tauri/gen/
@@ -72,6 +101,25 @@ kasbah-guard-dist/apps/desktop/src-tauri/icons/
 # Disabled services
 kasbah-guard-dist/services/
 kasbah-guard-dist/imports/
+
+# Public non-core (wrong personas, old pages, downloads)
+public/for/developers.html
+public/for/enterprises.html
+public/for/security.html
+public/for/startups.html
+public/for/knowledge-workers.html
+public/for/small-business-owners.html
+public/webapp.html
+public/benchmark.html
+public/content-scripts.md
+public/proof/
+public/downloads/
+
+# Root duplicates
+_redirects
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+docs/
 
 # Secrets & credentials (defensive)
 .env
@@ -100,11 +148,10 @@ final_*.sh
 *.log
 *.pid
 
-# Benchmark proof data (contains intentional test secrets for demo)
-public/proof/
+# Benchmark proof data
 **/benchmark-*.json
 
-# Python gauntlet cache
+# Python cache
 __pycache__/
 *.pyc
 *.pyo

@@ -22,12 +22,9 @@ paths = [
   ".rcgu.o$",
   "kasbah-guard-dist/audit_reports/",
   "kasbah-guard-dist/fortress_grade_final_verification.cjs",
-  "kasbah-guard-dist/fortress_grade_v3.0_enhanced_documents.py",
-  "kasbah-guard-dist/fortress_grade_v3.0_ultimate.py",
-  "kasbah-guard-dist/kasbah_redteam_gauntlet_v2.py",
   "kasbah-guard-dist/tests/",
   "kasbah-guard-dist/apps/desktop/dist/",
-  "docs/TESTING.md",
+  "kasbah-guard-dist/apps/desktop/src-tauri/src/guard.rs",
 ]
 
 # Known intentional test/demo strings — never real credentials
