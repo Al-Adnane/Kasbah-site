@@ -19,8 +19,7 @@
     "https://claude.ai/*",
     "https://gemini.google.com/*",
     "https://grok.x.ai/*",
-    "https://grok.com/*",
-    "http://127.0.0.1:8788/*"
+    "https://grok.com/*"
   ],
   "background": {
     "scripts": ["background.js"]
