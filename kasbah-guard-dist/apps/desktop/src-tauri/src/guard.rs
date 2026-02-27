@@ -10,6 +10,7 @@ use sha2::{Digest, Sha256};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
+use kasbah_kernel::{InterventionLevel, decide_intervention};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -3992,6 +3993,7 @@ struct State {
     velocity: VelocityTracker,
     behavioral: BehavioralTracker,
     last_fs_notify_ms: u64,
+    last_fs_critical_dialog_ms: u64,  // Rate-limit critical file dialogs (max 1 per 30s)
     // Verb tracking
     verb_counts: std::collections::HashMap<String, u64>,
     verb_last_blocked: std::collections::HashMap<String, (u64, String)>,
@@ -5884,6 +5886,7 @@ pub fn spawn_guard_service() {
             velocity: VelocityTracker::new(),
             behavioral: BehavioralTracker::new(),
             last_fs_notify_ms: 0,
+            last_fs_critical_dialog_ms: 0,
             verb_counts: {
                 let mut m = std::collections::HashMap::new();
                 for v in &["send", "paste", "upload", "download", "browse", "edit"] {
@@ -6544,7 +6547,48 @@ end tell"#
                             let finding_summary = finding_types.join(", ");
                             eprintln!("[Kasbah Guard] FS WATCHER ALERT: {} — {} findings: {}",
                                 fname, findings.len(), finding_summary);
-                            if !should_notify_flagged { /* skip notification per user pref */ } else {
+
+                            // ─────────────────────────────────────────────────────────────────────
+                            // SEVERITY GATE: Only interrupt user for CRITICAL PII types
+                            // ─────────────────────────────────────────────────────────────────────
+                            let critical_types = ["Credit Card", "SSN", "Social Security", "AWS Key",
+                                "API Key", "Secret Key", "Private Key", "Medical Record", "Passport",
+                                "National ID", "IBAN", "Bank Account", "Routing Number"];
+                            let has_critical = findings.iter().any(|f| {
+                                critical_types.iter().any(|ct| f.ftype.contains(ct))
+                            });
+
+                            if !has_critical {
+                                // Non-critical finding (email, phone, etc.) — log silently, no popup
+                                eprintln!("[Kasbah Guard] FS NOTIFY SILENT: low-severity findings logged, no dialog shown");
+                                let db_lock = db_fs.lock().unwrap_or_else(|e| e.into_inner());
+                                append_audit(
+                                    &db_lock, "FS_SILENT_LOG", None, Some("fs_watcher"), None,
+                                    Some("LOW_SEVERITY"), None,
+                                    Some(&format!("{} findings in {} (silent): {}", findings.len(), fname, finding_summary)),
+                                    Some(&file_hash),
+                                    Some(&serde_json::json!({
+                                        "path": file_path, "findings": findings.iter().map(|f| serde_json::json!({
+                                            "type": f.ftype, "category": f.category, "severity": f.severity
+                                        })).collect::<Vec<_>>(), "size": file_size
+                                    }).to_string()),
+                                );
+                            } else {
+                                // CRITICAL finding — show dialog and notification
+                                // Rate-limit critical dialogs (max 1 per 30s) to prevent dialog spam
+                                let now = now_ms();
+                                let can_show_critical_dialog = {
+                                    let s = st_fs.lock().unwrap_or_else(|e| e.into_inner());
+                                    now - s.last_fs_critical_dialog_ms > 30000  // 30 second cooldown
+                                };
+
+                                if can_show_critical_dialog {
+                                    {
+                                        let mut s = st_fs.lock().unwrap_or_else(|e| e.into_inner());
+                                        s.last_fs_critical_dialog_ms = now;
+                                    }
+
+                                    if !should_notify_flagged { /* skip notification per user pref */ } else {
                             // macOS notification for flagged files — identify the editing tool
                             let safe_fname = fname.replace('"', "'").replace('\\', "/");
                             // Detect which tool is editing based on common process patterns
@@ -6602,6 +6646,8 @@ end tell"#
                                 }).to_string()),
                             );
                             } // end notify_flagged gate
+                                    } // end can_show_critical_dialog rate-limit check
+                            } // end critical severity gate
                         } else {
                             // Clean file — brief notification (rate-limited, off by default)
                             if !should_notify_clean { /* skip per user pref */ } else {
@@ -7145,6 +7191,11 @@ end tell"#
                                     s.stats.denied += 1;
                                     s.stats.threats_blocked += 1;
                                 }
+                                let intervention = match decide_intervention(risk as u32) {
+                                    InterventionLevel::Silent => "silent",
+                                    InterventionLevel::Warning => "warning",
+                                    InterventionLevel::Block => "block",
+                                };
                                 let res = serde_json::json!({
                                     "ok": true,
                                     "decision": "BLOCK",
@@ -7153,7 +7204,8 @@ end tell"#
                                     "preflight": "DENY",
                                     "reason": reason,
                                     "content_hash": c_hash,
-                                    "verb": verb
+                                    "verb": verb,
+                                    "intervention": intervention
                                 });
                                 respond(request, 200, &res.to_string());
                             } else if risk < 30 {
@@ -7163,6 +7215,11 @@ end tell"#
                                     s.stats.total += 1;
                                     s.stats.allowed += 1;
                                 }
+                                let intervention = match decide_intervention(risk as u32) {
+                                    InterventionLevel::Silent => "silent",
+                                    InterventionLevel::Warning => "warning",
+                                    InterventionLevel::Block => "block",
+                                };
                                 let res = serde_json::json!({
                                     "ok": true,
                                     "decision": "ALLOW",
@@ -7174,7 +7231,8 @@ end tell"#
                                     "preflight": preflight_decision,
                                     "reason": reason,
                                     "content_hash": c_hash,
-                                    "verb": verb
+                                    "verb": verb,
+                                    "intervention": intervention
                                 });
                                 respond(request, 200, &res.to_string());
                             } else {
@@ -7183,6 +7241,11 @@ end tell"#
                                     let mut s = st.lock().unwrap();
                                     s.stats.total += 1;
                                 }
+                                let intervention = match decide_intervention(risk as u32) {
+                                    InterventionLevel::Silent => "silent",
+                                    InterventionLevel::Warning => "warning",
+                                    InterventionLevel::Block => "block",
+                                };
                                 let res = serde_json::json!({
                                     "ok": true,
                                     "decision": "WARN",
@@ -7194,7 +7257,8 @@ end tell"#
                                     "preflight": preflight_decision,
                                     "reason": reason,
                                     "content_hash": c_hash,
-                                    "verb": verb
+                                    "verb": verb,
+                                    "intervention": intervention
                                 });
                                 respond(request, 200, &res.to_string());
                             }
