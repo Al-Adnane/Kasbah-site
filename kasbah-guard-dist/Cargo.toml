@@ -1,7 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/kasbah-kernel",
+    "crates/kasbah-wasm",
     "apps/desktop/src-tauri",
+]
+exclude = [
+    "crates/kernel",
 ]
 
 [workspace.package]

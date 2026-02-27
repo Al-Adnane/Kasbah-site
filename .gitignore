@@ -51,41 +51,11 @@ Cargo.lock
 .wrangler/
 **/.wrangler/
 
-# ── Non-core (removed from tracking) ──
+# ── Non-core (kept for reference, not deployed) ──
 
-# Dev-only: tests, audit reports, fixtures, scripts
-kasbah-guard-dist/tests/
+# Generated output (reproducible)
 kasbah-guard-dist/audit_reports/
-kasbah-guard-dist/fixtures/
-kasbah-guard-dist/run_full_audit.sh
 kasbah-guard-dist/chrome-store-screenshots/
-
-# Legacy crates (v3.0 is browser-only, no desktop daemon)
-kasbah-guard-dist/crates/kasbah-daemon/
-kasbah-guard-dist/crates/kasbah-kernel/
-kasbah-guard-dist/crates/kasbah-wasm/
-kasbah-guard-dist/crates/ebpf-agent/
-kasbah-guard-dist/crates/kernel/
-kasbah-guard-dist/core/
-kasbah-guard-dist/db/
-
-# Dev docs (keep only KASBAH-TECH-SPEC.md + STATE-OF-DEVELOPMENT.md)
-kasbah-guard-dist/docs/future/
-kasbah-guard-dist/docs/EXHAUSTIVE_SENSITIVE_FILES_TEST.md
-kasbah-guard-dist/docs/MULTILINGUAL_DOCUMENT_DETECTION.md
-kasbah-guard-dist/docs/PASSPORT_UPLOAD_FIX.md
-kasbah-guard-dist/docs/TEST_SUITE_COMPLETE_SUMMARY.md
-kasbah-guard-dist/docs/UNBEATABLE_MOAT_V2_IMPLEMENTATION_ROADMAP.md
-kasbah-guard-dist/docs/UPLOAD_DEBUG_GUIDE.md
-
-# Status/analysis docs (live in Notion, not repo)
-kasbah-guard-dist/KASBAH-FULL-STATUS.md
-kasbah-guard-dist/MOAT_ANALYSIS_AND_PRODUCTS.md
-COMPETITIVE_MOATS.md
-
-# Old/stale apps
-kasbah-guard-dist/apps/web/
-kasbah-guard-dist/apps/desktop/install.command
 
 # Logo source (web versions: logo-200.png, og.png)
 kasbah-guard-dist/logo-source-*.png
@@ -119,7 +89,7 @@ public/downloads/
 _redirects
 CODE_OF_CONDUCT.md
 CONTRIBUTING.md
-docs/
+/docs/
 
 # Redundant CI (Cloudflare native Git integration handles deploy)
 .github/workflows/deploy-pages.yml

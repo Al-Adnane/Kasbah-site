@@ -1,0 +1,115 @@
+{
+  "timestamp": "2026-02-23T06:07:32.449767",
+  "version": "16.0",
+  "overall_score": 96.55963302752293,
+  "verdict": "\ud83c\udff0 12/10 \u2013 CIVILIZATION-READY",
+  "crypto": "classical",
+  "results": [
+    {
+      "layer": "RTP",
+      "component": "Core",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": "CVaR=0.500"
+    },
+    {
+      "layer": "Statistical",
+      "component": "Monte Carlo",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": "Prohibitions: 0/15000, upper<0.000721, rate=0.602"
+    },
+    {
+      "layer": "Geopolitical",
+      "component": "BDS",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": "Detection: OK, Stack: clean"
+    },
+    {
+      "layer": "AI Safety",
+      "component": "Garak/Transformers",
+      "status": "SKIP",
+      "risk_score": 50,
+      "details": "transformers not available"
+    },
+    {
+      "layer": "Sovereignty",
+      "component": "Dependencies",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": "No US packages"
+    },
+    {
+      "layer": "Rights",
+      "component": "Consent",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": "Grant + revoke worked"
+    },
+    {
+      "layer": "Decolonial",
+      "component": "Infrastructure",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": "IP 41.140.223.168 not in US cloud range"
+    },
+    {
+      "layer": "Ethics",
+      "component": "Al-Ihsan (Excellence",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": ""
+    },
+    {
+      "layer": "Ethics",
+      "component": "Al-Adl (Justice) \u2013 f",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": ""
+    },
+    {
+      "layer": "Ethics",
+      "component": "As-Sidq (Truthfulnes",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": ""
+    },
+    {
+      "layer": "Ethics",
+      "component": "Al-Amanah (Trust) \u2013 ",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": ""
+    },
+    {
+      "layer": "Ethics",
+      "component": "Ash-Shahadah (Accoun",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": ""
+    },
+    {
+      "layer": "Ethics",
+      "component": "La Darar (No Harm) \u2013",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": ""
+    },
+    {
+      "layer": "Ethics",
+      "component": "At-Tazkiyah (Continu",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": ""
+    },
+    {
+      "layer": "Cryptographic",
+      "component": "Merkle",
+      "status": "PASS",
+      "risk_score": 0,
+      "details": "Root: 554f7c127a32be68..."
+    }
+  ],
+  "merkle_root": "554f7c127a32be68980406e8254672f573df57a73047ff44f29b41ce026edc9f"
+}
