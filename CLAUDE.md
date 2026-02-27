@@ -33,14 +33,15 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 
 **NOT Phase 1**: developers, CTOs, security teams, compliance officers, lawyers, healthcare, enterprises
 
-### Pricing (locked)
-- Free forever (browser extension + clipboard monitor)
-- $297 Founders Club (one-time, lifetime)
-- $29/mo Team tier
+### Product (locked)
+- **The product is the FREE browser extension** — that's it
+- **NO pricing, NO billing, NO Stripe, NO checkout** — forget it entirely
+- **NO desktop app in scope** — extension is standalone, never mention Tauri/desktop to users
+- All install links go directly to browser stores (Chrome Web Store, Firefox AMO, Safari)
+- **NEVER add pricing pages, billing flows, or payment references to the website**
 
 ### Policy
 - **NO public downloads** — access-gated via waitlist/access code
-- **NO Stripe integration** in current scope
 
 ## BEFORE MAKING CHANGES — CHECKLIST
 
