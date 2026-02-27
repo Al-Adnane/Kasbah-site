@@ -49,7 +49,32 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({ guardEnabled: true, notifications: true, version: '2.0.0' });
 });
 
-chrome.runtime.onStartup.addListener(() => { updateBadge(); });
+// ── Suspend / Startup handlers (adversarial race fix) ──────────────────────
+// Saves pending state before service worker suspends so nothing is lost
+// across an extension disable/update/browser-restart race.
+chrome.runtime.onSuspend.addListener(() => {
+  chrome.storage.local.set({
+    lastSuspend: Date.now(),
+    guardEnabled: true  // Preserve enabled state across suspend
+  });
+  console.log('[Kasbah Guard] Service worker suspending — state saved');
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  // Restore state after browser restart / extension re-enable
+  chrome.storage.local.get(['lastSuspend', 'guardEnabled'], (data) => {
+    if (data.lastSuspend) {
+      const gapMs = Date.now() - data.lastSuspend;
+      console.log(`[Kasbah Guard] Resumed after ${Math.round(gapMs/1000)}s gap`);
+    }
+    // Re-enable guard if it was active before suspension
+    if (data.guardEnabled !== false) {
+      chrome.storage.local.set({ guardEnabled: true });
+    }
+  });
+  updateBadge();
+});
+
 setInterval(updateBadge, 10000); // 10s (was 15s)
 
 chrome.runtime.onMessage.addListener((msg, sender, respond) => {
