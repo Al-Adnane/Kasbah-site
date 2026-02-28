@@ -1,6 +1,6 @@
 /**
- * Kasbah Detection Engine v3.3 — FRONTIER DEFENSE (PRODUCTION)
- * 12-Layer Defense Architecture — ALL LAYERS LIVE
+ * Kasbah Detection Engine v3.5 — PPP NATURE-INSPIRED (PRODUCTION)
+ * 12-Layer Defense Architecture + 6 PPP Nature Techniques — ALL LIVE
  *
  * Layer 0:  Hybrid Hash (djb2 XOR FNV-1a)
  * Layer 1:  Pattern Confidence Tracking (stats influence scoring at 90%+ confidence)
@@ -19,16 +19,23 @@
  *         against sealed baseline hash. Pattern stats boost scoring at 90%+
  *         confidence. L33t speak deobfuscation. Mathematical alphanumerics.
  *         Superscript/subscript digit normalization. Enclosed letter handling.
+ * v3.5.0: 6 PPP Nature-Inspired Techniques:
+ *         - Beeodiversity (#2): PII co-occurrence multiplier
+ *         - Fungi (#6): Cross-line hidden correlation detection
+ *         - Breathe Easy (#17): Context-aware false positive filtering
+ *         - Soil Security (#18): Weak-signal dossier aggregation
+ *         - LanzaTech (#19): Encoded payload detection (base64/hex/URL)
+ *         - Aboriginal Fire (#22): Pattern stat temporal decay
  */
 
 // ══════════════════════════════════════════════════════════════
 // LAYER 6: Pattern Version + Integrity Tracking
 // ══════════════════════════════════════════════════════════════
-var PATTERN_VERSION = "3.3.0";
+var PATTERN_VERSION = "3.5.2";
 var PATTERN_EPOCH = 1772236800; // 2026-02-27
 
 // Feature flags for backward-compatible return objects
-var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof","anti_re_integrity","platform_fp","sealed_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral","l33t_deobfuscation","math_alphanumerics"];
+var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof","anti_re_integrity","platform_fp","sealed_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral","l33t_deobfuscation","math_alphanumerics","beeodiversity","fungi_correlation","lanzatech_transform","soil_security","breathe_easy","aboriginal_fire"];
 
 // ══════════════════════════════════════════════════════════════
 // Decision Mode — ENFORCED (production) or SIMULATED (testing)
@@ -271,18 +278,33 @@ function detectPlatform() {
 // ══════════════════════════════════════════════════════════════
 var patternStats = {};
 function updatePatternStat(name, blocked) {
-  if (!patternStats[name]) patternStats[name] = { blocked: 0, allowed: 0, confidence: 0.5 };
+  if (!patternStats[name]) patternStats[name] = { blocked: 0, allowed: 0, confidence: 0.5, lastSeen: 0 };
   var s = patternStats[name];
+  var now = Date.now();
+  // Aboriginal Fire (PPP #22): decay old counts before adding new observation
+  if (s.lastSeen > 0) {
+    var hoursSince = (now - s.lastSeen) / 3600000;
+    if (hoursSince > 24) {
+      var decayFactor = Math.max(0.1, Math.pow(0.95, hoursSince / 24));
+      s.blocked = Math.round(s.blocked * decayFactor);
+      s.allowed = Math.round(s.allowed * decayFactor);
+    }
+  }
+  s.lastSeen = now;
   if (blocked) s.blocked++; else s.allowed++;
   s.confidence = s.blocked / Math.max(1, s.blocked + s.allowed);
 }
 function getPatternStats() { return patternStats; }
 // Layer 1 boost: patterns with 90%+ block rate over 10+ samples get +5 score
+// Aboriginal Fire (PPP #22): ignore stats older than 30 days with no activity
 function patternConfidenceBoost(reasons) {
   var boost = 0;
+  var now = Date.now();
   for (var i = 0; i < reasons.length; i++) {
     var s = patternStats[reasons[i]];
-    if (s && (s.blocked + s.allowed) >= 10 && s.confidence >= 0.9) boost += 5;
+    if (!s) continue;
+    if (s.lastSeen > 0 && (now - s.lastSeen) > 2592000000) continue;
+    if ((s.blocked + s.allowed) >= 10 && s.confidence >= 0.9) boost += 5;
   }
   return Math.min(boost, 15); // cap at +15
 }
@@ -301,11 +323,11 @@ var OPENAI_KEY_RE = /\bsk-[A-Za-z0-9\-_]{20,}\b/;
 // ── TIER 1b: Critical Documents — 100+ LANGUAGE SUPPORT ──
 var PASSPORT_RE = /(?:passport|passeport|pasaporte|passaporte|paspoor|reisepass|passaporto|paspoort|paszport|جواز\s*(?:ال)?سفر|护照|паспорт|パスポート|여권|διαβατήριο|pasaport)[\s\S]{0,60}?[A-Z0-9]{5,12}/i;
 var VISA_RE = /(?:visa|entry\s*visa|work\s*visa|resident(?:ial|ence)?\s*(?:visa|permit)|green\s*card|residence\s*permit|travel\s*permit|working\s*permit|sejour|permiso\s*de\s*residencia|carte\s*de\s*séjour|visto|visse|einreisevisum|visum|soggiorno|تأشيرة|签证|виза|ビザ|비자)[\s\S]{0,60}?[A-Z0-9]{5,15}/i;
-var NATIONAL_ID_RE = /(?:national\s*(?:i\.?d|id|identification|identity)|identity\s*(?:card|number|document)|national\s*(?:identity\s*)?card|dni|cedula|cédula|cif|nic|carte\s*(?:nationale|d[\'']?identité|identité\s*nationale)|nif|nie|personalausweis|codice\s*fiscale|carta\s*identità|carnê|identidade|burgerservicenummer|bsn|identiteitskaart|dowód\s*osobisty|pesel|cartebi|cartebio|cin|cnie|بطاقة\s*(?:ال)?(?:تعريف|هوي[ةّ]|شخصية|وطنية)|身份证|удостоверение\s*личности|国民\s*身分|주민\s*등록증|αρ\.?\s*ταυτότητας|kimlik\s*numarası|občanský\s*průkaz|személyazonosság)[\s\S]{0,80}?[A-Z0-9]{5,15}/i;
+var NATIONAL_ID_RE = /(?:national\s*(?:i\.?d|id|identification|identity)|identity\s*(?:card|number|document)|national\s*(?:identity\s*)?card|\bdni\b|cedula|cédula|\bcif\b|\bnic\b|carte\s*(?:nationale|d[\'']?identité|identité\s*nationale)|\bnif\b|\bnie\b|personalausweis|codice\s*fiscale|carta\s*identità|carnê|identidade|burgerservicenummer|\bbsn\b|identiteitskaart|dowód\s*osobisty|pesel|cartebi|cartebio|\bcin\b|cnie|بطاقة\s*(?:ال)?(?:تعريف|هوي[ةّ]|شخصية|وطنية)|身份证|удостоверение\s*личности|国民\s*身分|주민\s*등록증|αρ\.?\s*ταυτότητας|kimlik\s*numarası|občanský\s*průkaz|személyazonosság)[\s\S]{0,80}?[A-Z0-9]{5,15}/i;
 var DRIVERS_LICENSE_RE = /(?:driver['s]*\s*(?:li(?:ce|sen)s(?:e)?|permit)|driving\s*(?:li(?:ce|sen)s(?:e)?|permit)|license\s*(?:number|no|#)|dl\s*(?:number|no)|permis\s*de\s*(?:conduire|conduite)|carnet\s*(?:de\s*)?conducir|licencia\s*(?:de\s*)?conducci[óo]n|carteira\s*(?:de\s*)?motorista|patente|führerschein|rijbewijs|prawo\s*jazdy|رخصة\s*قيادة|驾驶证|водительское\s*удостоверение|運転\s*免許|운전\s*면허증|sürücü\s*belgesi|řidičský\s*průkaz)[\s\S]{0,60}?[A-Z0-9]{5,12}/i;
 var MEDICAL_RE = /(?:medical\s*(?:record|history|file|dossier|notes?)|patient\s*(?:id|identification|record|number|name|chart)|physician|doctor|diagnosis|prescription|medication|prescription\s*(?:number|refill)|lab\s*(?:result|test|work|report)|blood\s*(?:type|group|pressure|test)|heart\s*rate|temperature|vitals|allergies?|vaccination|vaccine\s*(?:record|card)|covid|coronavirus|hospital|clinic|surgery|surgical|treatment|therapy|anesthesia|dosage|drug|pharmaceutical|health\s*insurance|insurance\s*claim|clinical\s*note|dossier\s*médical|antécédent|ordonnance|receta\s*(?:médica|farmacéutica)|historial\s*médico|cartilla\s*sanitaria|diagnóstico|medicamento|enfermeria|farmacia|receita|prescrição|histórico\s*médico|ficha\s*médica|cartão\s*de\s*saúde|medizin|arznei|krankenhaus|gesundheit|rezept|medico|cartella\s*clinica|prescrizione|diagnosi|طبي|صحة|مريض|وصفة|دواء|تشخيص|مستشفى|عيادة|طبيب|医疗|患者|病历|诊断|处方|药物|医院|医生|疫苗|保险|医學|病歷|処方箋|진료|의료기록|건강\s*보험)/i;
-var BANK_ACCOUNT_RE = /(?:account\s*(?:number|no|num|#|:)|iban|bban|routing\s*(?:number|no)|swift\s*(?:code|bic)|aba|credit\s*card|debit\s*card|bank\s*(?:account|code|number|routing)|bank\s*(?:account\s*)?no|loan\s*(?:number|no|#)|mortgage|wire\s*transfer|numero\s*(?:de\s*)?compte|numéro\s*(?:de\s*)?compte|número\s*(?:de\s*)?cuenta|conto\s*(?:bancario|corrente)|kontonummer|bankverbindung|rekeningnummer|رقم\s*الحساب|حساب\s*بنكي|银行\s*账户|银行账号|банковский\s*счёт|счет|銀行\s*口座|은행\s*계좌|banka\s*hesabı)[\s\S]{0,60}?[A-Z0-9]{8,34}/i;
-var TAX_ID_RE = /(?:tax\s*(?:id|identification|number|form|return|year)|irs\s*form|form\s*(?:1040|w-?2|1099|w-?9)|ssn|social\s*security\s*(?:number|no)|taxpayer\s*(?:id|number)|itin|ein|tin|sin|nif|nie|siret|siren|numéro\s*fiscal|número\s*(?:de\s*)?identificación\s*fiscal|cif|steuer(?:nummer|id|karte)|codice\s*fiscale|partita\s*iva|رقم\s*الضريبة|税号|纳税人|уникальный\s*номер|税務\s*識別|사업\s*자\s*등록|rodné\s*číslo)[\s\S]{0,80}?[A-Z0-9\-]{5,20}/i;
+var BANK_ACCOUNT_RE = /(?:account\s*(?:number|no|num|#|:)|iban|bban|routing\s*(?:number|no)|swift\s*(?:code|bic)|\baba\b|credit\s*card|debit\s*card|bank\s*(?:account|code|number|routing)|bank\s*(?:account\s*)?no|loan\s*(?:number|no|#)|mortgage|wire\s*transfer|numero\s*(?:de\s*)?compte|numéro\s*(?:de\s*)?compte|número\s*(?:de\s*)?cuenta|conto\s*(?:bancario|corrente)|kontonummer|bankverbindung|rekeningnummer|رقم\s*الحساب|حساب\s*بنكي|银行\s*账户|银行账号|банковский\s*счёт|счет|銀行\s*口座|은행\s*계좌|banka\s*hesabı)[\s\S]{0,60}?[A-Z0-9]{8,34}/i;
+var TAX_ID_RE = /(?:tax\s*(?:id|identification|number|form|return|year)|irs\s*form|form\s*(?:1040|w-?2|1099|w-?9)|ssn|social\s*security\s*(?:number|no)|taxpayer\s*(?:id|number)|itin|\bein\b|\btin\b|\bsin\b|\bnif\b|\bnie\b|siret|siren|numéro\s*fiscal|número\s*(?:de\s*)?identificación\s*fiscal|\bcif\b|steuer(?:nummer|id|karte)|codice\s*fiscale|partita\s*iva|رقم\s*الضريبة|税号|纳税人|уникальный\s*номер|税務\s*識別|사업\s*자\s*등록|rodné\s*číslo)[\s\S]{0,80}?[A-Z0-9\-]{5,20}/i;
 var BIRTH_CERT_RE = /(?:birth\s*(?:certificate|cert|record|document)|baptism|marriage\s*(?:certificate|cert|license|document)|divorce\s*(?:certificate|cert|decree|document)|death\s*(?:certificate|cert|record|document)|legal\s*document|acte\s*de\s*(?:naissance|mariage|décès)|certificado\s*de\s*(?:nacimiento|matrimonio|defunción)|certidão\s*de\s*(?:nascimento|casamento|óbito)|geburts(?:urkunde|schein)|heirats(?:urkunde|schein)|sterbeurkunde|atto\s*di\s*(?:nascita|matrimonio|morte)|شهادة\s*(?:ميلاد|زواج|وفاة)|出生\s*证(?:明|书)|结婚\s*证|死亡\s*证|свидетельство\s*(?:о\s*(?:рождении|браке|смерти))|出生\s*証明|婚姻\s*証書)/i;
 var CRYPTO_RE = /(?:bitcoin|btc|ethereum|eth|crypto(?:currency)?|wallet\s*(?:address|id)|seed\s*phrase|mnemonic|block\s*chain|private\s*key)[\s\S]{0,60}?(?:[13][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-zA-HJ-NP-Z0-9]{25,62}|0x[0-9a-fA-F]{40}|[A-Fa-f0-9]{64})/i;
 var SEED_RE = /\b(?:abandon|ability|able|about|above|absent|absorb|abstract|absurd|abuse|access|accident|account|accuse|achieve|acid|acoustic|acquire|across|act|action|add|addict|address|adjust|admit|adult|advance|advice|aerobic|affair|afford|afraid|again|age|agent|agree|ahead|aim|air|airport|aisle|alarm|album|alcohol|alert|alien|all|alley|almost|alone|alpha|already|also|alter|always|amateur|amazing|among|amount|amused|analyst|anchor|ancient|anger|angle|angry|animal|ankle|announce|annual)\b(?:\s+\b(?:abandon|ability|able|about|above|absent|absorb|abstract|absurd|abuse|access|accident|account|accuse|achieve|acid|acoustic|acquire|across|act|action|add|addict|address|adjust|admit|adult|advance|advice|aerobic|affair|afford|afraid|again|age|agent|agree|ahead|aim|air|airport|aisle|alarm|album|alcohol|alert|alien|all|alley|almost|alone|alpha|already|also|alter|always|amateur|amazing|among|amount|amused|analyst|anchor|ancient|anger|angle|angry|animal|ankle|announce|annual)\b){11,}/i;
@@ -339,6 +361,229 @@ function verifyPatternIntegrity() {
   var h = computePatternHash();
   var intact = constantTimeEqual(h, _BASELINE_PATTERN_HASH);
   return { version: PATTERN_VERSION, hash: h, baseline: _BASELINE_PATTERN_HASH, epoch: PATTERN_EPOCH, intact: intact };
+}
+
+// ══════════════════════════════════════════════════════════════
+// Moat I: Lightweight String Concatenation Bypass Detection
+// Detects attempts to evade keyword matching by splitting sensitive
+// strings across concatenated fragments.
+// e.g., 'se' + 'cret' → 'secret', "pass" + "word" → "password"
+// ══════════════════════════════════════════════════════════════
+var CONCAT_SENSITIVE_RE = /(?:secret|password|token|bearer|credential|private|apikey|api.key|passw|ssh.rsa|social.security|credit.card|passport|ssn|begin.private|begin.rsa)/;
+
+function detectStringConcatBypass(text) {
+  // Pattern 1: String literal concatenation chains
+  // Matches: 'abc' + 'def', "abc" + "def" + "ghi", etc.
+  var concatChainRe = /(['"])([^'"]{1,30})\1(?:\s*\+\s*(['"])([^'"]{1,30})\3)+/g;
+  var chain;
+  while ((chain = concatChainRe.exec(text)) !== null) {
+    var fragments = chain[0].match(/(?:['"])([^'"]{1,30})(?:['"])/g);
+    if (fragments && fragments.length >= 2) {
+      var joined = fragments.map(function(f) { return f.slice(1, -1); }).join('').toLowerCase();
+      if (CONCAT_SENSITIVE_RE.test(joined)) return true;
+    }
+  }
+
+  // Pattern 2: String.fromCharCode — character code construction
+  if (/String\.fromCharCode\s*\(/i.test(text)) return true;
+
+  // Pattern 3: eval/new Function with string concatenation
+  if (/(?:eval|new\s+Function)\s*\(\s*['"][^'"]*['"]\s*\+/i.test(text)) return true;
+
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════════
+// PPP #19 LanzaTech: Encoded Payload Detection
+// Like bacteria converting waste gases into useful chemicals —
+// decode base64/hex/URL-encoded content to find hidden secrets.
+// ══════════════════════════════════════════════════════════════
+var _TRANSFORM_PATTERNS = [CC_RE, SSN_RE, GH_PAT_RE, AWS_KEY_RE, OPENAI_KEY_RE, BEARER_RE, CONNSTR_RE];
+var _TRANSFORM_KW_RE = /password\s*[:=]|secret\s*[:=]|private.key|BEGIN\s*(RSA|DSA|EC|PRIVATE)/i;
+
+function lanzatechTransform(text) {
+  var hits = [];
+  // 1. Base64 segments (20+ chars)
+  var b64 = text.match(/[A-Za-z0-9+/]{20,}={0,2}/g);
+  if (b64) {
+    var decode = typeof atob === 'function' ? atob : (typeof Buffer !== 'undefined' ? function(s) { return Buffer.from(s, 'base64').toString(); } : null);
+    if (decode) {
+      for (var i = 0; i < Math.min(b64.length, 5); i++) {
+        try {
+          var dec = decode(b64[i]);
+          if (!/^[\x20-\x7e]{10,}$/.test(dec)) continue;
+          for (var p = 0; p < _TRANSFORM_PATTERNS.length; p++) {
+            if (_TRANSFORM_PATTERNS[p].test(dec)) { hits.push("base64"); break; }
+          }
+          if (_TRANSFORM_KW_RE.test(dec)) hits.push("base64");
+        } catch(e) {}
+      }
+    }
+  }
+  // 2. Hex-encoded (40+ hex chars → likely key/hash hiding text)
+  var hex = text.match(/(?:0x)?[0-9a-fA-F]{40,}/g);
+  if (hex) {
+    for (var h = 0; h < Math.min(hex.length, 3); h++) {
+      try {
+        var hs = hex[h].replace(/^0x/, ''), hd = '';
+        for (var j = 0; j < hs.length; j += 2) hd += String.fromCharCode(parseInt(hs.substr(j, 2), 16));
+        if (!/^[\x20-\x7e]{10,}$/.test(hd)) continue;
+        for (var p2 = 0; p2 < _TRANSFORM_PATTERNS.length; p2++) {
+          if (_TRANSFORM_PATTERNS[p2].test(hd)) { hits.push("hex"); break; }
+        }
+        if (_TRANSFORM_KW_RE.test(hd)) hits.push("hex");
+      } catch(e) {}
+    }
+  }
+  // 3. URL-encoded (5+ %XX sequences)
+  if (/%[0-9A-Fa-f]{2}/.test(text) && (text.match(/%[0-9A-Fa-f]{2}/g) || []).length >= 5) {
+    try {
+      var ud = decodeURIComponent(text);
+      if (ud !== text) {
+        for (var p3 = 0; p3 < _TRANSFORM_PATTERNS.length; p3++) {
+          if (_TRANSFORM_PATTERNS[p3].test(ud)) { hits.push("url"); break; }
+        }
+        if (_TRANSFORM_KW_RE.test(ud)) hits.push("url");
+      }
+    } catch(e) {}
+  }
+  return hits;
+}
+
+// ══════════════════════════════════════════════════════════════
+// PPP #2 Beeodiversity: PII Co-Occurrence Multiplier
+// Like bees cross-pollinating flowers — multiple PII types
+// appearing together is exponentially more dangerous.
+// ══════════════════════════════════════════════════════════════
+function beeodiversityBoost(tiers_triggered, currentScore) {
+  var t1 = 0, t1b = 0, t2 = 0, t3 = 0;
+  var hasSSN = false, hasPassport = false, hasLicense = false, hasNatID = false;
+  var hasApiKey = false, hasPassword = false, hasBearer = false, hasJWT = false, hasConn = false;
+  for (var i = 0; i < tiers_triggered.length; i++) {
+    var tier = tiers_triggered[i];
+    if (tier.indexOf("T1:") === 0) t1++;
+    else if (tier.indexOf("T1b:") === 0) t1b++;
+    else if (tier.indexOf("T2:") === 0) t2++;
+    else if (tier.indexOf("T3:") === 0) t3++;
+    if (tier === "T1:ssn") hasSSN = true;
+    if (tier === "T1b:passport") hasPassport = true;
+    if (tier === "T1b:drivers_license") hasLicense = true;
+    if (tier === "T1b:national_id") hasNatID = true;
+    if (tier === "T2:api_key") hasApiKey = true;
+    if (tier === "T2:password") hasPassword = true;
+    if (tier === "T2:bearer") hasBearer = true;
+    if (tier === "T2:jwt") hasJWT = true;
+    if (tier === "T2:conn_string") hasConn = true;
+  }
+  var totalTypes = t1 + t1b + t2 + t3;
+  if (totalTypes < 2) return { score: 0, reason: null };
+
+  var boost = 0;
+  var reasons = [];
+
+  // Named dangerous combos
+  if (hasSSN && (hasPassport || hasLicense || hasNatID)) {
+    boost += 25; reasons.push("identity theft kit");
+  }
+  var credCount = (hasApiKey?1:0) + (hasPassword?1:0) + (hasBearer?1:0) + (hasJWT?1:0) + (hasConn?1:0);
+  if (credCount >= 2) {
+    boost += 20; reasons.push("credential dump");
+  }
+
+  // General co-occurrence scaling
+  if (totalTypes >= 3) {
+    boost += Math.round(currentScore * 0.3);
+    reasons.push("3+ PII types");
+  } else if (totalTypes >= 2 && boost === 0) {
+    boost += Math.round(currentScore * 0.15);
+    reasons.push("cross-tier");
+  }
+
+  return { score: Math.min(boost, 40), reason: reasons.length > 0 ? "co-occurrence (" + reasons.join(", ") + ")" : null };
+}
+
+// ══════════════════════════════════════════════════════════════
+// PPP #18 Soil Security: Composite Weak-Signal Aggregation
+// Like a soil health index — no single reading is alarming,
+// but the composite of phone+name+address+DOB = personal dossier.
+// ══════════════════════════════════════════════════════════════
+var SOIL_SIGNALS = [
+  { name: "phone",    re: /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/, weight: 1 },
+  { name: "dob",      re: /\b(?:0[1-9]|1[0-2])[\/\-](?:0[1-9]|[12]\d|3[01])[\/\-](?:19|20)\d{2}\b/, weight: 1 },
+  { name: "address",  re: /\b\d{1,5}\s+[A-Z][a-z]+\s+(?:St|Ave|Blvd|Dr|Ln|Rd|Way|Ct|Pl|Pkwy|Cir)\.?\b/i, weight: 1 },
+  { name: "fullname", re: /\b[A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20}(?:\s+[A-Z][a-z]{1,20})?\b/, weight: 1 },
+  { name: "email_1",  re: /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i, weight: 1 },
+  { name: "zip",      re: /\b\d{5}(?:-\d{4})?\b/, weight: 0.5 },
+  { name: "age",      re: /\b(?:age|born|DOB)\s*[:=]?\s/i, weight: 0.5 },
+  { name: "gender",   re: /\b(?:gender|sex)\s*[:=]\s*(?:male|female|M|F)\b/i, weight: 0.5 }
+];
+
+function soilSecurityAggregate(tn, existingReasons) {
+  if (existingReasons.length >= 2) return { score: 0, signals: [] };
+  var signals = [];
+  var totalWeight = 0;
+  for (var i = 0; i < SOIL_SIGNALS.length; i++) {
+    if (SOIL_SIGNALS[i].re.test(tn)) {
+      signals.push(SOIL_SIGNALS[i].name);
+      totalWeight += SOIL_SIGNALS[i].weight;
+    }
+  }
+  if (totalWeight >= 3) {
+    return { score: Math.min(Math.round(totalWeight * 12), 50), signals: signals };
+  }
+  return { score: 0, signals: [] };
+}
+
+// ══════════════════════════════════════════════════════════════
+// PPP #6 Fungi: Hidden Cross-Line Correlation
+// Like mycorrhizal networks linking separate trees underground —
+// detect when labels and values are split across different lines.
+// ══════════════════════════════════════════════════════════════
+var _FUNGI_LABELS = /\b(?:card|credit|debit|ssn|social\s*security|password|secret|key|account|routing|passport|license)\b/i;
+
+function fungiCorrelation(tn) {
+  var lines = tn.split('\n');
+  if (lines.length < 2) return { correlations: 0, assembledCC: false };
+  var labelLines = [], valueLines = [];
+  for (var i = 0; i < Math.min(lines.length, 100); i++) {
+    if (_FUNGI_LABELS.test(lines[i])) labelLines.push(i);
+    if (/\d{4,}/.test(lines[i])) valueLines.push(i);
+  }
+  var correlations = 0;
+  for (var li = 0; li < labelLines.length; li++) {
+    for (var vi = 0; vi < valueLines.length; vi++) {
+      if (Math.abs(labelLines[li] - valueLines[vi]) <= 5 && labelLines[li] !== valueLines[vi]) {
+        correlations++;
+      }
+    }
+  }
+  // Assemble nearby digit fragments and re-test for CC via Luhn
+  var digitRuns = tn.match(/\b\d{3,6}\b/g);
+  var assembled = digitRuns ? digitRuns.join('') : '';
+  var assembledCC = assembled.length >= 13 && assembled.length <= 19 && luhnCheck(assembled);
+  return { correlations: Math.min(correlations, 3), assembledCC: assembledCC };
+}
+
+// ══════════════════════════════════════════════════════════════
+// PPP #17 Breathe Easy: Context-Aware Noise Filtering
+// Like urban trees filtering pollution — reduce false positives
+// in educational/reference contexts. NEVER reduces scores >= 80.
+// ══════════════════════════════════════════════════════════════
+var BENIGN_CONTEXTS = [
+  { re: /\b(?:example|sample|test|demo|dummy|fake|placeholder|documentation|tutorial|guide|how.to)\b/i, discount: 0.5, name: "educational" },
+  { re: /\b(?:wikipedia|wiki|article|blog\s*post|essay|lecture|course|textbook)\b/i, discount: 0.7, name: "reference" },
+  { re: /\b(?:do\s+not|never|don't|avoid|warning|caution|example\s+of\s+what\s+not)\b/i, discount: 0.65, name: "cautionary" },
+  { re: /\b(?:regex|pattern|format|validation|regular\s+expression|like\s+this)\b/i, discount: 0.5, name: "format_description" }
+];
+
+function breatheEasyFilter(lower, reasons, score) {
+  if (score >= 80 || score < 40 || reasons.length === 0) return { discount: 1.0, context: null };
+  for (var i = 0; i < BENIGN_CONTEXTS.length; i++) {
+    if (BENIGN_CONTEXTS[i].re.test(lower)) {
+      return { discount: BENIGN_CONTEXTS[i].discount, context: BENIGN_CONTEXTS[i].name };
+    }
+  }
+  return { discount: 1.0, context: null };
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -407,7 +652,7 @@ function classify(text) {
   var has_ssn = SSN_RE.test(tn);
   var has_social_security = /\bsocial\s+security\b/i.test(tn);
   var has_github_pat = GH_PAT_RE.test(tc);
-  var has_aws_key = AWS_KEY_RE.test(tc);
+  var has_aws_key = AWS_KEY_RE.test(tn); // use tn (newlines preserved) so line-end word boundaries work
   var has_private_key = t.includes("-----BEGIN") && t.includes("PRIVATE KEY-----");
   var has_openai_key = OPENAI_KEY_RE.test(tc);
 
@@ -446,7 +691,8 @@ function classify(text) {
   // ── TIER 2: High-risk credential patterns ──
   var has_bearer_token = BEARER_RE.test(tn);
   var has_api_key_word = /\b(?:api[_\-]?key|apikey)\s*["']?\s*[:=]/i.test(lower);
-  var has_password_assign = /password\s*["']?\s*[:=]/i.test(lower) || /\bpwd\s*[:=]/i.test(lower);
+  var has_password_assign = /password\s*["']?\s*[:=]/i.test(lower) || /\bpwd\s*[:=]/i.test(lower)
+    || /_pass(?:wd|word)?["']?\s*=\s*["']?[^\s"']{4,}/i.test(lower); // DB_PASS=, APP_PASSWD=, etc.
   var has_env_secret = ENV_SECRET_RE.test(lower) && !/^\s*(?:\/\/|#)/.test(lower.split('\n')[0]);
   var has_jwt = /eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}/.test(t);
   var has_conn = CONNSTR_RE.test(lower);
@@ -474,9 +720,11 @@ function classify(text) {
   // ── TIER 3: Injection & dangerous commands ──
   var has_injection = INJECTION_RE.test(tn);
   var has_shell = SHELL_RE.test(tn);
+  var has_concat_bypass = detectStringConcatBypass(t);
 
   if (has_injection) tiers_triggered.push("T3:injection");
   if (has_shell) tiers_triggered.push("T3:shell");
+  if (has_concat_bypass) tiers_triggered.push("T3:concat_bypass");
 
   // Suspicious keyword ngrams
   var suspicious = [
@@ -533,6 +781,7 @@ function classify(text) {
   if (has_social_security){ score += 50; reasons.push("social security reference"); }
   if (has_injection)      { score += 50; reasons.push("prompt injection"); }
   if (has_shell)          { score += 45; reasons.push("dangerous command"); }
+  if (has_concat_bypass)  { score += 60; reasons.push("string concatenation bypass"); }
   if (has_env_secret && keyword_hits >= 3) { score += 45; reasons.push("env/shell secret pattern"); }
   if (has_api_key_word && entropy <= 3.5) { score += 40; reasons.push("API key keyword"); }
 
@@ -540,7 +789,10 @@ function classify(text) {
   if (has_bulk_emails) { score += 40; reasons.push("bulk email addresses (" + email_matches.length + ")"); }
 
   // Entropy / pattern scoring
-  if (has_base64 && entropy > 4.5) { score += 45; reasons.push("high-entropy base64"); }
+  // Public keys are not sensitive — skip high-entropy scoring for public-key-only blobs
+  var is_public_key_only = /-----BEGIN\s+(?:RSA\s+|EC\s+)?PUBLIC\s+KEY-----/i.test(tn)
+    && !/-----BEGIN\s+(?:RSA\s+|EC\s+|OPENSSH\s+)?PRIVATE\s+KEY-----/i.test(tn);
+  if (has_base64 && entropy > 4.5 && !is_public_key_only) { score += 45; reasons.push("high-entropy base64"); }
   if (ngram_score > 2)   { score += 20; reasons.push("suspicious keywords"); }
   if (keyword_hits >= 3) { score += 15; reasons.push("multiple secret keywords"); }
   if (entropy > 5.0 && special_ratio > 0.2) { score += 10; reasons.push("high entropy + special chars"); }
@@ -551,13 +803,25 @@ function classify(text) {
     score += 25; reasons.push("high-entropy unknown content");
   }
 
-  // ── LAYER 2: Multi-tier interdependence bonus ──
-  var unique_tiers = {};
-  for (var ti = 0; ti < tiers_triggered.length; ti++) {
-    unique_tiers[tiers_triggered[ti].split(":")[0]] = true;
+  // ── PPP #19 LanzaTech: Encoded payload detection ──
+  var transforms = lanzatechTransform(t);
+  if (transforms.length > 0) {
+    score += 55; reasons.push("encoded payload (" + transforms.join(", ") + ")");
+    tiers_triggered.push("T1:encoded");
   }
-  var tier_count = Object.keys(unique_tiers).length;
-  if (tier_count >= 2) { score += 5; reasons.push("multi-tier corroboration"); }
+
+  // ── PPP #2 Beeodiversity: PII co-occurrence multiplier (replaces flat +5) ──
+  var beeBoost = beeodiversityBoost(tiers_triggered, score);
+  if (beeBoost.score > 0) { score += beeBoost.score; reasons.push(beeBoost.reason); }
+
+  // ── PPP #18 Soil Security: Weak-signal aggregation ──
+  var soil = soilSecurityAggregate(tn, reasons);
+  if (soil.score > 0) { score += soil.score; reasons.push("personal dossier (" + soil.signals.join("+") + ")"); }
+
+  // ── PPP #6 Fungi: Cross-line correlation ──
+  var fungi = fungiCorrelation(tn);
+  if (fungi.correlations > 0) { score += fungi.correlations * 8; reasons.push("cross-line correlation"); }
+  if (fungi.assembledCC) { score += 70; reasons.push("assembled credit card"); tiers_triggered.push("T1:cc_assembled"); }
 
   // ── LAYER 1: Pattern confidence boost ──
   var confBoost = patternConfidenceBoost(reasons);
@@ -572,6 +836,17 @@ function classify(text) {
 
   // Normalize to 0-100
   score = Math.max(0, Math.min(100, score));
+
+  // ── PPP #17 Breathe Easy: Noise filtering (WARN band only, never >= 80) ──
+  var breathe = breatheEasyFilter(lower, reasons, score);
+  if (breathe.discount < 1.0) {
+    score = Math.round(score * breathe.discount);
+    // "Cautionary" context (DO NOT COMMIT, WARNING) shouldn't silence real assignments —
+    // developers often write such notes next to actual credentials in code/comments.
+    // Educational context (Example:, demo) still silences freely (genuine examples).
+    if (has_password_assign && score < 40 && breathe.context === "cautionary") { score = 40; }
+    reasons.push("noise-filtered (" + breathe.context + ")");
+  }
 
   // Decision
   var decision = "ALLOW";
@@ -651,6 +926,32 @@ function selfTest() {
   // v3.3: L33t speak bypass resistance — p@$$port should still detect
   var t15 = classify("p@$$port No AB1234567");
   results.push({ name: "l33t_bypass", pass: t15.decision === "DENY" });
+  // v3.4: Moat I — String concatenation bypass detection
+  var t16 = classify("var x = 'pass' + 'word' + '123'");
+  results.push({ name: "concat_bypass", pass: t16.risk >= 40 });
+  // v3.5 PPP #2: Beeodiversity — co-occurrence of SSN + passport should amplify risk
+  var t17 = classify("SSN: 123-45-6789 and Passport No AB1234567");
+  results.push({ name: "beeodiversity_cooccur", pass: t17.risk >= 95 });
+  // v3.5 PPP #6: Fungi — CC number split across lines
+  var t18 = classify("My credit card:\n\nthe number is\n4111\n1111\n1111\n1111");
+  results.push({ name: "fungi_split_detect", pass: t18.risk >= 40 });
+  // v3.5 PPP #19: LanzaTech — base64-encoded password detection
+  var t19 = classify("config: cGFzc3dvcmQ9bXlTZWNyZXQxMjM=");
+  results.push({ name: "lanzatech_b64", pass: t19.risk >= 40 });
+  // v3.5 PPP #18: Soil Security — personal dossier with weak signals
+  var t20 = classify("John Smith\n123 Main St, Springfield\n(555) 123-4567\nDOB: 03/15/1985");
+  results.push({ name: "soil_weak_signals", pass: t20.risk >= 30 });
+  // v3.5 PPP #17: Breathe Easy — educational context should reduce FP
+  var t21 = classify("Example: password format is password=value");
+  results.push({ name: "breathe_easy_filter", pass: t21.risk < 40 });
+  // v3.5 PPP #17: Breathe Easy — real password must still trigger
+  var t22 = classify("password=myActualS3cretKey123!");
+  results.push({ name: "breathe_real_pass", pass: t22.risk >= 40 });
+  // v3.5 PPP #22: Aboriginal Fire — pattern stats include lastSeen
+  updatePatternStat("_test_fire_decay", true);
+  var _fireCheck = patternStats["_test_fire_decay"];
+  results.push({ name: "fire_decay_ts", pass: _fireCheck && _fireCheck.lastSeen > 0 });
+  delete patternStats["_test_fire_decay"];
   return {
     passed: results.filter(function(r) { return r.pass; }).length,
     total: results.length,
@@ -676,6 +977,8 @@ if (typeof module !== 'undefined' && module.exports) {
     djb2Hash, fnv1aHash, generateDetectionProof, constantTimeEqual,
     detectPlatform, getPatternStats, patternConfidenceBoost, computePatternHash,
     verifyPatternIntegrity, selfTest, luhnCheck, normalizeHomoglyphs,
-    checkBehavioral, PATTERN_VERSION, DECISION_MODE, FEATURES
+    checkBehavioral, detectStringConcatBypass,
+    lanzatechTransform, beeodiversityBoost, soilSecurityAggregate, fungiCorrelation, breatheEasyFilter,
+    PATTERN_VERSION, DECISION_MODE, FEATURES
   };
 }

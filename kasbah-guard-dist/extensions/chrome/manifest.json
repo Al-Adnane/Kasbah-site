@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Kasbah Guard",
-  "version": "1.2.0",
-  "description": "Local-first guard that intercepts prompts and actions on AI chat services to prevent leaks and enforce user control.",
+  "name": "__MSG_extensionName__",
+  "version": "1.0.0",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
   "permissions": [
     "storage",
     "activeTab"

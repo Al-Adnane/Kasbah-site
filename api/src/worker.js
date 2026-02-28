@@ -757,6 +757,52 @@ function flattenObject(obj, prefix = '') {
 
 // ── Main router ──
 
+// ══════════════════════════════════════════════════════════════
+// Moat F (Mirror): System Integrity Index — JS mirror of integrity.rs
+// Formula: I(t) = hook^0.30 × pattern^0.30 × session^0.25 × latency^0.15
+// Used server-side to compute API health score without Rust/WASM.
+// ══════════════════════════════════════════════════════════════
+function computeSII(hookInt, patternInt, sessionHealth, latencyNorm) {
+  return Math.pow(hookInt, 0.30) * Math.pow(patternInt, 0.30)
+       * Math.pow(sessionHealth, 0.25) * Math.pow(latencyNorm, 0.15);
+}
+
+// ══════════════════════════════════════════════════════════════
+// Moat O (Mirror): Three-Gate Policy Check — JS mirror of gate.rs
+// R_MIN=0.72 (reliability), B_MAX=0.18 (brittleness), H_MAX=0.35 (harm)
+// ══════════════════════════════════════════════════════════════
+const R_MIN = 0.72, B_MAX = 0.18, H_MAX = 0.35;
+function apiGateCheck(reliability, brittleness, harm) {
+  if (reliability < R_MIN) return { pass: false, gate: 'reliability', value: reliability, threshold: R_MIN };
+  if (brittleness > B_MAX) return { pass: false, gate: 'brittleness', value: brittleness, threshold: B_MAX };
+  if (harm > H_MAX)        return { pass: false, gate: 'harm',        value: harm,        threshold: H_MAX };
+  return { pass: true };
+}
+
+// ══════════════════════════════════════════════════════════════
+// Lightweight request body risk scan (Moat I mirror for API layer)
+// Detects credential leaks in API request bodies — adds X-Kasbah-Risk header.
+// NEVER blocks requests — informational only (no /decide endpoint).
+// ══════════════════════════════════════════════════════════════
+const _API_RISK_RE = [
+  /\bAKIA[0-9A-Z]{16}\b/,                                        // AWS key
+  /\bghp_[A-Za-z0-9]{36,}\b/,                                    // GitHub PAT
+  /\bsk-[A-Za-z0-9\-_]{20,}\b/,                                  // OpenAI key
+  /\bBearer\s+[A-Za-z0-9_\-\.]{20,}\b/i,                        // Bearer token
+  /-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----/,                  // Private key
+  /\b(?:mongodb|postgres(?:ql)?|mysql|redis):\/\/[^\s"'<>]{10,}/, // Conn string
+  /\b(?!000|666|9\d{2})\d{3}[-\s]\d{2}[-\s]\d{4}\b/,           // SSN
+];
+function scanRequestRisk(body) {
+  if (!body || typeof body !== 'string' || body.length > 8192) return 0;
+  let score = 0;
+  for (let i = 0; i < _API_RISK_RE.length; i++) {
+    if (_API_RISK_RE[i].test(body)) score += 40;
+    if (score >= 100) break;
+  }
+  return Math.min(score, 100);
+}
+
 export default {
   async fetch(request, env, ctx) {
     // Handle CORS preflight
@@ -768,39 +814,72 @@ export default {
     const path = url.pathname;
     const method = request.method;
 
+    // Moat I (API mirror): scan POST body for credential risk — attach header, never block
+    let _bodyRisk = 0;
+    let _clonedRequest = request;
+    if (method === 'POST' && path !== '/stripe/webhook') {
+      try {
+        const clone = request.clone();
+        const bodyText = await clone.text();
+        _bodyRisk = scanRequestRisk(bodyText);
+        // Reconstruct request with original body intact
+        _clonedRequest = new Request(request.url, { method: request.method, headers: request.headers, body: bodyText });
+      } catch (_) {}
+    }
+
     try {
+      let response;
+
       if (method === 'POST' && path === '/auth/register') {
-        return await handleRegister(request, env);
-      }
-      if (method === 'POST' && path === '/auth/verify') {
-        return await handleVerify(request, env);
-      }
-      if (method === 'POST' && path === '/auth/resend') {
-        return await handleResend(request, env);
-      }
-      if (method === 'POST' && path === '/auth/login') {
-        return await handleLogin(request, env);
-      }
-      if (method === 'GET' && path === '/auth/me') {
-        return await handleMe(request, env);
-      }
-      if (method === 'POST' && path === '/auth/logout') {
-        return await handleLogout(request, env);
-      }
-      if (method === 'GET' && path === '/auth/stats') {
-        return await handleStats(env);
-      }
-      if (method === 'POST' && path === '/stripe/checkout-session') {
-        return await handleStripeCheckout(request, env);
-      }
-      if (method === 'POST' && path === '/stripe/webhook') {
-        return await handleStripeWebhook(request, env);
-      }
-      if (method === 'GET' && path === '/health') {
-        return json({ ok: true, service: 'kasbah-api', version: '2.0.0' });
+        response = await handleRegister(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/auth/verify') {
+        response = await handleVerify(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/auth/resend') {
+        response = await handleResend(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/auth/login') {
+        response = await handleLogin(_clonedRequest, env);
+      } else if (method === 'GET' && path === '/auth/me') {
+        response = await handleMe(request, env);
+      } else if (method === 'POST' && path === '/auth/logout') {
+        response = await handleLogout(_clonedRequest, env);
+      } else if (method === 'GET' && path === '/auth/stats') {
+        response = await handleStats(env);
+      } else if (method === 'POST' && path === '/stripe/checkout-session') {
+        response = await handleStripeCheckout(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/stripe/webhook') {
+        response = await handleStripeWebhook(request, env);
+      } else if (method === 'GET' && path === '/health') {
+        // Moat F: SII computed with nominal API health values
+        const sii = computeSII(1.0, 1.0, 1.0, 1.0);
+        const gate = apiGateCheck(1.0, 0.0, 0.0);
+        response = json({
+          ok: true, service: 'kasbah-api', version: '2.0.0',
+          moats: {
+            sii: parseFloat(sii.toFixed(4)),
+            gate: gate.pass,
+            version: 'v1.5.0',
+            techniques: ['moat_f_sii', 'moat_o_gate', 'moat_i_risk_scan'],
+          }
+        });
+      } else if (method === 'POST' && path === '/moat/gate') {
+        // Moat O: Three-gate check endpoint (for integrators / SDK health checks)
+        let body = {};
+        try { body = await _clonedRequest.json(); } catch (_) {}
+        const { reliability = 1.0, brittleness = 0.0, harm = 0.0 } = body;
+        const gate = apiGateCheck(Number(reliability), Number(brittleness), Number(harm));
+        response = json({ ok: true, gate });
+      } else {
+        response = err('Not found', 404);
       }
 
-      return err('Not found', 404);
+      // Moat I: attach X-Kasbah-Risk header when POST body contained suspicious patterns
+      if (_bodyRisk > 0) {
+        const newHeaders = new Headers(response.headers);
+        newHeaders.set('X-Kasbah-Risk', String(_bodyRisk));
+        response = new Response(response.body, { status: response.status, headers: newHeaders });
+      }
+
+      return response;
     } catch (e) {
       return err('Internal error: ' + e.message, 500);
     }

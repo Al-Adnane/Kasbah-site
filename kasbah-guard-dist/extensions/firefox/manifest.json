@@ -1,12 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "Kasbah Guard",
-  "version": "2.0.0",
-  "description": "Local-first guard that intercepts prompts and actions on AI chat services to prevent leaks and enforce user control.",
+  "name": "__MSG_extensionName__",
+  "version": "1.0.0",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
   "browser_specific_settings": {
     "gecko": {
       "id": "guard@bekasbah.com",
-      "strict_min_version": "109.0"
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "websiteContent"
+        ]
+      }
     }
   },
   "permissions": [

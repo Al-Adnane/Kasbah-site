@@ -26,6 +26,35 @@
 
   const DENY = "DENY";
 
+  // ── Same-site bypass: never block requests to the site you're already on ─
+  // Rationale: if you're on chatgpt.com, requests to chatgpt.com and
+  // ab.chatgpt.com are NOT exfiltration — the site already has access.
+  // Only CROSS-ORIGIN requests to third-party domains need scanning.
+  const _currentHost = location.hostname;    // e.g. "chatgpt.com"
+  const _currentOrigin = location.origin;    // e.g. "https://chatgpt.com"
+  // Extract registrable domain (eTLD+1): "ab.chatgpt.com" → "chatgpt.com"
+  function _getBaseDomain(hostname) {
+    const parts = hostname.split(".");
+    if (parts.length <= 2) return hostname;
+    return parts.slice(-2).join(".");
+  }
+  const _baseDomain = _getBaseDomain(_currentHost);
+
+  function _isSameSite(urlStr) {
+    try {
+      // Handle relative URLs
+      if (urlStr.startsWith("/") || urlStr.startsWith("./")) return true;
+      const u = new URL(urlStr, _currentOrigin);
+      // Same origin is always safe
+      if (u.origin === _currentOrigin) return true;
+      // Same base domain is safe (subdomains like ab.chatgpt.com)
+      if (_getBaseDomain(u.hostname) === _baseDomain) return true;
+      return false;
+    } catch {
+      return false; // If URL can't be parsed, treat as cross-origin → scan it
+    }
+  }
+
   // ── MOAT 5: Inline fallback patterns ────────────────────────────────────
   // If detector.js / getDecision() is unavailable for any reason (timing,
   // world mismatch, error), we NEVER fail open. These critical patterns run
@@ -74,7 +103,11 @@
   }
 
   function _s(v) { try { return String(v); } catch { return ""; } }
-  function scanUrl(u)  { return _isDeny(_s(u)); }
+  function scanUrl(u)  {
+    const s = _s(u);
+    if (_isSameSite(s)) return false; // Same-site requests are never exfiltration
+    return _isDeny(s);
+  }
   function scanBody(body) {
     if (body == null) return false;
     if (typeof body === "string")        return _isDeny(body);
@@ -108,13 +141,28 @@
 
   // XHR URL tracking (open() records URL, send() checks it)
   const _xhrUrls = new WeakMap();
+  // WebSocket URL tracking (constructor records URL, send() checks it)
+  const _wsUrls = new WeakMap();
+
+  // ── Approval window: when user clicks "Proceed Anyway" in SEND modal,
+  //    skip body scanning for a short window so the fetch/XHR doesn't
+  //    double-block what the user already approved.
+  // Exposed on window so the second IIFE (Sovereign Intent Layer) can set it.
+  window.__kasbah_approved_until = 0;
 
   // ── Hook implementations ─────────────────────────────────────────────────
 
-  // E1: fetch()
+  // E1: fetch() — handle both string URLs and Request objects
   function _hFetch(input, init) {
-    if (scanUrl(input))              block("fetch:url");
-    if (init && scanBody(init.body)) block("fetch:body");
+    // Extract URL from Request objects (String(request) gives "[object Request]")
+    const url = (input instanceof Request) ? input.url : _s(input);
+    if (!_isSameSite(url)) {
+      if (scanUrl(url)) block("fetch:url");
+      // Body scan: skip for same-site, skip during approval window
+      const body = (init && init.body) || (input instanceof Request ? input.body : undefined);
+      if (Date.now() < window.__kasbah_approved_until) { /* User approved via modal — skip body scan */ }
+      else if (scanBody(body)) block("fetch:body");
+    }
     return _origFetch.apply(this, arguments);
   }
 
@@ -127,23 +175,35 @@
   // E2b: XHR.send() — scan URL + body
   function _hXhrSend(body) {
     const url = _xhrUrls.get(this) || "";
-    if (url && scanUrl(url)) block("xhr:url");
-    let _f = false;
-    try { if (scanBody(body)) _f = true; } catch {}
-    if (_f) block("xhr:body");
+    if (url && !_isSameSite(url)) {
+      if (scanUrl(url)) block("xhr:url");
+      if (Date.now() < window.__kasbah_approved_until) { /* User approved via modal */ }
+      else {
+        let _f = false;
+        try { if (scanBody(body)) _f = true; } catch {}
+        if (_f) block("xhr:body");
+      }
+    }
     return _origXhrSend.apply(this, arguments);
   }
 
   // E3: sendBeacon()
+  // Beacons are fire-and-forget analytics pings. Only block if the body
+  // contains CRITICAL patterns (SSN, CC, private keys). Skip the full
+  // classifier to avoid false positives on analytics session tokens.
   function _hBeacon(url, data) {
-    if (scanUrl(url))   block("beacon:url");
-    if (scanBody(data)) block("beacon:body");
+    if (scanUrl(url)) block("beacon:url");
+    // For beacon bodies, only use fallback (critical) patterns —
+    // the full classifier triggers on analytics tokens/session IDs
+    const body = _s(data);
+    if (body && _fallbackDeny(body)) block("beacon:body");
     return _origBeacon(url, data);
   }
 
-  // E4: WebSocket.prototype.send()
+  // E4: WebSocket.prototype.send() — with same-site bypass
   function _hWsSend(data) {
-    if (_isDeny(_s(data))) block("ws:send");
+    const wsUrl = _wsUrls.get(this) || "";
+    if (!_isSameSite(wsUrl) && _isDeny(_s(data))) block("ws:send");
     return _origWsSend.apply(this, arguments);
   }
 
@@ -154,6 +214,8 @@
     const ws = (protocols !== undefined)
       ? new _origWsCtor(url, protocols)
       : new _origWsCtor(url);
+    // Track URL so _hWsSend can do same-site bypass
+    _wsUrls.set(ws, _s(url));
     return ws;
   }
   _hWsCtor.prototype = _origWsCtor.prototype;
@@ -220,7 +282,9 @@
     const tag = (node.tagName || "").toLowerCase();
     if (tag === "img" || tag === "script" || tag === "iframe" || tag === "link") {
       const src = node.src || node.href || "";
-      if (src && scanUrl(src)) {
+      if (!src) return;
+      if (_isSameSite(src)) return; // Same-site resources are never exfiltration
+      if (scanUrl(src)) {
         try { node.src = ""; node.href = ""; } catch {}
         node.remove();
         console.warn("[Kasbah Guard] Blocked src-exfil:", tag, src.slice(0, 80));
@@ -247,17 +311,41 @@
   if (document.documentElement) { _startMO(); }
   else { document.addEventListener("DOMContentLoaded", _startMO, { once: true }); }
 
-  // ── MOAT 4: Self-healing — re-lock hooks every 3 s ──────────────────────
-  // If a page script somehow unwraps our hooks, we restore them.
+  // ── MOAT 4 + MOAT B: Self-healing with tamper detection ──────────────
+  // Enhanced integrity monitor: detects, logs, counts, and re-locks
+  // tampered hooks. Verifies both value AND property descriptor flags
+  // (configurable/writable) to catch sophisticated prototype attacks.
+  let _tamperCount = 0;
+
+  function _verifyHook(obj, prop, expected, label) {
+    let tampered = false;
+    if (obj[prop] !== expected) {
+      tampered = true;
+    } else {
+      // Deep check: verify descriptor hasn't been weakened
+      try {
+        const desc = Object.getOwnPropertyDescriptor(obj, prop);
+        if (desc && (desc.configurable === true || desc.writable === true)) {
+          tampered = true;
+        }
+      } catch {}
+    }
+    if (tampered) {
+      _tamperCount++;
+      console.warn("[Kasbah Guard] Hook tamper detected:", label, "— re-locking (attempt #" + _tamperCount + ")");
+      _lock(obj, prop, expected);
+    }
+  }
+
   setInterval(() => {
-    if (window.fetch       !== _hFetch)      _lock(window,                    "fetch",       _hFetch);
-    if (window.WebSocket   !== _hWsCtor)     _lock(window,                    "WebSocket",   _hWsCtor);
-    if (window.open        !== _hOpen)       _lock(window,                    "open",        _hOpen);
-    if (_origBeacon && navigator.sendBeacon !== _hBeacon) _lock(navigator, "sendBeacon", _hBeacon);
-    if (XMLHttpRequest.prototype.send   !== _hXhrSend)  _lock(XMLHttpRequest.prototype,  "send",   _hXhrSend);
-    if (XMLHttpRequest.prototype.open   !== _hXhrOpen)  _lock(XMLHttpRequest.prototype,  "open",   _hXhrOpen);
-    if (WebSocket.prototype.send        !== _hWsSend)   _lock(WebSocket.prototype,       "send",   _hWsSend);
-    if (HTMLFormElement.prototype.submit !== _hFormSubmit) _lock(HTMLFormElement.prototype, "submit", _hFormSubmit);
+    _verifyHook(window,                    "fetch",       _hFetch,       "window.fetch");
+    _verifyHook(window,                    "WebSocket",   _hWsCtor,      "window.WebSocket");
+    _verifyHook(window,                    "open",        _hOpen,        "window.open");
+    if (_origBeacon) _verifyHook(navigator, "sendBeacon", _hBeacon,      "navigator.sendBeacon");
+    _verifyHook(XMLHttpRequest.prototype,  "send",        _hXhrSend,    "XHR.send");
+    _verifyHook(XMLHttpRequest.prototype,  "open",        _hXhrOpen,    "XHR.open");
+    _verifyHook(WebSocket.prototype,       "send",        _hWsSend,     "WS.send");
+    _verifyHook(HTMLFormElement.prototype,  "submit",      _hFormSubmit, "Form.submit");
   }, 3000);
 
   // ── MOAT 14: Cross-Context Interception ────────────────────────────────
@@ -581,6 +669,8 @@
     }
 
     var toast = document.createElement("div");
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "polite");
     var bgColor = isError ? 'rgba(220,38,38,.96)' : 'rgba(24,24,27,.96)';
     var borderColor = isError ? 'rgba(239,68,68,.4)' : 'rgba(255,255,255,.1)';
     var shadowColor = isError ? 'rgba(220,38,38,.3)' : 'rgba(0,0,0,.3)';
@@ -591,7 +681,7 @@
     var iconBg = isError ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.15)';
     icon.style.cssText = "width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:" + iconBg + ";color:#fff;padding:4px";
     // Kasbah fortress SVG logo (matches brand identity)
-    icon.innerHTML = '<svg viewBox="0 0 100 100" width="24" height="24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g><path d="M 20 40 L 30 20 L 40 35 L 40 55"/><path d="M 50 30 L 60 12 L 70 30 L 70 55"/><path d="M 80 40 L 90 20 L 98 35 L 98 55"/><path d="M 15 58 L 98 58 L 98 75 L 15 75 Z"/><line x1="35" y1="58" x2="35" y2="75"/><line x1="55" y1="58" x2="55" y2="75"/><line x1="75" y1="58" x2="75" y2="75"/></g></svg>';
+    try { icon.innerHTML = '<svg viewBox="0 0 100 100" width="24" height="24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g><path d="M 20 40 L 30 20 L 40 35 L 40 55"/><path d="M 50 30 L 60 12 L 70 30 L 70 55"/><path d="M 80 40 L 90 20 L 98 35 L 98 55"/><path d="M 15 58 L 98 58 L 98 75 L 15 75 Z"/><line x1="35" y1="58" x2="35" y2="75"/><line x1="55" y1="58" x2="55" y2="75"/><line x1="75" y1="58" x2="75" y2="75"/></g></svg>'; } catch(e) { icon.textContent = "\uD83C\uDFF0"; }
     toast.appendChild(icon);
 
     var textWrap = document.createElement("div");
@@ -762,9 +852,13 @@
     };
 
     var overlay = document.createElement("div");
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "Kasbah Guard — sensitive data review");
     overlay.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)";
 
     var card = document.createElement("div");
+    card.setAttribute("role", "document");
     card.style.cssText = "width:min(520px,94vw);background:#fafaf9;border:1px solid #e4e4e7;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.2),0 0 1px rgba(0,0,0,.1);overflow:hidden";
 
     // Header with Kasbah fortress red accent
@@ -776,7 +870,7 @@
     // Kasbah fortress logo (SVG)
     var mark = document.createElement("div");
     mark.style.cssText = "width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#dc2626,#991b1b);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;padding:4px;box-shadow:0 2px 8px rgba(220,38,38,.3)";
-    mark.innerHTML = '<svg viewBox="0 0 100 100" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><g><path d="M 20 40 L 30 20 L 40 35 L 40 55"/><path d="M 50 30 L 60 12 L 70 30 L 70 55"/><path d="M 80 40 L 90 20 L 98 35 L 98 55"/><path d="M 15 58 L 98 58 L 98 75 L 15 75 Z"/><line x1="35" y1="58" x2="35" y2="75"/><line x1="55" y1="58" x2="55" y2="75"/><line x1="75" y1="58" x2="75" y2="75"/></g></svg>';
+    try { mark.innerHTML = '<svg viewBox="0 0 100 100" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><g><path d="M 20 40 L 30 20 L 40 35 L 40 55"/><path d="M 50 30 L 60 12 L 70 30 L 70 55"/><path d="M 80 40 L 90 20 L 98 35 L 98 55"/><path d="M 15 58 L 98 58 L 98 75 L 15 75 Z"/><line x1="35" y1="58" x2="35" y2="75"/><line x1="55" y1="58" x2="55" y2="75"/><line x1="75" y1="58" x2="75" y2="75"/></g></svg>'; } catch(e) { mark.textContent = "\uD83C\uDFF0"; }
     brand.appendChild(mark);
 
     var bname = document.createElement("span");
@@ -883,12 +977,55 @@
     allowBtn.onmousedown = function () { allowBtn.style.transform = "scale(.96)"; };
     allowBtn.onmouseup = function () { allowBtn.style.transform = ""; };
 
+    // Bulletproof overlay removal — called by every dismiss path
+    var dismissed = false;
+    function dismissOverlay() {
+      if (dismissed) return;
+      dismissed = true;
+      overlay.style.pointerEvents = "none";
+      overlay.style.opacity = "0";
+      overlay.style.transition = "opacity .15s ease";
+      setTimeout(function () {
+        try { overlay.remove(); } catch(e) {}
+      }, 200);
+    }
+
     blockBtn.onclick = function () {
-      try { if (onBlock) onBlock(); } finally { overlay.remove(); }
+      try { if (onBlock) onBlock(); } catch(e) { console.error("[Kasbah] onBlock error:", e); }
+      dismissOverlay();
     };
     allowBtn.onclick = function () {
-      try { if (onAllow) onAllow(); } finally { overlay.remove(); }
+      try { if (onAllow) onAllow(); } catch(e) { console.error("[Kasbah] onAllow error:", e); }
+      dismissOverlay();
     };
+
+    // Safety: click backdrop (outside card) → dismiss as block
+    overlay.onclick = function (e) {
+      if (e.target === overlay) {
+        try { if (onBlock) onBlock(); } catch(e2) {}
+        dismissOverlay();
+      }
+    };
+
+    // Safety: Escape key → dismiss as block
+    var escHandler = function (e) {
+      if (e.key === "Escape") {
+        try { if (onBlock) onBlock(); } catch(e2) {}
+        dismissOverlay();
+        document.removeEventListener("keydown", escHandler, true);
+      }
+    };
+    document.addEventListener("keydown", escHandler, true);
+
+    // Safety: auto-dismiss after 30 seconds (fail-safe against frozen UI)
+    setTimeout(function () {
+      if (!dismissed) {
+        console.warn("[Kasbah] Modal auto-dismissed after 30s safety timeout");
+        try { if (onBlock) onBlock(); } catch(e) {}
+        dismissOverlay();
+      }
+      document.removeEventListener("keydown", escHandler, true);
+    }, 30000);
 
     row.appendChild(allowBtn);  // ghost — left
     row.appendChild(blockBtn);  // primary red — right
@@ -911,6 +1048,11 @@
     if (verb === "upload" && extraMeta && extraMeta.sensitive_filenames && extraMeta.sensitive_filenames.length > 0) {
       console.log("[Kasbah] guardFlow - UPLOAD with sensitive filenames:", extraMeta.sensitive_filenames);
       res = { decision: "DENY", risk: 80, reason: "Sensitive document detected: " + extraMeta.sensitive_filenames.join(", ") };
+    }
+    // UPLOAD escalation: uploads are irreversible — any suspicion must block
+    if (verb === "upload" && res.decision !== "DENY" && res.risk >= 30) {
+      console.log("[Kasbah] Upload escalation: risk", res.risk, "→ DENY (uploads are high-stakes)");
+      res = { decision: "DENY", risk: Math.max(res.risk, 70), reason: (res.reason || "Suspicious content") + " — upload requires review" };
     }
     console.log("[Kasbah] guardFlow - verb:", verb, "decision:", res.decision, "risk:", res.risk);
 
@@ -986,6 +1128,8 @@
         preview: text.slice(0, 400),
         verb: verb,
         onAllow: function () {
+          // Set approval window so egress gate doesn't double-block
+          window.__kasbah_approved_until = Date.now() + 5000;
           try {
             var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
             logs.push({
@@ -1166,6 +1310,8 @@
         preview: msg.slice(0, 400),
         verb: "send",
         onAllow: function () {
+          // Set approval window so egress gate doesn't double-block
+          window.__kasbah_approved_until = Date.now() + 5000;
           // Log to localStorage
           try {
             var logs = JSON.parse(localStorage.getItem('kasbah_logs') || '[]');
@@ -1201,6 +1347,37 @@
         return;
       }
 
+      // Check for pasted images (screenshots of passports, IDs, etc.)
+      if (ev.clipboardData && ev.clipboardData.items) {
+        for (var ci = 0; ci < ev.clipboardData.items.length; ci++) {
+          var item = ev.clipboardData.items[ci];
+          if (item.type && item.type.indexOf("image") !== -1) {
+            var imgFile = item.getAsFile();
+            if (imgFile) {
+              ev.preventDefault();
+              ev.stopImmediatePropagation();
+              var imgName = imgFile.name || "pasted-image." + (imgFile.type.split("/")[1] || "png");
+              var imgMeta = { file_count: 1, total_size: imgFile.size, file_names: [imgName], sensitive_filenames: [], source: "clipboard-image" };
+              console.log("[Kasbah] Pasted image intercepted:", imgName, imgFile.type, imgFile.size + " bytes");
+              guardFlow("upload", "Pasted image: " + imgName + " (" + (imgFile.size / 1024).toFixed(1) + "KB, " + imgFile.type + ")", imgMeta,
+                function () {
+                  // Allow: write image back and re-paste
+                  try {
+                    document[PASTE_FLAG] = true;
+                    // Can't replay image paste reliably — tell user to paste again
+                    showToast("✓ Approved — paste the image again (Ctrl+V)", false, "upload");
+                  } catch(e) {}
+                },
+                function () {
+                  showToast("✓ Image upload blocked — your data stayed on your device.", true, "upload");
+                }
+              );
+              return;
+            }
+          }
+        }
+      }
+
       var clipText = "";
       if (ev.clipboardData) {
         clipText = ev.clipboardData.getData("text") || "";
@@ -1212,11 +1389,11 @@
       // Use unified detector to classify clipboard content
       var res = typeof classify !== 'undefined' ? classify(clipText) : { decision: "ALLOW", risk: 0 };
 
-      // For SILENT/ALLOW with no long text, let it through without interception
-      if (res.decision === "ALLOW" && clipText.length < 2500) return;
+      // For SILENT/ALLOW, let it through without interception (any length)
+      if (res.decision === "ALLOW") return;
 
       ev.preventDefault();
-      ev.stopPropagation();
+      ev.stopImmediatePropagation();
 
       // L6: Fail-closed check
       if (failClosedCheck("paste", null)) return;
@@ -1225,19 +1402,61 @@
 
       guardFlow("paste", clipText, { source: "clipboard", detected_risk: res.risk, detected_reason: res.reason },
         function () {
-          // Allow: re-paste by inserting text directly
-          if (activeEl) {
-            if (activeEl.isContentEditable || (activeEl.closest && activeEl.closest('[contenteditable="true"]'))) {
-              document.execCommand("insertText", false, clipText);
-            } else if (activeEl.tagName === "TEXTAREA" || activeEl.tagName === "INPUT") {
-              var start = activeEl.selectionStart || 0;
-              var end = activeEl.selectionEnd || 0;
-              var val = activeEl.value || "";
-              activeEl.value = val.slice(0, start) + clipText + val.slice(end);
-              activeEl.selectionStart = activeEl.selectionEnd = start + clipText.length;
-              activeEl.dispatchEvent(new Event("input", { bubbles: true }));
-            }
-          }
+          // Allow: re-focus and re-paste after modal dismissal
+          // Must delay because focus is on the modal until it's removed
+          setTimeout(function () {
+            try {
+              // Re-focus the original element
+              if (activeEl) activeEl.focus();
+            } catch(e) {}
+
+            // Give focus time to settle, then insert
+            setTimeout(function () {
+              var el = activeEl || document.activeElement;
+              if (!el) return;
+
+              var inserted = false;
+
+              // Method 1: contenteditable (ChatGPT, Claude, DeepSeek, etc.)
+              if (el.isContentEditable || (el.closest && el.closest('[contenteditable="true"]'))) {
+                var editableEl = el.isContentEditable ? el : el.closest('[contenteditable="true"]');
+                try { editableEl.focus(); } catch(e) {}
+                // Place cursor at end if selection is outside
+                var sel = window.getSelection();
+                if (!sel || !editableEl.contains(sel.anchorNode)) {
+                  var range = document.createRange();
+                  range.selectNodeContents(editableEl);
+                  range.collapse(false);
+                  sel = window.getSelection();
+                  sel.removeAllRanges();
+                  sel.addRange(range);
+                }
+                inserted = document.execCommand("insertText", false, clipText);
+              }
+
+              // Method 2: textarea/input
+              if (!inserted && (el.tagName === "TEXTAREA" || el.tagName === "INPUT")) {
+                var start = el.selectionStart || 0;
+                var end = el.selectionEnd || 0;
+                var val = el.value || "";
+                el.value = val.slice(0, start) + clipText + val.slice(end);
+                el.selectionStart = el.selectionEnd = start + clipText.length;
+                el.dispatchEvent(new Event("input", { bubbles: true }));
+                inserted = true;
+              }
+
+              // Method 3: last resort — write to clipboard, tell user to re-paste
+              if (!inserted) {
+                try {
+                  navigator.clipboard.writeText(clipText).then(function() {
+                    showToast("✓ Approved — press Ctrl+V to paste", false, "paste");
+                  });
+                } catch(e) {
+                  showToast("✓ Approved — press Ctrl+V to paste", false, "paste");
+                }
+              }
+            }, 50);
+          }, 50);
         },
         function () { /* Block: do nothing, paste prevented */ }
       );
@@ -1260,7 +1479,7 @@
         return;
       }
       if (target.__kasbah_allowed) {
-        console.log("[Kasbah] Upload - already allowed");
+        console.log("[Kasbah] Upload - already allowed, releasing");
         target.__kasbah_allowed = false;
         return;
       }
@@ -1268,122 +1487,117 @@
       var files = target.files;
       if (!files || files.length === 0) return;
 
+      // ═══ FAIL-CLOSED: Immediately seize files and kill event propagation ═══
+      // This MUST happen synchronously before ANY async work (FileReader, modal).
+      // Without this, the web app receives the change event and uploads the files
+      // before our scan/modal finishes — the race condition that broke blocking.
+      ev.stopImmediatePropagation();
+
+      // Save files into a DataTransfer so we can restore them if user approves
+      var savedDT = new DataTransfer();
+      for (var si = 0; si < files.length; si++) {
+        savedDT.items.add(files[si]);
+      }
+      var savedFileList = savedDT.files; // Keep a reference to the saved FileList
+      console.log("[Kasbah] Upload - SEIZED " + files.length + " file(s), event propagation stopped");
+
+      // Clear the input immediately — web app sees empty input if it somehow reads it
+      target.value = "";
+
+      // Now build metadata from the saved files (not from target.files which is now empty)
       var fileList = [];
       var totalSize = 0;
       var sensitiveDocNames = [];
-      for (var i = 0; i < files.length; i++) {
-        fileList.push(files[i].name + " (" + (files[i].size / 1024).toFixed(1) + "KB, " + (files[i].type || "unknown") + ")");
-        totalSize += files[i].size;
-        if (detectSensitiveFilename(files[i].name)) {
-          sensitiveDocNames.push(files[i].name);
+      for (var i = 0; i < savedFileList.length; i++) {
+        fileList.push(savedFileList[i].name + " (" + (savedFileList[i].size / 1024).toFixed(1) + "KB, " + (savedFileList[i].type || "unknown") + ")");
+        totalSize += savedFileList[i].size;
+        if (detectSensitiveFilename(savedFileList[i].name)) {
+          sensitiveDocNames.push(savedFileList[i].name);
         }
       }
 
       var previewText = "Files: " + fileList.join(", ");
-      // If sensitive filename detected, add context so guard and local scanner both flag it
       console.log("[Kasbah] Upload - Detected sensitive files:", sensitiveDocNames);
       if (sensitiveDocNames.length > 0) {
         console.log("[Kasbah] Upload - SENSITIVE FILENAMES DETECTED:", sensitiveDocNames);
         previewText += "\nThis looks like a personal document: " + sensitiveDocNames.join(", ");
       }
       var extraMeta = {
-        file_count: files.length,
+        file_count: savedFileList.length,
         total_size: totalSize,
         file_names: fileList,
         sensitive_filenames: sensitiveDocNames,
       };
 
+      // Helper: restore files to input and re-dispatch change event (user approved)
+      function restoreAndAllow() {
+        target.files = savedDT.files;
+        target.__kasbah_allowed = true;
+        target.dispatchEvent(new Event("change", { bubbles: true }));
+        console.log("[Kasbah] Upload - APPROVED, files restored and change re-dispatched");
+      }
+
+      // Helper: keep input cleared (user blocked or auto-denied)
+      function keepBlocked() {
+        target.value = "";
+        console.log("[Kasbah] Upload - BLOCKED, files destroyed");
+      }
+
       // L6: Fail-closed check
-      if (failClosedCheck("upload", function () { target.value = ""; })) return;
+      if (failClosedCheck("upload", keepBlocked)) return;
 
       // L3: Scan text-based file contents for secrets before uploading
-      var savedFiles = target.files;
       var textTypes = ["text/", "application/json", "application/xml", "application/csv", "application/javascript"];
       var filesToScan = [];
-      for (var fi = 0; fi < files.length; fi++) {
-        var fType = (files[fi].type || "").toLowerCase();
-        var fName = (files[fi].name || "").toLowerCase();
+      for (var fi = 0; fi < savedFileList.length; fi++) {
+        var fType = (savedFileList[fi].type || "").toLowerCase();
+        var fName = (savedFileList[fi].name || "").toLowerCase();
         var isText = textTypes.some(function (t) { return fType.indexOf(t) !== -1; });
         var isTextExt = fName.endsWith(".txt") || fName.endsWith(".csv") || fName.endsWith(".json") || fName.endsWith(".env") || fName.endsWith(".yaml") || fName.endsWith(".yml") || fName.endsWith(".xml") || fName.endsWith(".md") || fName.endsWith(".js") || fName.endsWith(".ts") || fName.endsWith(".py") || fName.endsWith(".sh") || fName.endsWith(".conf") || fName.endsWith(".cfg") || fName.endsWith(".ini") || fName.endsWith(".toml") || fName.endsWith(".log");
-        if ((isText || isTextExt) && files[fi].size < 512000) { // < 500KB
-          filesToScan.push(files[fi]);
+        if ((isText || isTextExt) && savedFileList[fi].size < 512000) {
+          filesToScan.push(savedFileList[fi]);
         }
       }
 
       // If we have sensitive filenames OR text files to scan, enter async scanning
       if (filesToScan.length > 0 || sensitiveDocNames.length > 0) {
-        // Read and scan file contents using unified detector
         var scannedCount = 0;
         var fileRisks = [];
 
-        // If we have text files to scan, process them
         if (filesToScan.length > 0) {
           filesToScan.forEach(function (file) {
             var reader = new FileReader();
             reader.onerror = function () {
-              // File read failed — count as scanned to avoid blocking
               scannedCount++;
               if (scannedCount === filesToScan.length) {
-                guardFlow("upload", previewText, extraMeta,
-                  function () { target.__kasbah_allowed = true; target.dispatchEvent(new Event("change", { bubbles: true })); },
-                  function () { target.value = ""; }
-                );
+                guardFlow("upload", previewText, extraMeta, restoreAndAllow, keepBlocked);
               }
             };
             reader.onload = function (e) {
               var content = e.target.result || "";
               var fileRes = typeof classify !== 'undefined' ? classify(content) : { decision: "ALLOW", risk: 0, reason: "" };
               if (fileRes.risk > 0) {
-                fileRisks.push({
-                  file: file.name,
-                  risk: fileRes.risk,
-                  decision: fileRes.decision,
-                  reason: fileRes.reason
-                });
+                fileRisks.push({ file: file.name, risk: fileRes.risk, decision: fileRes.decision, reason: fileRes.reason });
               }
               scannedCount++;
               if (scannedCount === filesToScan.length) {
-                // All files scanned, now proceed with guardFlow
                 if (fileRisks.length > 0) {
                   extraMeta.file_risks = fileRisks;
                   previewText += "\n\u26a0 File contents flagged: " + fileRisks.map(function (fr) { return fr.file + " (Risk: " + fr.risk + ", " + fr.reason + ")"; }).join("; ");
                 }
-                guardFlow("upload", previewText, extraMeta,
-                  function () {
-                    target.__kasbah_allowed = true;
-                    target.dispatchEvent(new Event("change", { bubbles: true }));
-                  },
-                  function () { target.value = ""; }
-                );
+                guardFlow("upload", previewText, extraMeta, restoreAndAllow, keepBlocked);
               }
             };
             reader.readAsText(file);
           });
         } else if (sensitiveDocNames.length > 0) {
-          // No text files to scan, but we have sensitive filenames - proceed with guardFlow
-          guardFlow("upload", previewText, extraMeta,
-            function () {
-              target.__kasbah_allowed = true;
-              target.dispatchEvent(new Event("change", { bubbles: true }));
-            },
-            function () { target.value = ""; }
-          );
+          guardFlow("upload", previewText, extraMeta, restoreAndAllow, keepBlocked);
         }
         return;
       }
 
-      guardFlow("upload", previewText, extraMeta,
-        function () {
-          // Allow: the files are already selected, let them through
-          // Dispatch a new change event
-          target.__kasbah_allowed = true;
-          target.dispatchEvent(new Event("change", { bubbles: true }));
-        },
-        function () {
-          // Block: clear the file input
-          target.value = "";
-        }
-      );
+      // No sensitive filenames, no text files — still run through guardFlow
+      guardFlow("upload", previewText, extraMeta, restoreAndAllow, keepBlocked);
     },
     true
   );
@@ -1407,19 +1621,26 @@
       var files = dt.files;
       var fileList = [];
       var totalSize = 0;
+      var sensitiveDocNames = [];
       for (var i = 0; i < files.length; i++) {
         fileList.push(files[i].name + " (" + (files[i].size / 1024).toFixed(1) + "KB)");
         totalSize += files[i].size;
+        if (detectSensitiveFilename(files[i].name)) {
+          sensitiveDocNames.push(files[i].name);
+        }
       }
 
       // Only intercept file drops, not text drops
       if (fileList.length === 0) return;
 
       ev.preventDefault();
-      ev.stopPropagation();
+      ev.stopImmediatePropagation();
 
       var previewText = "Dropped files: " + fileList.join(", ");
-      guardFlow("upload", previewText, { file_count: files.length, total_size: totalSize, file_names: fileList, source: "drop" },
+      if (sensitiveDocNames.length > 0) {
+        previewText += "\nThis looks like a personal document: " + sensitiveDocNames.join(", ");
+      }
+      guardFlow("upload", previewText, { file_count: files.length, total_size: totalSize, file_names: fileList, sensitive_filenames: sensitiveDocNames, source: "drop" },
         function () {
           // Allow: set grace window so next drop goes through without re-prompting
           dropApprovedUntil = Date.now() + 10000; // 10 second window
@@ -1429,7 +1650,7 @@
           document.body.appendChild(note);
           setTimeout(function () { note.remove(); }, 5000);
         },
-        function () { /* Block: drop prevented */ }
+        function () { console.log("[Kasbah] Drop BLOCKED — files destroyed"); }
       );
     },
     true
@@ -1662,8 +1883,96 @@
     true
   );
 
+  // ══════════════════════════════════════════════════════════════
+  // INCLUSIVITY: Accessibility Profiles + Voice Alerts + Cultural Context
+  // ══════════════════════════════════════════════════════════════
+
+  // ── Accessibility profile (persisted in localStorage) ──
+  var __kasbah_accessibility = {
+    voiceAlerts: false,
+    highContrast: false,
+    fontSize: 'medium',
+    simplifiedLanguage: false,
+  };
+
+  // Load saved preferences
+  try {
+    var saved = JSON.parse(localStorage.getItem('kasbah_accessibility') || '{}');
+    if (saved.voiceAlerts !== undefined) __kasbah_accessibility.voiceAlerts = saved.voiceAlerts;
+    if (saved.highContrast !== undefined) __kasbah_accessibility.highContrast = saved.highContrast;
+    if (saved.fontSize) __kasbah_accessibility.fontSize = saved.fontSize;
+    if (saved.simplifiedLanguage !== undefined) __kasbah_accessibility.simplifiedLanguage = saved.simplifiedLanguage;
+  } catch(e) {}
+
+  // ── TTS Voice Alerts (Web Speech API) ──
+  // Speaks high-risk block alerts aloud for visually impaired users.
+  // Activated when user enables voiceAlerts in accessibility profile.
+  function speakAlert(message) {
+    if (!__kasbah_accessibility.voiceAlerts) return;
+    if (!('speechSynthesis' in window)) return;
+    try {
+      var utterance = new SpeechSynthesisUtterance(message);
+      // Auto-detect language from browser
+      var lang = (navigator.language || navigator.userLanguage || 'en').slice(0, 2);
+      utterance.lang = lang === 'ar' ? 'ar-SA' : lang === 'fr' ? 'fr-FR' : 'en-US';
+      utterance.rate = 0.9; // Slightly slower for clarity
+      utterance.volume = 0.8;
+      window.speechSynthesis.speak(utterance);
+    } catch(e) {}
+  }
+
+  // ── Patch showToast to include voice alerts ──
+  var _origShowToast = showToast;
+  showToast = function(message, isError, verb) {
+    _origShowToast(message, isError, verb);
+    // Speak high-risk blocks aloud
+    if (isError) {
+      speakAlert(message);
+    }
+  };
+
+  // ── High-contrast mode: inject CSS overrides when enabled ──
+  if (__kasbah_accessibility.highContrast) {
+    try {
+      var hcStyle = document.createElement('style');
+      hcStyle.id = 'kasbah-high-contrast';
+      hcStyle.textContent = '[role="dialog"][aria-label*="Kasbah"]{background:rgba(0,0,0,.85)!important}[role="dialog"][aria-label*="Kasbah"] > div{background:#000!important;color:#fff!important;border:2px solid #ff0!important}[role="alert"][aria-live]{background:#000!important;color:#ff0!important;border:2px solid #ff0!important}';
+      (document.head || document.documentElement).appendChild(hcStyle);
+    } catch(e) {}
+  }
+
+  // ── Font size override for modal/toast ──
+  var _fontScale = { small: '12px', medium: '13px', large: '15px', 'extra-large': '18px' };
+  if (__kasbah_accessibility.fontSize !== 'medium') {
+    try {
+      var fsStyle = document.createElement('style');
+      fsStyle.id = 'kasbah-font-scale';
+      var fs = _fontScale[__kasbah_accessibility.fontSize] || '13px';
+      fsStyle.textContent = '[role="dialog"][aria-label*="Kasbah"],[role="alert"][aria-live]{font-size:' + fs + '!important}';
+      (document.head || document.documentElement).appendChild(fsStyle);
+    } catch(e) {}
+  }
+
+  // ── Cultural context: privacy norms per locale ──
+  var __kasbah_cultural_context = {
+    'en': { privacyLabel: 'Sensitive data detected', blockLabel: 'Block — Stay Safe', allowLabel: 'Proceed Anyway' },
+    'fr': { privacyLabel: 'Donn\u00e9es sensibles d\u00e9tect\u00e9es', blockLabel: 'Bloquer — Rester en s\u00e9curit\u00e9', allowLabel: 'Continuer quand m\u00eame' },
+    'ar': { privacyLabel: '\u062a\u0645 \u0627\u0643\u062a\u0634\u0627\u0641 \u0628\u064a\u0627\u0646\u0627\u062a \u062d\u0633\u0627\u0633\u0629', blockLabel: '\u062d\u0638\u0631 \u2014 \u0627\u0628\u0642\u064e \u0622\u0645\u0646\u0627\u064b', allowLabel: '\u0627\u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0639\u0644\u0649 \u0623\u064a \u062d\u0627\u0644' },
+  };
+
+  // Expose accessibility API on window for extension popup configuration
+  window.__kasbah_accessibility = __kasbah_accessibility;
+  window.__kasbah_setAccessibility = function(prefs) {
+    if (prefs.voiceAlerts !== undefined) __kasbah_accessibility.voiceAlerts = prefs.voiceAlerts;
+    if (prefs.highContrast !== undefined) __kasbah_accessibility.highContrast = prefs.highContrast;
+    if (prefs.fontSize) __kasbah_accessibility.fontSize = prefs.fontSize;
+    if (prefs.simplifiedLanguage !== undefined) __kasbah_accessibility.simplifiedLanguage = prefs.simplifiedLanguage;
+    try { localStorage.setItem('kasbah_accessibility', JSON.stringify(__kasbah_accessibility)); } catch(e) {}
+  };
+
   // ── Startup notification ──
   var detectedProduct = product();
   console.log("[Kasbah Guard] v3.2 initialized — " + host() + " → " + detectedProduct.toUpperCase());
   console.log("[Kasbah Guard] 6 verbs active: send, paste, upload, browse, download, edit");
+  console.log("[Kasbah Guard] Accessibility: voiceAlerts=" + __kasbah_accessibility.voiceAlerts + " highContrast=" + __kasbah_accessibility.highContrast + " fontSize=" + __kasbah_accessibility.fontSize);
 })();

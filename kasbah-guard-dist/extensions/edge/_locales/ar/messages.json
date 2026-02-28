@@ -1,0 +1,56 @@
+{
+  "extensionName": {
+    "message": "Kasbah Guard",
+    "description": "اسم الإضافة"
+  },
+  "extensionDescription": {
+    "message": "حارس محلي يعترض الأوامر والإجراءات على خدمات الذكاء الاصطناعي لمنع تسرب البيانات وضمان التحكم الكامل للمستخدم.",
+    "description": "وصف الإضافة المعروض في المتاجر وإعدادات المتصفح"
+  },
+  "popupTitle": {
+    "message": "Kasbah Guard",
+    "description": "العنوان المعروض في رأس النافذة المنبثقة"
+  },
+  "popupStatus": {
+    "message": "نشط",
+    "description": "حالة الحارس عندما يكون قيد التشغيل"
+  },
+  "popupProtecting": {
+    "message": "حماية بياناتك على $PLATFORM$",
+    "description": "رسالة الحالة التي تظهر أي منصة ذكاء اصطناعي قيد الحماية",
+    "placeholders": {
+      "PLATFORM": {
+        "content": "$1",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "blocked": {
+    "message": "محظور",
+    "description": "تسمية عدد الإجراءات المحظورة"
+  },
+  "allowed": {
+    "message": "مسموح",
+    "description": "تسمية عدد الإجراءات المسموح بها"
+  },
+  "warnings": {
+    "message": "تحذيرات",
+    "description": "تسمية عدد التحذيرات"
+  },
+  "modalBlockButton": {
+    "message": "حظر — ابقَ آمناً",
+    "description": "نص زر الحظر الرئيسي في نافذة المراجعة"
+  },
+  "modalAllowButton": {
+    "message": "المتابعة على أي حال",
+    "description": "نص زر السماح الثانوي في نافذة المراجعة"
+  },
+  "modalSensitiveDetected": {
+    "message": "تم اكتشاف بيانات حساسة",
+    "description": "عنوان التنبيه عند العثور على بيانات حساسة"
+  },
+  "toastBlocked": {
+    "message": "تم الحظر. بياناتك الحساسة بقيت على جهازك.",
+    "description": "إشعار منبثق عند حظر إجراء"
+  }
+}

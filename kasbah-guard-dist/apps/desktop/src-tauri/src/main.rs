@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod guard;
+mod moats;
 
 use std::env;
 
@@ -73,7 +74,38 @@ fn main() {
 
   tauri::Builder::default()
     .plugin(tauri_plugin_clipboard_manager::init())
-    .invoke_handler(tauri::generate_handler![preflight_text, get_session])
+    // Register moat state (Mutex-wrapped for thread safety)
+    .manage(moats::MoatTelemetry(std::sync::Mutex::new(
+        kasbah_moats::telemetry::TelemetryBuffer::new(),
+    )))
+    .manage(moats::MoatEvolution(std::sync::Mutex::new(
+        kasbah_moats::evolution::EvolutionEngine::new(),
+    )))
+    .manage(moats::MoatCapabilities(std::sync::Mutex::new(Vec::new())))
+    .invoke_handler(tauri::generate_handler![
+        preflight_text,
+        get_session,
+        // Moat F: System Integrity Index
+        moats::get_system_integrity,
+        // Moat O: Three-Gate Execution
+        moats::check_execution_gates,
+        // Moat K: Capability-Based ABAC
+        moats::grant_capability,
+        moats::authorize_data_request,
+        // Moat N: Privacy Telemetry
+        moats::record_detection_event,
+        moats::get_telemetry_metrics,
+        moats::export_telemetry,
+        moats::clear_telemetry,
+        // Moat H: Pattern Evolution
+        moats::record_pattern_feedback,
+        moats::get_pattern_stats,
+        moats::get_pattern_priority_order,
+        moats::export_pattern_evolution,
+        // Redaction + Audit
+        moats::redact_content,
+        moats::audit_event,
+    ])
     .plugin(tauri_plugin_dialog::init())
     .setup(|app| {
       #[cfg(desktop)]

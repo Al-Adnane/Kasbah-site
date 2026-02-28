@@ -1,0 +1,56 @@
+{
+  "extensionName": {
+    "message": "Kasbah Guard",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Local-first guard that intercepts prompts and actions on AI chat services to prevent leaks and enforce user control.",
+    "description": "The description of the extension shown in stores and browser settings"
+  },
+  "popupTitle": {
+    "message": "Kasbah Guard",
+    "description": "Title shown in the popup header"
+  },
+  "popupStatus": {
+    "message": "Active",
+    "description": "Status label when guard is running"
+  },
+  "popupProtecting": {
+    "message": "Protecting your data on $PLATFORM$",
+    "description": "Status message showing which AI platform is being guarded",
+    "placeholders": {
+      "PLATFORM": {
+        "content": "$1",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "blocked": {
+    "message": "Blocked",
+    "description": "Label for blocked action count"
+  },
+  "allowed": {
+    "message": "Allowed",
+    "description": "Label for allowed action count"
+  },
+  "warnings": {
+    "message": "Warnings",
+    "description": "Label for warning count"
+  },
+  "modalBlockButton": {
+    "message": "Block — Stay Safe",
+    "description": "Primary block button text in the review modal"
+  },
+  "modalAllowButton": {
+    "message": "Proceed Anyway",
+    "description": "Secondary allow button text in the review modal"
+  },
+  "modalSensitiveDetected": {
+    "message": "Sensitive data detected",
+    "description": "Alert title when sensitive data is found"
+  },
+  "toastBlocked": {
+    "message": "Blocked. Your sensitive data stayed on your device.",
+    "description": "Toast notification when an action is blocked"
+  }
+}

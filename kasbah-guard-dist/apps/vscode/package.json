@@ -1,0 +1,120 @@
+{
+  "name": "kasbah-guard",
+  "displayName": "Kasbah Guard — Sensitive Data Detector",
+  "description": "Real-time sensitive data leak detection powered by Kasbah Detection Engine v3.5.2",
+  "version": "1.0.0",
+  "publisher": "kasbah-guard",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kasbah/kasbah-guard"
+  },
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1a1a2e",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "security",
+    "sensitive data",
+    "PII",
+    "credentials",
+    "leak detection"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "kasbah.scanFile",
+        "title": "Kasbah: Scan Current File",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "kasbah.redactSelection",
+        "title": "Kasbah: Redact Selection",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "kasbah.scanClipboard",
+        "title": "Kasbah: Scan Clipboard",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "kasbah.clearDiagnostics",
+        "title": "Kasbah: Clear All Warnings"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "kasbah.redactSelection",
+          "when": "editorHasSelection",
+          "group": "kasbah"
+        },
+        {
+          "command": "kasbah.scanFile",
+          "group": "kasbah"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Kasbah Guard",
+      "properties": {
+        "kasbah.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Kasbah Guard sensitive data detection"
+        },
+        "kasbah.threshold": {
+          "type": "number",
+          "default": 40,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Risk score threshold to trigger warnings (0–100). Default: 40"
+        },
+        "kasbah.warnOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scan and emit diagnostics when a file is saved"
+        },
+        "kasbah.warnOnPaste": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scan clipboard content on paste events"
+        },
+        "kasbah.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show risk indicator in the status bar"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "node esbuild.js --minify",
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "dependencies": {
+    "@kasbah/guard": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  }
+}
