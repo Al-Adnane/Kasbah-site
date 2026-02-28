@@ -33,53 +33,18 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In production: fetch from /api/dashboard/stats and /api/audit/recent
-    // Placeholder data for skeleton
-    setTimeout(() => {
-      setStats({
-        totalScans: 1284,
-        denyCount: 23,
-        warnCount: 87,
-        avgRisk: 18,
-        teamMembers: 4,
-      });
-      setRecentEvents([
-        {
-          id: '1',
-          contentHash: 'sha256:8adef4fb...',
-          action: 'SCAN',
-          risk: 95,
-          decision: 'DENY',
-          reason: 'AWS access key detected',
-          timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-          user: 'alice@company.com',
-          product: 'CLI',
-        },
-        {
-          id: '2',
-          contentHash: 'sha256:4d58ff74...',
-          action: 'SCAN',
-          risk: 62,
-          decision: 'WARN',
-          reason: 'Credit card number pattern',
-          timestamp: new Date(Date.now() - 12 * 60000).toISOString(),
-          user: 'bob@company.com',
-          product: 'VS Code',
-        },
-        {
-          id: '3',
-          contentHash: 'sha256:c3d1a2b0...',
-          action: 'REDACT',
-          risk: 88,
-          decision: 'DENY',
-          reason: 'SSN detected',
-          timestamp: new Date(Date.now() - 28 * 60000).toISOString(),
-          user: 'carol@company.com',
-          product: 'Desktop',
-        },
-      ]);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('kasbah_token') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    Promise.all([
+      fetch('https://api.bekasbah.com/api/stats', { headers }).then(r => r.ok ? r.json() : null),
+      fetch('https://api.bekasbah.com/api/audit/recent', { headers }).then(r => r.ok ? r.json() : null),
+    ]).then(([statsRes, auditRes]) => {
+      if (statsRes?.ok) setStats(statsRes.stats);
+      if (auditRes?.ok && Array.isArray(auditRes.events)) setRecentEvents(auditRes.events);
       setLoading(false);
-    }, 800);
+    }).catch(() => setLoading(false));
   }, []);
 
   if (loading) {
@@ -103,7 +68,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div style={styles.engineBadge}>
-          Engine v3.5.0 · 23 invariants
+          Engine v3.5.2 · 23 invariants
         </div>
       </header>
 

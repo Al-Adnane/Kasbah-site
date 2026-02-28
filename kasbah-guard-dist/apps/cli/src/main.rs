@@ -1,10 +1,10 @@
 //! kasbah — CLI for Kasbah Guard sensitive data detection
 //!
 //! Commands:
-//!   kasbah scan <path>        — Scan file or directory
+//!   kasbah scan <path>        — Scan file or directory (use "-" for stdin)
 //!   kasbah scan --json <path> — JSON output (CI/CD)
 //!   kasbah redact <file>      — Redact sensitive data in-place
-//!   kasbah watch <path>       — Live watch mode
+//!   kasbah watch <path>       — Live watch mode (re-scans on file changes)
 //!   kasbah selftest           — Run 23 internal invariants
 //!
 //! Exit codes: 0 = clean, 1 = warn, 2 = deny
@@ -19,7 +19,7 @@ use clap::{Parser, Subcommand};
     name = "kasbah",
     about = "Kasbah Guard — sensitive data leak detection",
     version = "1.0.0",
-    long_about = "Scan files, directories, and stdin for sensitive data (PII, credentials, keys).\nPowered by Kasbah Detection Engine v3.5.2 with 23 invariants."
+    long_about = "Scan files, directories, and stdin for sensitive data (PII, credentials, keys).\nPowered by Kasbah Detection Engine v3.5.2 with 23 invariants.\n\nExamples:\n  kasbah scan .env\n  kasbah scan --json src/\n  echo 'SSN: 123-45-6789' | kasbah scan -\n  kasbah watch ./src\n  kasbah selftest"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -28,9 +28,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Scan a file or directory for sensitive data
+    /// Scan a file or directory for sensitive data (use "-" for stdin)
     Scan {
-        /// Path to scan (file or directory)
+        /// Path to scan (file, directory, or "-" for stdin)
         path: String,
         /// Output as JSON (for CI/CD pipelines)
         #[arg(long)]
@@ -50,6 +50,17 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Watch a path for changes and re-scan on every write
+    Watch {
+        /// Path to watch (file or directory)
+        path: String,
+        /// Only report findings at or above this risk level (0-100)
+        #[arg(long, default_value = "40")]
+        min_risk: u16,
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
     /// Run the internal self-test suite (23 invariants)
     Selftest,
 }
@@ -63,6 +74,9 @@ fn main() {
         }
         Commands::Redact { file, dry_run } => {
             scanner::run_redact(&file, dry_run)
+        }
+        Commands::Watch { path, min_risk, json } => {
+            scanner::run_watch(&path, min_risk, json)
         }
         Commands::Selftest => {
             run_selftest()

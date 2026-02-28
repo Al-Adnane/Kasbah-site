@@ -136,7 +136,7 @@
 
   <!-- Engine badge -->
   <div class="engine-badge">
-    Powered by Kasbah Detection Engine v3.5.0 · 23 invariants
+    Powered by Kasbah Detection Engine v3.5.2 · 23 invariants
   </div>
 </main>
 

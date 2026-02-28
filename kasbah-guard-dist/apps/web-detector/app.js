@@ -31,7 +31,7 @@ async function loadEngine() {
   }
 }
 
-// ─── JS Fallback (mirrors key patterns from detector.js v3.5.1) ────────────
+// ─── JS Fallback (mirrors key patterns from detector.js v3.5.2) ────────────
 
 const FALLBACK_PATTERNS = [
   { re: /\b\d{3}-\d{2}-\d{4}\b/, risk: 90, reason: 'SSN pattern' },
