@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kasbah-guard
+  labels:
+    app.kubernetes.io/managed-by: kasbah
+    environment: production

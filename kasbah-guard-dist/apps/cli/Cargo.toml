@@ -21,3 +21,4 @@ walkdir = "2"
 colored = "2"
 anyhow = "1"
 notify = { version = "6", features = ["macos_kqueue"] }
+ureq = { version = "2", features = ["json"] }

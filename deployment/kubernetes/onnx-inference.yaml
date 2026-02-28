@@ -1,0 +1,184 @@
+# ──────────────────────────────────────────────
+# onnx-inference  — Rust HTTP server, port 8080
+# ML inference engine; mounts read-only model PVC.
+# Higher CPU/memory limits for ML workloads.
+# ──────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kasbah-models
+  namespace: kasbah-guard
+  labels:
+    app.kubernetes.io/managed-by: kasbah
+    component: model-storage
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: onnx-inference
+  namespace: kasbah-guard
+  labels:
+    app: onnx-inference
+    app.kubernetes.io/name: onnx-inference
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: inference
+    app.kubernetes.io/managed-by: kasbah
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: onnx-inference
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: onnx-inference
+        app.kubernetes.io/name: onnx-inference
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: wait-for-constitutional-ai
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until wget -qO- http://constitutional-ai:3000/api/validate-intent > /dev/null 2>&1; do
+                echo "Waiting for constitutional-ai to be ready...";
+                sleep 5;
+              done;
+              echo "constitutional-ai is ready."
+      containers:
+        - name: onnx-inference
+          image: kasbah/onnx-inference:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: kasbah-guard-config
+            - secretRef:
+                name: kasbah-guard-secrets
+          volumeMounts:
+            - name: model-storage
+              mountPath: /models
+              readOnly: true
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: kasbah-models
+            readOnly: true
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onnx-inference
+  namespace: kasbah-guard
+  labels:
+    app: onnx-inference
+    app.kubernetes.io/name: onnx-inference
+    app.kubernetes.io/component: inference
+    app.kubernetes.io/managed-by: kasbah
+spec:
+  selector:
+    app: onnx-inference
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: onnx-inference-hpa
+  namespace: kasbah-guard
+  labels:
+    app: onnx-inference
+    app.kubernetes.io/managed-by: kasbah
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: onnx-inference
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Pods
+          value: 4
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 180

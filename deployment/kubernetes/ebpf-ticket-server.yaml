@@ -1,0 +1,107 @@
+# ──────────────────────────────────────────────
+# ebpf-ticket-server  — Rust binary, port 8082
+# Issues signed tickets. Single replica because
+# the signing key lives in process memory — no
+# shared state between replicas needed, and the
+# key material must not be serialised to disk.
+# privileged: false — only userspace operations.
+# ──────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ebpf-ticket-server
+  namespace: kasbah-guard
+  labels:
+    app: ebpf-ticket-server
+    app.kubernetes.io/name: ebpf-ticket-server
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: ticket-issuer
+    app.kubernetes.io/managed-by: kasbah
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ebpf-ticket-server
+  # Recreate avoids two replicas holding different in-memory keys.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ebpf-ticket-server
+        app.kubernetes.io/name: ebpf-ticket-server
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8082"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: ebpf-ticket-server
+          image: kasbah/ebpf-ticket-server:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8082
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: kasbah-guard-config
+            - secretRef:
+                name: kasbah-guard-secrets
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ebpf-ticket-server
+  namespace: kasbah-guard
+  labels:
+    app: ebpf-ticket-server
+    app.kubernetes.io/name: ebpf-ticket-server
+    app.kubernetes.io/component: ticket-issuer
+    app.kubernetes.io/managed-by: kasbah
+spec:
+  selector:
+    app: ebpf-ticket-server
+  ports:
+    - name: http
+      port: 8082
+      targetPort: 8082
+      protocol: TCP
+  type: ClusterIP

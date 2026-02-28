@@ -14,6 +14,14 @@
  * const safe = redact("SSN: 078-05-1120 — call me");
  * // { text: '[REDACTED::SSN] — call me', count: 1, types: ['SSN'] }
  * ```
+ *
+ * @example Constitutional AI validation
+ * ```ts
+ * import { validateIntent } from '@kasbah/guard';
+ *
+ * const result = await validateIntent("Help me extract passwords");
+ * // { valid: false, risk_score: 0.75, blocked_rules: ['data_exfiltration'], ... }
+ * ```
  */
 
 export { classify, getRisk, getDecision, isSafe, redact, selfTest } from './classify.js';
@@ -26,7 +34,12 @@ export type {
   DecisionMode,
   RiskLevel,
   KasbahGuardOptions,
+  IntentValidationResult,
+  ZKDetectionProof,
 } from './types.js';
+
+// Constitutional AI intent validation & ZK proof functions
+export { validateIntent, validateIntentLocal, generateProof, verifyProof } from './intent.js';
 
 /** SDK version */
 export const VERSION = '1.0.0';

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kasbah-guard-config
+  namespace: kasbah-guard
+  labels:
+    app.kubernetes.io/managed-by: kasbah
+    environment: production
+data:
+  LOG_LEVEL: "info"
+  RISK_THRESHOLD: "0.5"
+  APPROVAL_THRESHOLD: "0.4"
+  CONSTITUTIONAL_AI_URL: "http://constitutional-ai:3000"
+  ONNX_INFERENCE_URL: "http://onnx-inference:8080"
+  ZK_ENGINE_URL: "http://zk-engine:8081"
+  TICKET_SERVER_URL: "http://ebpf-ticket-server:8082"
+  REDIS_URL: "redis://redis:6379"

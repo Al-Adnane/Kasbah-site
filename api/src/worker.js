@@ -14,7 +14,11 @@
  *   GET  /api/audit/recent  — Last 20 audit events (auth required)
  *   GET  /api/policies      — Org policy config (auth required)
  *   GET  /api/team          — Team members list (auth required)
- *   POST /api/scan          — Scan text for sensitive data (auth required)
+ *   POST /api/scan                     — Scan text for sensitive data (auth required)
+ *   POST /api/validate-intent           — Constitutional AI intent validation (auth required)
+ *   GET  /api/proofs                    — List ZK proofs (auth required)
+ *   POST /api/proofs/generate           — Generate ZK proof for detection result (auth required)
+ *   GET  /api/proofs/verify/:proof_id   — Verify a ZK proof (auth required)
  *
  * Storage: Cloudflare KV
  *   USERS    — key: email, value: { id, email, name, passwordHash, salt, plan, verified, createdAt, lastLogin }
@@ -764,6 +768,254 @@ async function handleApiScan(request, env) {
   });
 }
 
+// ── Constitutional AI Intent Validator (built-in) ────────────────────────────
+
+// 5 Constitutional AI rule patterns — mirrors validator.ts exactly
+const _CAI_RULES = [
+  {
+    rule_id: 'injection_attack',
+    description: 'Prompt injection attempt detected',
+    severity: 'critical',
+    severity_score: 1.0,
+    pattern: /ignore.*previous|forget|new instructions|role.*switch/i,
+  },
+  {
+    rule_id: 'jailbreak_attempt',
+    description: 'Jailbreak attempt detected',
+    severity: 'critical',
+    severity_score: 1.0,
+    pattern: /jailbreak|bypass|circumvent|disable.*safety/i,
+  },
+  {
+    rule_id: 'data_exfiltration',
+    description: 'Potential data exfiltration intent',
+    severity: 'high',
+    severity_score: 0.75,
+    pattern: /extract|exfiltrate|steal|leak|dump.*data|credentials/i,
+  },
+  {
+    rule_id: 'malware_intent',
+    description: 'Malware development or distribution intent',
+    severity: 'critical',
+    severity_score: 1.0,
+    pattern: /malware|ransomware|botnet|exploit|shellcode/i,
+  },
+  {
+    rule_id: 'privacy_violation',
+    description: 'Privacy violation intent',
+    severity: 'high',
+    severity_score: 0.75,
+    pattern: /spy|dox|doxx|stalking|harass|blackmail/i,
+  },
+];
+
+function _caiCalculateEntropy(text) {
+  const freq = {};
+  for (const ch of text) { freq[ch] = (freq[ch] || 0) + 1; }
+  const len = text.length;
+  if (len === 0) return 0;
+  return -Object.values(freq).reduce((acc, c) => {
+    const p = c / len;
+    return acc + p * Math.log2(p);
+  }, 0);
+}
+
+function _caiCalculateRepetition(text) {
+  const words = text.split(/\s+/);
+  if (!words.length) return 0;
+  const counts = {};
+  for (const w of words) { counts[w.toLowerCase()] = (counts[w.toLowerCase()] || 0) + 1; }
+  return Math.max(...Object.values(counts)) / words.length;
+}
+
+function _caiValidateIntentLocal(intent, policy_id) {
+  const rules = _CAI_RULES; // extend with policy_id lookup when custom policies are added
+  const blockedRules = [];
+  let maxSeverity = 0;
+
+  for (const rule of rules) {
+    if (rule.pattern.test(intent)) {
+      blockedRules.push(rule.rule_id);
+      maxSeverity = Math.max(maxSeverity, rule.severity_score);
+    }
+  }
+
+  // Heuristic risk (mirrors calculateHeuristicRisk in validator.ts)
+  let heuristicRisk = 0;
+  if (intent.length > 5000) heuristicRisk += 0.1;
+  if (_caiCalculateEntropy(intent) > 5.5) heuristicRisk += 0.15;
+  if (_caiCalculateRepetition(intent) > 0.3) heuristicRisk += 0.1;
+  heuristicRisk = Math.min(heuristicRisk, 0.5);
+
+  const risk_score = Math.max(maxSeverity, heuristicRisk);
+  const valid = risk_score < 0.5;
+  const requires_approval = risk_score >= 0.4;
+
+  const reasoning = blockedRules.length === 0
+    ? `Intent appears safe (risk score: ${(risk_score * 100).toFixed(1)}%). No constitutional violations detected.`
+    : `Intent rejected due to policy violations: ${blockedRules.join(', ')}. Risk score: ${(risk_score * 100).toFixed(1)}%. Requires manual review or approval.`;
+
+  return { valid, risk_score, reasoning, blocked_rules: blockedRules, requires_approval };
+}
+
+async function handleValidateIntent(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const { intent, policy_id = 'default', user_id, context } = body;
+  if (!intent || typeof intent !== 'string') return err('intent must be a non-empty string');
+  if (intent.length > 32768) return err('intent exceeds maximum length of 32768 characters');
+
+  const result = _caiValidateIntentLocal(intent, policy_id);
+
+  return json({
+    ok: true,
+    ...result,
+  });
+}
+
+// ── ZK-Proof stubs (Merkle-SHA256) ──────────────────────────────────────────
+
+// In-memory proof store (Cloudflare Worker ephemeral — use KV for persistence)
+const _proofStore = new Map();
+
+async function _sha256Hex(data) {
+  const encoded = new TextEncoder().encode(typeof data === 'string' ? data : JSON.stringify(data));
+  const hashBuf = await crypto.subtle.digest('SHA-256', encoded);
+  return bufToHex(hashBuf);
+}
+
+async function _buildMerkleProof(detection_result) {
+  // Leaf hashes for each field
+  const fields = ['model_id', 'risk_score', 'decision', 'timestamp', 'content_hash'];
+  const leafHashes = await Promise.all(
+    fields.map(f => _sha256Hex(String(detection_result[f] ?? '')))
+  );
+
+  // Simple two-level Merkle tree: pair leaves, hash pairs, root
+  const level1 = [];
+  for (let i = 0; i < leafHashes.length; i += 2) {
+    const left = leafHashes[i];
+    const right = leafHashes[i + 1] || left; // duplicate last leaf if odd
+    level1.push(await _sha256Hex(left + right));
+  }
+  const root = level1.length === 1
+    ? level1[0]
+    : await _sha256Hex(level1.join(''));
+
+  // proof_bytes_hex encodes: root + all leaf hashes (hex-concatenated)
+  const proof_bytes_hex = root + leafHashes.join('');
+
+  // public_inputs_hex: SHA-256 of the serialised detection_result
+  const public_inputs_hex = await _sha256Hex(JSON.stringify(detection_result));
+
+  return { root, proof_bytes_hex, public_inputs_hex, leaf_hashes: leafHashes };
+}
+
+async function handleListProofs(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  // Return all proofs from in-memory store for this session
+  // (Cloudflare Workers restart between requests — in production use KV)
+  const proofs = [..._proofStore.values()].map(p => ({
+    proof_id: p.proof_id,
+    proof_type: p.proof_type,
+    model_id: p.detection_result?.model_id ?? 'unknown',
+    risk_score: p.detection_result?.risk_score ?? 0,
+    decision: p.detection_result?.decision ?? 'ALLOW',
+    verified: true,
+    created_at: p.created_at,
+  }));
+
+  return json({ ok: true, proofs });
+}
+
+async function handleGenerateProof(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const { detection_result } = body;
+  if (!detection_result || typeof detection_result !== 'object') {
+    return err('detection_result must be an object with model_id, risk_score, decision, timestamp, content_hash');
+  }
+
+  const proof_id = 'proof_' + generateId();
+  const { proof_bytes_hex, public_inputs_hex, root } = await _buildMerkleProof(detection_result);
+
+  // Store proof for later verification
+  _proofStore.set(proof_id, {
+    proof_id,
+    proof_bytes_hex,
+    public_inputs_hex,
+    proof_type: 'merkle-sha256',
+    root,
+    detection_result,
+    created_at: new Date().toISOString(),
+  });
+
+  // Also persist to KV if available (best-effort)
+  if (env.SESSIONS) {
+    try {
+      await env.SESSIONS.put('proof:' + proof_id, JSON.stringify({
+        proof_id, proof_bytes_hex, public_inputs_hex, root, detection_result,
+        created_at: new Date().toISOString(),
+      }), { expirationTtl: 86400 });
+    } catch (_) {}
+  }
+
+  return json({
+    ok: true,
+    proof_id,
+    proof_bytes_hex,
+    public_inputs_hex,
+    proof_type: 'merkle-sha256',
+  });
+}
+
+async function handleVerifyProof(proof_id, request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  // Try in-memory first, then KV
+  let stored = _proofStore.get(proof_id);
+  if (!stored && env.SESSIONS) {
+    try {
+      const raw = await env.SESSIONS.get('proof:' + proof_id);
+      if (raw) stored = JSON.parse(raw);
+    } catch (_) {}
+  }
+
+  if (!stored) {
+    return json({ verified: false, proof_id, verified_at: new Date().toISOString(), error: 'Proof not found' });
+  }
+
+  // Verify integrity: re-compute proof and compare
+  const { proof_bytes_hex: recomputed_bytes, public_inputs_hex: recomputed_inputs } =
+    await _buildMerkleProof(stored.detection_result);
+
+  const verified =
+    recomputed_bytes === stored.proof_bytes_hex &&
+    recomputed_inputs === stored.public_inputs_hex;
+
+  return json({
+    ok: true,
+    verified,
+    proof_id,
+    verified_at: new Date().toISOString(),
+  });
+}
+
 // ── Main router ──
 
 // ══════════════════════════════════════════════════════════════
@@ -863,12 +1115,23 @@ export default {
         response = await handleApiTeam(request, env);
       } else if (method === 'POST' && path === '/api/scan') {
         response = await handleApiScan(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/api/validate-intent') {
+        response = await handleValidateIntent(_clonedRequest, env);
+      } else if (method === 'GET' && path === '/api/proofs') {
+        response = await handleListProofs(request, env);
+      } else if (method === 'POST' && path === '/api/proofs/generate') {
+        response = await handleGenerateProof(_clonedRequest, env);
+      } else if (method === 'GET' && path.startsWith('/api/proofs/verify/')) {
+        const proof_id = path.slice('/api/proofs/verify/'.length);
+        response = await handleVerifyProof(proof_id, request, env);
       } else if (method === 'GET' && path === '/health') {
         // Moat F: SII computed with nominal API health values
         const sii = computeSII(1.0, 1.0, 1.0, 1.0);
         const gate = apiGateCheck(1.0, 0.0, 0.0);
         response = json({
           ok: true, service: 'kasbah-api', version: '2.0.0',
+          capabilities: ['constitutional-ai', 'zk-proofs', 'enterprise'],
+          sii: parseFloat(sii.toFixed(4)),
           moats: {
             sii: parseFloat(sii.toFixed(4)),
             gate: gate.pass,

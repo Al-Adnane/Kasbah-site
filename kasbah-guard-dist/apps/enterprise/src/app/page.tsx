@@ -111,6 +111,8 @@ export default function DashboardPage() {
         <NavLink href="/policies" label="⚙️ Policies" />
         <NavLink href="/audit" label="📋 Audit Log" />
         <NavLink href="/team" label="👥 Team" />
+        <NavLink href="/proofs" label="🔐 ZK Proofs" />
+        <NavLink href="/ecosystem" label="🌿 Ecosystem" />
       </nav>
     </div>
   );

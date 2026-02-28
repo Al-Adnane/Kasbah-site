@@ -62,4 +62,9 @@ regexes = [
   "abandon about above after again against all allow almost alone along",
   "api_key=sk_test_1234567890abcdefgh",
   "aws_secret_access_key=",
+  # K8s secrets.yaml placeholder base64 values (instructions, not real secrets)
+  "eW91ci1qd3Qtc2VjcmV0LW1pbi0zMi1jaGFycw==",
+  "eW91ci02NC1jaGFyLWhleC1zaWduaW5nLWtleQ==",
+  "eW91ci1yZWRpcy1wYXNzd29yZA==",
+  "eW91ci1ncmFmYW5hLWFkbWluLXBhc3N3b3Jk",
 ]

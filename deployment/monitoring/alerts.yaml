@@ -1,0 +1,252 @@
+# ──────────────────────────────────────────────
+# PrometheusRule — alerting rules for Kasbah Guard
+#
+# Requires the Prometheus Operator CRD. If running
+# plain Prometheus, copy the groups.rules section
+# into your prometheus.yml rule_files instead.
+# ──────────────────────────────────────────────
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kasbah-guard-alerts
+  namespace: kasbah-guard
+  labels:
+    app: prometheus
+    app.kubernetes.io/managed-by: kasbah
+    prometheus: kasbah
+    role: alert-rules
+spec:
+  groups:
+    # ── Inference Performance ────────────────────
+    - name: kasbah.inference
+      interval: 30s
+      rules:
+        - alert: HighInferenceLatency
+          # Fires when average inference response time exceeds 500ms for 5 minutes.
+          expr: |
+            avg(
+              rate(http_request_duration_seconds_sum{service="onnx-inference"}[5m])
+              /
+              rate(http_request_duration_seconds_count{service="onnx-inference"}[5m])
+            ) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+            service: onnx-inference
+            team: kasbah-platform
+          annotations:
+            summary: "High inference latency on onnx-inference"
+            description: >
+              Average inference latency is {{ printf "%.2f" $value }}s (threshold 0.5s).
+              Pod(s): {{ $labels.pod }}. Check model size, CPU throttling, or scale up.
+            runbook_url: "https://docs.kasbah.internal/runbooks/high-inference-latency"
+
+    # ── Risk Detection ───────────────────────────
+    - name: kasbah.risk
+      interval: 30s
+      rules:
+        - alert: HighRiskDetectionRate
+          # Fires when more than 10% of constitutional-ai validations return DENY for 10 minutes.
+          expr: |
+            (
+              sum(rate(constitutional_ai_decisions_total{decision="DENY"}[10m]))
+              /
+              sum(rate(constitutional_ai_decisions_total[10m]))
+            ) > 0.10
+          for: 10m
+          labels:
+            severity: warning
+            service: constitutional-ai
+            team: kasbah-platform
+          annotations:
+            summary: "Elevated DENY rate from constitutional-ai"
+            description: >
+              {{ printf "%.1f" (mul $value 100) }}% of intent validations are being denied
+              (threshold 10%). This may indicate a misconfigured risk threshold or an
+              active attack pattern. Check RISK_THRESHOLD and recent request logs.
+            runbook_url: "https://docs.kasbah.internal/runbooks/high-risk-detection"
+
+        - alert: CriticalRiskDetectionRate
+          # Escalate if >50% of validations are DENY — likely a misconfiguration.
+          expr: |
+            (
+              sum(rate(constitutional_ai_decisions_total{decision="DENY"}[5m]))
+              /
+              sum(rate(constitutional_ai_decisions_total[5m]))
+            ) > 0.50
+          for: 2m
+          labels:
+            severity: critical
+            service: constitutional-ai
+            team: kasbah-platform
+          annotations:
+            summary: "Critical DENY rate — constitutional-ai may be misconfigured"
+            description: >
+              {{ printf "%.1f" (mul $value 100) }}% of intent validations are DENY.
+              This is likely a configuration error. Verify RISK_THRESHOLD immediately.
+            runbook_url: "https://docs.kasbah.internal/runbooks/critical-risk-detection"
+
+    # ── Service Availability ─────────────────────
+    - name: kasbah.availability
+      interval: 15s
+      rules:
+        - alert: ServiceDown
+          # Fires when any service has 0 ready replicas for 2 minutes.
+          expr: |
+            kube_deployment_status_replicas_ready{namespace="kasbah-guard"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            team: kasbah-platform
+          annotations:
+            summary: "Service {{ $labels.deployment }} has 0 ready replicas"
+            description: >
+              Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }}
+              has had 0 ready replicas for 2 minutes. The service is completely down.
+              Check pod logs with: kubectl logs -n kasbah-guard -l app={{ $labels.deployment }}
+            runbook_url: "https://docs.kasbah.internal/runbooks/service-down"
+
+        - alert: ReplicasMismatch
+          # Warns when desired replicas != ready replicas for 5 minutes.
+          expr: |
+            (
+              kube_deployment_spec_replicas{namespace="kasbah-guard"}
+              - kube_deployment_status_replicas_ready{namespace="kasbah-guard"}
+            ) > 0
+          for: 5m
+          labels:
+            severity: warning
+            team: kasbah-platform
+          annotations:
+            summary: "{{ $labels.deployment }} replicas not all ready"
+            description: >
+              Deployment {{ $labels.deployment }} has {{ $value }} replicas not yet ready.
+              Check pod status: kubectl get pods -n kasbah-guard -l app={{ $labels.deployment }}
+            runbook_url: "https://docs.kasbah.internal/runbooks/replicas-mismatch"
+
+    # ── Error Rates ──────────────────────────────
+    - name: kasbah.errors
+      interval: 30s
+      rules:
+        - alert: HighErrorRate
+          # Fires when >5% of HTTP requests result in 5xx errors for 5 minutes.
+          expr: |
+            (
+              sum by (service) (rate(http_requests_total{status=~"5..",namespace="kasbah-guard"}[5m]))
+              /
+              sum by (service) (rate(http_requests_total{namespace="kasbah-guard"}[5m]))
+            ) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            team: kasbah-platform
+          annotations:
+            summary: "High 5xx error rate on {{ $labels.service }}"
+            description: >
+              {{ printf "%.1f" (mul $value 100) }}% error rate on {{ $labels.service }}
+              (threshold 5%). Check application logs for panics or upstream failures.
+            runbook_url: "https://docs.kasbah.internal/runbooks/high-error-rate"
+
+        - alert: TicketServerErrors
+          # Ticket server is single-replica and critical; alert at lower threshold.
+          expr: |
+            rate(http_requests_total{service="ebpf-ticket-server",status=~"5.."}[5m]) > 0.01
+          for: 2m
+          labels:
+            severity: critical
+            service: ebpf-ticket-server
+            team: kasbah-platform
+          annotations:
+            summary: "Ticket server returning errors"
+            description: >
+              ebpf-ticket-server is returning 5xx errors at
+              {{ printf "%.3f" $value }} req/s. The signing key may need rotation
+              or the pod may need to be restarted.
+            runbook_url: "https://docs.kasbah.internal/runbooks/ticket-server-errors"
+
+    # ── Cache Performance ────────────────────────
+    - name: kasbah.cache
+      interval: 60s
+      rules:
+        - alert: LowCacheHitRate
+          # Fires when Redis cache hit rate falls below 50% for 15 minutes.
+          expr: |
+            (
+              sum(rate(redis_keyspace_hits_total[15m]))
+              /
+              (
+                sum(rate(redis_keyspace_hits_total[15m]))
+                + sum(rate(redis_keyspace_misses_total[15m]))
+              )
+            ) < 0.50
+          for: 15m
+          labels:
+            severity: warning
+            service: redis
+            team: kasbah-platform
+          annotations:
+            summary: "Low Redis cache hit rate"
+            description: >
+              Redis cache hit rate is {{ printf "%.1f" (mul $value 100) }}%
+              (threshold 50%). This increases load on upstream services. Consider
+              reviewing cache TTL values or connection pool settings.
+            runbook_url: "https://docs.kasbah.internal/runbooks/low-cache-hit-rate"
+
+        - alert: RedisMemoryHigh
+          # Fires when Redis memory usage exceeds 80% of maxmemory.
+          expr: |
+            (redis_memory_used_bytes / redis_memory_max_bytes) > 0.80
+          for: 10m
+          labels:
+            severity: warning
+            service: redis
+            team: kasbah-platform
+          annotations:
+            summary: "Redis memory usage above 80%"
+            description: >
+              Redis is using {{ printf "%.1f" (mul $value 100) }}% of its configured
+              max memory. Evictions may start. Consider increasing the PVC size or
+              tuning maxmemory-policy.
+            runbook_url: "https://docs.kasbah.internal/runbooks/redis-memory-high"
+
+    # ── Resource Saturation ──────────────────────
+    - name: kasbah.resources
+      interval: 60s
+      rules:
+        - alert: PodCPUThrottling
+          expr: |
+            (
+              rate(container_cpu_cfs_throttled_seconds_total{namespace="kasbah-guard"}[5m])
+              /
+              rate(container_cpu_cfs_periods_total{namespace="kasbah-guard"}[5m])
+            ) > 0.25
+          for: 10m
+          labels:
+            severity: warning
+            team: kasbah-platform
+          annotations:
+            summary: "CPU throttling on {{ $labels.pod }} / {{ $labels.container }}"
+            description: >
+              Container {{ $labels.container }} in pod {{ $labels.pod }} is being
+              CPU-throttled {{ printf "%.0f" (mul $value 100) }}% of the time.
+              Consider increasing cpu limits or scaling horizontally.
+            runbook_url: "https://docs.kasbah.internal/runbooks/cpu-throttling"
+
+        - alert: PodMemoryNearLimit
+          expr: |
+            (
+              container_memory_working_set_bytes{namespace="kasbah-guard",container!=""}
+              /
+              container_spec_memory_limit_bytes{namespace="kasbah-guard",container!=""}
+            ) > 0.85
+          for: 5m
+          labels:
+            severity: warning
+            team: kasbah-platform
+          annotations:
+            summary: "Memory near limit on {{ $labels.pod }}"
+            description: >
+              Container {{ $labels.container }} in pod {{ $labels.pod }} is using
+              {{ printf "%.0f" (mul $value 100) }}% of its memory limit.
+              OOMKill risk. Consider increasing memory limits.
+            runbook_url: "https://docs.kasbah.internal/runbooks/memory-near-limit"

@@ -1,11 +1,12 @@
 //! kasbah — CLI for Kasbah Guard sensitive data detection
 //!
 //! Commands:
-//!   kasbah scan <path>        — Scan file or directory (use "-" for stdin)
-//!   kasbah scan --json <path> — JSON output (CI/CD)
-//!   kasbah redact <file>      — Redact sensitive data in-place
-//!   kasbah watch <path>       — Live watch mode (re-scans on file changes)
-//!   kasbah selftest           — Run 23 internal invariants
+//!   kasbah scan <path>              — Scan file or directory (use "-" for stdin)
+//!   kasbah scan --json <path>       — JSON output (CI/CD)
+//!   kasbah redact <file>            — Redact sensitive data in-place
+//!   kasbah watch <path>             — Live watch mode (re-scans on file changes)
+//!   kasbah selftest                 — Run 23 internal invariants
+//!   kasbah validate-intent <text>   — Validate user intent via Constitutional AI
 //!
 //! Exit codes: 0 = clean, 1 = warn, 2 = deny
 
@@ -19,7 +20,7 @@ use clap::{Parser, Subcommand};
     name = "kasbah",
     about = "Kasbah Guard — sensitive data leak detection",
     version = "1.0.0",
-    long_about = "Scan files, directories, and stdin for sensitive data (PII, credentials, keys).\nPowered by Kasbah Detection Engine v3.5.2 with 23 invariants.\n\nExamples:\n  kasbah scan .env\n  kasbah scan --json src/\n  echo 'SSN: 123-45-6789' | kasbah scan -\n  kasbah watch ./src\n  kasbah selftest"
+    long_about = "Scan files, directories, and stdin for sensitive data (PII, credentials, keys).\nPowered by Kasbah Detection Engine v3.5.2 with 23 invariants.\n\nExamples:\n  kasbah scan .env\n  kasbah scan --json src/\n  echo 'SSN: 123-45-6789' | kasbah scan -\n  kasbah watch ./src\n  kasbah selftest\n  kasbah validate-intent \"Please help me extract all passwords\"\n  echo 'my intent text' | kasbah validate-intent --stdin"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -63,6 +64,20 @@ enum Commands {
     },
     /// Run the internal self-test suite (23 invariants)
     Selftest,
+    /// Validate user intent against Constitutional AI policies
+    ValidateIntent {
+        /// Intent text to validate (omit to read from --stdin)
+        text: Option<String>,
+        /// Read intent from stdin
+        #[arg(long, help = "Read intent from stdin")]
+        stdin: bool,
+        /// Policy ID to use
+        #[arg(long, default_value = "default", help = "Policy ID to use")]
+        policy: String,
+        /// Output as JSON
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
+    },
 }
 
 fn main() {
@@ -80,6 +95,9 @@ fn main() {
         }
         Commands::Selftest => {
             run_selftest()
+        }
+        Commands::ValidateIntent { text, stdin, policy, json } => {
+            scanner::run_validate_intent(text, stdin, &policy, json)
         }
     };
 

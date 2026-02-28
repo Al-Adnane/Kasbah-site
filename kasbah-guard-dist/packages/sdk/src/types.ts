@@ -24,7 +24,7 @@ export interface ClassifyResult {
   tiers: string[];
   /** Zero-knowledge detection proof (only when risk >= 40) */
   proof: DetectionProof | null;
-  /** Pattern version (e.g. "3.5.1") */
+  /** Pattern version (e.g. "3.5.2") */
   version: string;
   /** Enabled feature flags */
   features: string[];
@@ -71,4 +71,32 @@ export interface KasbahGuardOptions {
   denyThreshold?: number;
   /** Decision mode override */
   mode?: DecisionMode;
+}
+
+// ── Constitutional AI / ZK-Proof types ──────────────────────────────────────
+
+/** Result of a Constitutional AI intent validation */
+export interface IntentValidationResult {
+  /** Whether the intent is valid (not blocked) */
+  valid: boolean;
+  /** Risk score from 0.0 (safe) to 1.0 (critical) */
+  risk_score: number;
+  /** Human-readable explanation of the validation decision */
+  reasoning: string;
+  /** List of rule IDs that were triggered */
+  blocked_rules: string[];
+  /** Whether human approval is required before proceeding */
+  requires_approval: boolean;
+}
+
+/** ZK proof for a detection result */
+export interface ZKDetectionProof {
+  /** Unique proof identifier */
+  proof_id: string;
+  /** Merkle proof bytes encoded as hex string */
+  proof_bytes_hex: string;
+  /** Public inputs encoded as hex string (SHA-256 of detection_result) */
+  public_inputs_hex: string;
+  /** Proof type identifier */
+  proof_type: string;
 }

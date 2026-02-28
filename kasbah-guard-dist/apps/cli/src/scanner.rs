@@ -16,6 +16,9 @@ const TEXT_EXTENSIONS: &[&str] = &[
 
 const CHUNK_SIZE: usize = 4096;
 
+/// Constitutional AI service URL
+const CONSTITUTIONAL_AI_URL: &str = "http://localhost:3000/api/validate-intent";
+
 #[derive(serde::Serialize)]
 pub struct ScanResult {
     pub path: String,
@@ -24,6 +27,17 @@ pub struct ScanResult {
     pub reason: String,
     pub line_count: usize,
     pub chunks_scanned: usize,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct IntentValidationResult {
+    pub valid: bool,
+    pub risk_score: f64,
+    pub reasoning: String,
+    pub blocked_rules: Vec<String>,
+    pub requires_approval: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
 }
 
 /// Scan a single file in chunks, return the worst finding.
@@ -237,4 +251,284 @@ pub fn run_watch(path: &str, min_risk: u16, json_output: bool) -> i32 {
     }
 
     last_exit
+}
+
+// ── Constitutional AI Intent Validation ─────────────────────────────────────
+
+/// Local fallback: 5 Constitutional AI rule patterns (mirrors validator.ts)
+struct LocalPolicy {
+    rule_id: &'static str,
+    #[allow(dead_code)]
+    description: &'static str,
+    severity_score: f64,
+}
+
+const LOCAL_POLICIES: &[LocalPolicy] = &[
+    LocalPolicy {
+        rule_id: "injection_attack",
+        description: "Prompt injection attempt detected",
+        severity_score: 1.0,
+    },
+    LocalPolicy {
+        rule_id: "jailbreak_attempt",
+        description: "Jailbreak attempt detected",
+        severity_score: 1.0,
+    },
+    LocalPolicy {
+        rule_id: "data_exfiltration",
+        description: "Potential data exfiltration intent",
+        severity_score: 0.75,
+    },
+    LocalPolicy {
+        rule_id: "malware_intent",
+        description: "Malware development or distribution intent",
+        severity_score: 1.0,
+    },
+    LocalPolicy {
+        rule_id: "privacy_violation",
+        description: "Privacy violation intent",
+        severity_score: 0.75,
+    },
+];
+
+/// Check a single rule against intent text using regex-equivalent patterns
+fn check_rule(rule_id: &str, text: &str) -> bool {
+    let lower = text.to_lowercase();
+    match rule_id {
+        "injection_attack" => {
+            lower.contains("ignore") && lower.contains("previous")
+            || lower.contains("forget")
+            || lower.contains("new instructions")
+            || (lower.contains("role") && lower.contains("switch"))
+        }
+        "jailbreak_attempt" => {
+            lower.contains("jailbreak")
+            || lower.contains("bypass")
+            || lower.contains("circumvent")
+            || (lower.contains("disable") && lower.contains("safety"))
+        }
+        "data_exfiltration" => {
+            lower.contains("exfiltrate")
+            || lower.contains("steal")
+            || lower.contains("leak")
+            || (lower.contains("dump") && lower.contains("data"))
+            || (lower.contains("extract") && lower.contains("credentials"))
+            || lower.contains("credentials")
+        }
+        "malware_intent" => {
+            lower.contains("malware")
+            || lower.contains("ransomware")
+            || lower.contains("botnet")
+            || lower.contains("exploit")
+            || lower.contains("shellcode")
+        }
+        "privacy_violation" => {
+            lower.contains("spy")
+            || lower.contains("dox")
+            || lower.contains("doxx")
+            || lower.contains("stalking")
+            || lower.contains("harass")
+            || lower.contains("blackmail")
+        }
+        _ => false,
+    }
+}
+
+/// Calculate Shannon entropy of text (heuristic risk component)
+fn calculate_entropy(text: &str) -> f64 {
+    let mut freq = std::collections::HashMap::new();
+    for ch in text.chars() {
+        *freq.entry(ch).or_insert(0u64) += 1;
+    }
+    let len = text.chars().count() as f64;
+    if len == 0.0 { return 0.0; }
+    freq.values().fold(0.0f64, |acc, &count| {
+        let p = count as f64 / len;
+        acc - p * p.log2()
+    })
+}
+
+/// Calculate repetition score (heuristic risk component)
+fn calculate_repetition(text: &str) -> f64 {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.is_empty() { return 0.0; }
+    let mut counts = std::collections::HashMap::new();
+    for w in &words {
+        *counts.entry(w.to_lowercase()).or_insert(0u64) += 1;
+    }
+    let max_rep = counts.values().copied().max().unwrap_or(0) as f64;
+    max_rep / words.len() as f64
+}
+
+/// Local Constitutional AI validation (fallback when service is unavailable)
+fn validate_intent_local(text: &str, _policy: &str) -> IntentValidationResult {
+    let mut blocked_rules: Vec<String> = Vec::new();
+    let mut max_severity: f64 = 0.0;
+
+    for policy in LOCAL_POLICIES {
+        if check_rule(policy.rule_id, text) {
+            blocked_rules.push(policy.rule_id.to_string());
+            if policy.severity_score > max_severity {
+                max_severity = policy.severity_score;
+            }
+        }
+    }
+
+    // Heuristic risk
+    let mut heuristic_risk: f64 = 0.0;
+    if text.len() > 5000 { heuristic_risk += 0.1; }
+    let entropy = calculate_entropy(text);
+    if entropy > 5.5 { heuristic_risk += 0.15; }
+    let repetition = calculate_repetition(text);
+    if repetition > 0.3 { heuristic_risk += 0.1; }
+    heuristic_risk = heuristic_risk.min(0.5);
+
+    let risk_score = max_severity.max(heuristic_risk);
+    let valid = risk_score < 0.5;
+    let requires_approval = risk_score >= 0.4;
+
+    let reasoning = if blocked_rules.is_empty() {
+        format!(
+            "Intent appears safe (risk score: {:.1}%). No constitutional violations detected.",
+            risk_score * 100.0
+        )
+    } else {
+        format!(
+            "Intent rejected due to policy violations: {}. Risk score: {:.1}%. Requires manual review or approval.",
+            blocked_rules.join(", "),
+            risk_score * 100.0
+        )
+    };
+
+    IntentValidationResult {
+        valid,
+        risk_score,
+        reasoning,
+        blocked_rules,
+        requires_approval,
+        source: Some("local-fallback".to_string()),
+    }
+}
+
+/// Try to call the Constitutional AI service via HTTP; fall back to local validation.
+fn validate_intent_via_service(text: &str, policy: &str) -> IntentValidationResult {
+    let body = serde_json::json!({
+        "intent": text,
+        "policy_id": policy,
+    });
+
+    match ureq::post(CONSTITUTIONAL_AI_URL)
+        .set("Content-Type", "application/json")
+        .timeout(std::time::Duration::from_secs(3))
+        .send_json(&body)
+    {
+        Ok(response) => {
+            match response.into_json::<serde_json::Value>() {
+                Ok(v) => {
+                    // Parse the response from the service
+                    let valid = v["valid"].as_bool().unwrap_or(true);
+                    let risk_score = v["risk_score"].as_f64().unwrap_or(0.0);
+                    let reasoning = v["reasoning"].as_str().unwrap_or("").to_string();
+                    let blocked_rules: Vec<String> = v["blocked_rules"]
+                        .as_array()
+                        .map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect())
+                        .unwrap_or_default();
+                    let requires_approval = v["requires_approval"].as_bool().unwrap_or(false);
+                    IntentValidationResult {
+                        valid,
+                        risk_score,
+                        reasoning,
+                        blocked_rules,
+                        requires_approval,
+                        source: Some("constitutional-ai-service".to_string()),
+                    }
+                }
+                Err(_) => validate_intent_local(text, policy),
+            }
+        }
+        Err(_) => {
+            // Service unavailable — use local fallback silently
+            validate_intent_local(text, policy)
+        }
+    }
+}
+
+/// Print validation result in human-readable form
+fn print_validation_result(result: &IntentValidationResult) {
+    println!("Kasbah Guard — Constitutional AI Validator");
+    println!("──────────────────────────────────────────");
+
+    let status_icon = if result.valid { "✅" } else { "🚫" };
+    let status_text = if result.valid { "VALID".green() } else { "BLOCKED".red() };
+    println!("{} Status:    {}", status_icon, status_text);
+
+    let risk_pct = result.risk_score * 100.0;
+    let risk_display = if risk_pct >= 75.0 {
+        format!("{:.1}%", risk_pct).red().to_string()
+    } else if risk_pct >= 40.0 {
+        format!("{:.1}%", risk_pct).yellow().to_string()
+    } else {
+        format!("{:.1}%", risk_pct).green().to_string()
+    };
+    println!("   Risk:     {}", risk_display);
+
+    if !result.blocked_rules.is_empty() {
+        println!("   Blocked:  {}", result.blocked_rules.join(", ").red());
+    }
+
+    if result.requires_approval {
+        println!("   Approval: {}", "Required".yellow());
+    }
+
+    println!("   Reason:   {}", result.reasoning);
+
+    if let Some(ref src) = result.source {
+        println!("   Source:   {}", src.dimmed());
+    }
+
+    println!("──────────────────────────────────────────");
+}
+
+/// Validate user intent against Constitutional AI policies.
+/// Returns exit code: 0 = valid, 1 = requires approval, 2 = blocked.
+pub fn validate_intent(text: &str, policy: &str, json_out: bool) -> i32 {
+    let result = validate_intent_via_service(text, policy);
+
+    if json_out {
+        println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+    } else {
+        print_validation_result(&result);
+    }
+
+    if !result.valid {
+        2
+    } else if result.requires_approval {
+        1
+    } else {
+        0
+    }
+}
+
+/// Entry point for the validate-intent subcommand.
+pub fn run_validate_intent(text: Option<String>, from_stdin: bool, policy: &str, json_out: bool) -> i32 {
+    let intent_text = if from_stdin || text.is_none() {
+        // Read from stdin
+        let mut content = String::new();
+        match io::stdin().read_to_string(&mut content) {
+            Ok(_) => content.trim().to_string(),
+            Err(e) => {
+                eprintln!("Error reading stdin: {}", e);
+                return 2;
+            }
+        }
+    } else {
+        text.unwrap()
+    };
+
+    if intent_text.is_empty() {
+        eprintln!("Error: intent text is empty. Provide text as argument or via --stdin.");
+        return 2;
+    }
+
+    validate_intent(&intent_text, policy, json_out)
 }
