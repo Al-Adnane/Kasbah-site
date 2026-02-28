@@ -1,0 +1,46 @@
+[package]
+name = "kasbah-zk-engine"
+version = "1.0.0"
+edition = "2021"
+description = "Zero-knowledge proof engine for Kasbah Guard (arkworks-based)"
+
+[dependencies]
+# ZK framework
+ark-ff = "0.4"
+ark-ec = "0.4"
+ark-poly = "0.4"
+ark-relations = "0.4"
+ark-groth16 = "0.4"
+ark-plonk = "0.4"
+ark-snark = "0.4"
+
+# Curves
+ark-bls12-381 = "0.4"
+ark-bn254 = "0.4"
+
+# Serialization
+ark-serialize = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Hashing
+sha2 = "0.10"
+blake3 = "1.5"
+merkletree = "0.23"
+
+# Async
+tokio = { version = "1.35", features = ["full"] }
+async-trait = "0.1"
+
+# Utilities
+anyhow = "1.0"
+thiserror = "1.0"
+rand = "0.8"
+
+# Metrics
+prometheus = "0.13"
+tracing = "0.1"
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.4"
