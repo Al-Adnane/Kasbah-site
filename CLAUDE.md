@@ -35,7 +35,7 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 
 ### Product (locked)
 - **The product is the FREE browser extension** — that's it
-- **NO pricing, NO billing, NO Stripe, NO checkout** — forget it entirely
+- **NO pricing, NO billing, NO Stripe, NO checkout** — Stripe is PERMANENTLY REMOVED, never re-add it
 - **NO desktop app in scope** — extension is standalone, never mention Tauri/desktop to users
 - All install links go directly to browser stores (Chrome Web Store, Firefox AMO, Safari)
 - **NEVER add pricing pages, billing flows, or payment references to the website**
@@ -53,28 +53,54 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 
 ## AFTER MAKING CHANGES — VERIFICATION
 
-1. **detector.js**: Run `node fortress_grade_final_verification.cjs` — must pass
-2. **detector.js**: Verify all 6 browser copies have identical MD5 hash
-3. **content.js**: Verify all 7 copies have identical MD5 hash
-4. **selfTest()**: Must pass all invariants (currently 15/15)
-5. **Website**: All pages must return 200 on bekasbah.com
-6. **API**: Health check must return `{"ok":true}` on api.bekasbah.com
+1. **detector.js**: Run `node /tmp/kasbah-market-launch.cjs` — must pass 58/58
+2. **detector.js**: selfTest() must return 23/23
+3. **detector.js**: All 6 copies MD5 = `d9cd10f93c97c8de5078b0e9e98437fa`
+4. **content.js**: All 7 copies MD5 = `4d58ff74028499237b80a3c5bffd781b`
+5. **CLI**: `/tmp/kasbah-cli-build/release/kasbah selftest` → 10/10
+6. **Website**: All pages must return 200 on bekasbah.com
+7. **API**: `curl https://api.bekasbah.com/health` → `{"ok":true}`
 
 ## BUILD & DEPLOY
 
+- **CLI build**: `CARGO_TARGET_DIR=/tmp/kasbah-cli-build cargo build --release --manifest-path kasbah-guard-dist/apps/cli/Cargo.toml`
+- **CLI binary**: `/tmp/kasbah-cli-build/release/kasbah`
 - **Rust build**: `CARGO_TARGET_DIR=/tmp/kasbah-build cargo build --release`
 - **Deploy desktop**: `cp /tmp/kasbah-build/release/kasbah_guard_desktop "/Applications/KasbahGuard.app/Contents/MacOS/kasbah_guard_desktop"`
 - **Deploy website**: Push to `main` → Cloudflare Pages auto-deploys from `public/`
 - **Deploy API**: `cd api && wrangler deploy`
 - **Git flags**: Always use `git -c core.trustctime=false -c core.checkStat=minimal`
 
-## CURRENT VERSIONS — KASBAH 1.0.0
+## CURRENT VERSIONS — LOCKED AT v1.0.0
 
-- **All extensions**: v1.0.0 (Chrome, Firefox, Edge, Opera, Safari)
-- **detector.js**: v3.3.0 (hash: `bedcedf3a5ecee575c2a4bdfe423e591`) — identical across all 5 browsers
-- **content.js**: v1.0.0 (hash: `8fbad41322c21c98839352ac204564f5`) — identical across all 5 browsers
-- **Fortress Grade**: 34/34 (100% — UNBREAKABLE)
-- **selfTest**: 15/15 invariants PASS
+### All products: v1.0.0
+| Product | File |
+|---------|------|
+| Chrome / Firefox / Edge / Opera / Safari extensions | `extensions/*/manifest.json` |
+| CLI (kasbah) | `apps/cli/Cargo.toml` |
+| VS Code extension | `apps/vscode/package.json` |
+| @kasbah/guard SDK | `packages/sdk/package.json` |
+| Enterprise dashboard | `apps/enterprise/package.json` |
+| Mobile (Tauri) | `apps/mobile/package.json` |
+
+### Engine
+- **detector.js PATTERN_VERSION**: `3.5.2`
+- **detector.js MD5** (all 6 copies): `d9cd10f93c97c8de5078b0e9e98437fa`
+- **content.js MD5** (all 7 copies): `4d58ff74028499237b80a3c5bffd781b`
+- **selfTest()**: 23/23 PASS
+- **Market launch**: 58/58 PASS
+- **SDK ENGINE_VERSION**: `3.5.2`
+- **VS Code EXPECTED_ENGINE**: `3.5.2`
+- **API worker**: v2.0.0
+
+### API endpoints (v2.0.0)
+Auth: `POST /auth/register|verify|resend|login|logout` · `GET /auth/me|stats`
+Enterprise (Bearer): `GET /api/stats|audit/recent|policies|team` · `POST /api/scan`
+Moats: `GET /health` · `POST /moat/gate`
+**STRIPE IS GONE → `/stripe/*` = 404. Never re-add.**
+
+### CLI commands (v1.0.0)
+`kasbah scan <path>` · `kasbah scan -` (stdin) · `kasbah redact <file>` · `kasbah watch <path>` · `kasbah selftest`
 
 ## LOCKED ARCHITECTURE — SESSION FINAL (NON-REGRESS)
 
@@ -143,15 +169,19 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 - **Rationale**: ChatGPT and other platforms enforce Trusted Types CSP; `innerHTML` assignment throws error
 
 ### No Regress Rules
-1. **detector.js**: NEVER remove patterns. Only ADD patterns for new document types.
-2. **content.js**: NEVER remove moats. Only ADD moats if new exfiltration vector discovered.
-3. **Hashes**: If content.js or detector.js changes, ALL 5 browser copies must have identical hash. If hashes diverge, it's a BUG.
-4. **Manifests**: All 5 manifests must have identical version (currently 1.0.0) and must all have `world: "MAIN"`, `run_at: "document_start"`, `all_frames: true` where applicable.
-5. **Same-site bypass**: NEVER remove. It's the reason the extension doesn't break AI platforms.
-6. **Approval window**: NEVER remove. It's the reason "Proceed Anyway" works without egress gate re-blocking.
-7. **Image paste intercept**: NEVER remove. It's the only defense against screenshot exfiltration.
+1. **detector.js**: NEVER remove patterns. Only ADD for new document types.
+2. **content.js**: NEVER remove moats. Only ADD for new exfiltration vectors.
+3. **Hashes**: All copies must have identical hash. Divergence = BUG, must be fixed immediately.
+4. **Manifests**: All 5 must be `version: "1.0.0"`, `world: "MAIN"`, `run_at: "document_start"`, `all_frames: true`.
+5. **Same-site bypass**: NEVER remove (keeps extension from breaking AI platforms).
+6. **Approval window**: NEVER remove ("Proceed Anyway" would double-block without it).
+7. **Image paste intercept**: NEVER remove (only defense against screenshot exfiltration).
+8. **selfTest**: Must remain 23/23 after ANY detector.js change.
+9. **Market launch**: Must remain 58/58 after ANY detector.js change.
+10. **CLI selftest**: Must remain 10/10 after ANY CLI/kernel change.
+11. **Stripe**: PERMANENTLY REMOVED. Never re-add for any reason.
 
-### Test Files (IMMUTABLE)
-- `kasbah-guard-dist/fortress_grade_final_verification.cjs`: Must always pass 34/34
-- `kasbah-guard-dist/extensions/chrome/src/detector.js`: Must always pass selfTest() 15/15
-- If either test fails, the change is BROKEN and must be reverted immediately
+### Test Commands (IMMUTABLE GATE)
+- `node /tmp/kasbah-market-launch.cjs` → 58/58 (detector gate)
+- `/tmp/kasbah-cli-build/release/kasbah selftest` → 10/10 (CLI gate)
+- If any test fails, the change is BROKEN and must be reverted immediately.
