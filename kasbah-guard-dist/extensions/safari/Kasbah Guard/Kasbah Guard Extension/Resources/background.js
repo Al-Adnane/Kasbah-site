@@ -1,17 +1,83 @@
-// Kasbah Guard - Background Service Worker v1.1.0 (Safari)
-// Safari compatibility: browser.* API with chrome.* fallback
-const api = typeof browser !== 'undefined' ? browser : chrome;
+// Kasbah Guard - Background Service Worker v2.0.0
 const GUARD_URL = 'http://127.0.0.1:8788';
 let healthFailCount = 0;
+let badgeFlashTimeout = null;
+
+// ── Sentry Error Tracking (v2.0.0) ────────────────────────────────────────
+// Privacy-first error tracking: no URLs, no user data, no secrets
+const SENTRY_ENDPOINT = 'https://api.bekasbah.com/api/sentry';
+const SENTRY_ENABLED = typeof fetch !== 'undefined';
+
+function sendSentryError(type, message, stack, context = {}) {
+  if (!SENTRY_ENABLED) return;
+
+  // Privacy-first: strip sensitive data
+  const sanitizedMessage = message.toString()
+    .replace(/http[s]?:\/\/[^\s]+/g, '[URL]')
+    .replace(/\d{3}-\d{2}-\d{4}/g, '[SSN]')
+    .replace(/4[0-9]{12}(?:[0-9]{3})?/g, '[CC]');
+
+  const event = {
+    type,
+    message: sanitizedMessage,
+    stack: stack ? stack.toString().split('\n').slice(0, 5).join('\n') : '',
+    context: {
+      extensionVersion: '2.0.0',
+      browser: 'chrome',
+      timestamp: new Date().toISOString(),
+      ...context
+    }
+  };
+
+  fetch(SENTRY_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(event)
+  }).catch(() => {}); // Silent fail - don't break extension on network error
+}
+
+// Global error handler
+self.addEventListener('error', (event) => {
+  sendSentryError('extension_error', event.message, event.filename + ':' + event.lineno, {
+    errorType: 'uncaughtError'
+  });
+});
+
+// Promise rejection handler
+self.addEventListener('unhandledrejection', (event) => {
+  sendSentryError('unhandled_rejection', event.reason, '', {
+    errorType: 'rejectionError'
+  });
+});
 
 async function checkGuardStatus() {
   try {
+    const start = performance.now();
     const r = await fetch(`${GUARD_URL}/status`, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+    const latency = performance.now() - start;
+
+    // Track slow Guard service
+    if (latency > 5000) {
+      sendSentryError('guard_timeout', `Guard status check took ${latency.toFixed(0)}ms`, '', {
+        latency: Math.round(latency),
+        errorType: 'slowResponse'
+      });
+    }
+
     const d = await r.json();
     healthFailCount = 0;
     return d;
-  } catch {
+  } catch (error) {
     healthFailCount++;
+
+    // Track Guard service failures
+    if (healthFailCount >= 4) {
+      sendSentryError('guard_failure', `Guard health check failed (${healthFailCount} attempts)`, error.stack, {
+        healthFailCount,
+        errorType: 'guardConnectivity'
+      });
+    }
+
     return null;
   }
 }
@@ -20,27 +86,65 @@ async function updateBadge() {
   const data = await checkGuardStatus();
   const on = data && data.ok === true;
 
+  // Don't override flash badge
+  if (badgeFlashTimeout) return;
+
   if (healthFailCount >= 4) {
-    // 4 consecutive failures (1 minute) = crash detected
-    api.action.setBadgeText({ text: '!' });
-    api.action.setBadgeBackgroundColor({ color: '#dc2626' });
+    chrome.action.setBadgeText({ text: '!' });
+    chrome.action.setBadgeBackgroundColor({ color: '#dc2626' });
     return;
   }
 
-  api.action.setBadgeText({ text: on ? '\u2713' : '\u2717' });
-  api.action.setBadgeBackgroundColor({ color: on ? '#059669' : '#dc2626' });
+  chrome.action.setBadgeText({ text: on ? '\u2713' : '\u2717' });
+  chrome.action.setBadgeBackgroundColor({ color: on ? '#059669' : '#dc2626' });
 }
 
-api.runtime.onInstalled.addListener(() => {
-  console.log('[Kasbah Guard] Extension v1.1.0 installed \u2014 5-verb interception active across 30+ AI platforms');
+// Flash badge red with "!" for 3s on block events, then reset
+function flashBadge() {
+  if (badgeFlashTimeout) clearTimeout(badgeFlashTimeout);
+  chrome.action.setBadgeText({ text: '!' });
+  chrome.action.setBadgeBackgroundColor({ color: '#C1440E' });
+  badgeFlashTimeout = setTimeout(function() {
+    badgeFlashTimeout = null;
+    updateBadge();
+  }, 3000);
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('[Kasbah Guard] Extension v2.0.0 installed — 6-verb interception across 30+ AI platforms');
   updateBadge();
-  api.storage.local.set({ guardEnabled: true, notifications: true, version: '1.1.0' });
+  chrome.storage.local.set({ guardEnabled: true, notifications: true, version: '2.0.0' });
 });
 
-api.runtime.onStartup.addListener(() => { updateBadge(); });
-setInterval(updateBadge, 15000);
+// ── Suspend / Startup handlers (adversarial race fix) ──────────────────────
+// Saves pending state before service worker suspends so nothing is lost
+// across an extension disable/update/browser-restart race.
+chrome.runtime.onSuspend.addListener(() => {
+  chrome.storage.local.set({
+    lastSuspend: Date.now(),
+    guardEnabled: true  // Preserve enabled state across suspend
+  });
+  console.log('[Kasbah Guard] Service worker suspending — state saved');
+});
 
-api.runtime.onMessage.addListener((msg, sender, respond) => {
+chrome.runtime.onStartup.addListener(() => {
+  // Restore state after browser restart / extension re-enable
+  chrome.storage.local.get(['lastSuspend', 'guardEnabled'], (data) => {
+    if (data.lastSuspend) {
+      const gapMs = Date.now() - data.lastSuspend;
+      console.log(`[Kasbah Guard] Resumed after ${Math.round(gapMs/1000)}s gap`);
+    }
+    // Re-enable guard if it was active before suspension
+    if (data.guardEnabled !== false) {
+      chrome.storage.local.set({ guardEnabled: true });
+    }
+  });
+  updateBadge();
+});
+
+setInterval(updateBadge, 10000); // 10s (was 15s)
+
+chrome.runtime.onMessage.addListener((msg, sender, respond) => {
   if (msg.type === 'CHECK_STATUS') {
     checkGuardStatus().then(data => respond({ online: data && data.ok, data: data }));
     return true;
@@ -53,6 +157,10 @@ api.runtime.onMessage.addListener((msg, sender, respond) => {
       respond({ stats: data && data.stats ? data.stats : null });
     });
     return true;
+  }
+  // Block event from content.js — flash badge
+  if (msg.type === 'BLOCK_EVENT') {
+    flashBadge();
   }
   return true;
 });
@@ -67,7 +175,7 @@ const AI_DOMAINS = [
   'bard.google.com', 'chat.openai.com', 'bing.com', 'duckduckgo.com'
 ];
 
-api.tabs.onUpdated.addListener((tabId, info, tab) => {
+chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
   if (info.status === 'complete' && tab.url) {
     const isAI = AI_DOMAINS.some(d => tab.url.includes(d));
     if (isAI) {

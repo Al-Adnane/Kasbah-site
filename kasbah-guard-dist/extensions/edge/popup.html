@@ -3,59 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <style>
+    :root{--red:#C1440E;--bg:#FEFCFA;--card:#FFFFFF;--green:#065F46;--muted:#64748B;--border:#E2DDD7;--ink:#0F172A;--subtle:#94A3B8}
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,-apple-system,sans-serif;background:#fafaf9;color:#1c1917;width:320px;min-height:200px}
-    .header{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid #e7e5e4}
-    .logo{width:40px;height:40px;border-radius:12px}
+    body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);width:340px;min-height:200px}
+
+    /* Header */
+    .header{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}
+    .logo{width:36px;height:36px;border-radius:10px}
     .brand{flex:1}
-    .brand-name{font-weight:800;font-size:16px}
-    .brand-tag{font-size:11px;color:#78716c}
-    .status{padding:16px}
-    .status-row{display:flex;align-items:center;justify-content:space-between;padding:12px;background:#f5f5f4;border-radius:12px;margin-bottom:12px}
-    .status-indicator{display:flex;align-items:center;gap:8px}
-    .dot{width:10px;height:10px;border-radius:50%;background:#dc2626}
-    .dot.on{background:#16a34a}
-    .status-text{font-size:13px;font-weight:600}
-    .crypto-tag{font-size:9px;color:#78716c;background:#f5f5f4;padding:2px 6px;border-radius:4px;border:1px solid #e7e5e4}
+    .brand-name{font-weight:900;font-size:15px;letter-spacing:-.02em;color:var(--ink)}
+    .brand-tag{font-size:10px;color:var(--muted);font-weight:600}
+    .status-dot{width:10px;height:10px;border-radius:50%;background:#dc2626;flex-shrink:0}
+    .status-dot.on{background:var(--green);animation:pulse 2s ease infinite}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(6,95,70,.3)}50%{box-shadow:0 0 0 6px rgba(6,95,70,0)}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Status row */
+    .status-row{display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border)}
+    .status-text{font-size:12px;font-weight:700;flex:1}
+    .crypto-tag{font-size:9px;color:var(--muted);background:rgba(6,95,70,.06);padding:3px 8px;border-radius:5px;font-weight:700;border:1px solid rgba(6,95,70,.1)}
 
     /* Binding Ceremony */
-    .ceremony{padding:0 16px 12px;display:none}
-    .ceremony.show{display:block}
-    .ceremony-prompt{font-size:14px;font-weight:800;text-align:center;margin-bottom:10px}
-    .ceremony-sub{font-size:11px;color:#78716c;text-align:center;margin-bottom:12px}
-    .btn-bind{display:block;width:100%;padding:12px;border-radius:10px;border:none;font-weight:800;font-size:14px;cursor:pointer;text-align:center;font-family:inherit;background:#1c1917;color:#fff;transition:opacity .15s}
-    .btn-bind:hover{opacity:.85}
+    .ceremony{padding:16px 18px;display:none;text-align:center}
+    .ceremony.show{display:block;animation:fadeIn .3s ease}
+    .ceremony-prompt{font-size:14px;font-weight:900;margin-bottom:6px;color:var(--ink)}
+    .ceremony-sub{font-size:11px;color:var(--muted);margin-bottom:14px}
+    .btn-bind{display:block;width:100%;padding:13px;border-radius:12px;border:none;font-weight:900;font-size:14px;cursor:pointer;text-align:center;font-family:inherit;background:var(--red);color:#fff;transition:all .2s;box-shadow:0 4px 16px rgba(193,68,14,.2)}
+    .btn-bind:hover{transform:scale(1.02);box-shadow:0 6px 24px rgba(193,68,14,.3)}
+    .btn-bind:active{transform:scale(.98)}
 
-    /* Authority state */
-    .authority-box{padding:0 16px 12px}
-    .auth-status{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f5f5f4;border:1px solid #e7e5e4;border-radius:10px;margin-bottom:8px}
-    .auth-label{font-size:10px;font-weight:700;color:#78716c;text-transform:uppercase;letter-spacing:.04em}
-    .auth-value{font-size:13px;font-weight:800;flex:1}
-    .auth-badge{font-size:9px;font-weight:800;padding:3px 8px;border-radius:6px}
-    .badge-bound{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
-    .badge-unbound{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
-    .badge-reclaimed{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+    /* Stats */
+    .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 18px}
+    .stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;transition:all .2s}
+    .stat:hover{border-color:var(--red);transform:translateY(-1px)}
+    .stat-val{font-size:20px;font-weight:900;letter-spacing:-.02em}
+    .stat-lbl{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 
-    /* Saves counter */
-    .saves{padding:0 16px 12px;text-align:center}
-    .saves-box{padding:12px;border:2px solid #1c1917;border-radius:10px}
-    .saves-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#78716c;margin-bottom:2px}
-    .saves-count{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums}
-    .saves-sub{font-size:9px;color:#78716c}
+    /* Verb Grid */
+    .verb-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:0 18px 12px}
+    .vg-cell{text-align:center;padding:8px 2px;border-radius:8px;border:1px solid var(--border);background:var(--card);transition:all .2s}
+    .vg-cell:hover{transform:translateY(-1px);border-color:var(--red)}
+    .vg-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+    .vg-count{font-size:14px;font-weight:900;line-height:1}
 
-    .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 12px}
-    .stat{background:#f5f5f4;border:1px solid #e7e5e4;border-radius:12px;padding:10px;text-align:center}
-    .stat-val{font-size:18px;font-weight:800}
-    .stat-lbl{font-size:10px;color:#78716c;margin-top:2px}
-    .actions{padding:0 16px 16px}
-    .btn{display:block;width:100%;padding:11px;border-radius:999px;border:none;font-weight:700;font-size:13px;cursor:pointer;text-align:center;text-decoration:none;margin-top:8px;transition:all .15s;font-family:inherit}
-    .btn-ledger{background:#1c1917;color:#fafaf9}
-    .btn-ledger:hover{background:#333}
-    .btn-reclaim{background:#dc2626;color:#fff;border:none}
-    .btn-reclaim:hover{background:#b91c1c}
-    .footer{padding:12px 16px;border-top:1px solid #e7e5e4;text-align:center;font-size:11px;color:#78716c}
-    .footer a{color:#1c1917;text-decoration:none}
+    /* Actions */
+    .actions{padding:8px 18px 14px;display:flex;gap:8px}
+    .btn{flex:1;padding:11px;border-radius:10px;border:none;font-weight:800;font-size:12px;cursor:pointer;text-align:center;font-family:inherit;transition:all .15s}
+    .btn-dark{background:var(--ink);color:var(--bg)}
+    .btn-dark:hover{background:#333}
+    .btn-danger{background:rgba(220,38,38,.06);color:#dc2626;border:1px solid rgba(220,38,38,.15)}
+    .btn-danger:hover{background:rgba(220,38,38,.12)}
+
+    /* Footer */
+    .footer{padding:10px 18px;border-top:1px solid var(--border);text-align:center;font-size:10px;color:var(--muted)}
+    .footer a{color:var(--ink);text-decoration:none;font-weight:700}
+    .footer a:hover{color:var(--red)}
+
     .hide{display:none!important}
+
+    /* Modal Overlay */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal-overlay.show{display:flex;animation:fadeIn .2s ease}
+    .modal-box{background:var(--card);border-radius:14px;padding:20px;width:90%;max-width:350px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .modal-title{font-size:16px;font-weight:900;margin-bottom:8px;color:var(--ink)}
+    .modal-desc{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5}
+    .fp-form{display:flex;flex-direction:column;gap:10px}
+    .fp-input,.fp-textarea{padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;color:var(--ink)}
+    .fp-input:focus,.fp-textarea:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(193,68,14,.1)}
+    .fp-textarea{resize:vertical;min-height:60px}
+    .fp-actions{display:flex;gap:10px;margin-top:8px}
+    .fp-submit{flex:1;padding:10px;background:var(--red);color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px;transition:all .2s}
+    .fp-submit:hover{opacity:.9;transform:scale(1.01)}
+    .fp-cancel{flex:1;padding:10px;background:var(--border);color:var(--ink);border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px}
   </style>
 </head>
 <body>
@@ -65,63 +84,62 @@
       <div class="brand-name">Kasbah Guard</div>
       <div class="brand-tag">Your data, your rules</div>
     </div>
-  </div>
-  <div class="status">
-    <div class="status-row">
-      <div class="status-indicator">
-        <div class="dot" id="dot"></div>
-        <span class="status-text" id="txt">Checking...</span>
-      </div>
-      <span class="crypto-tag" id="cryptoTag">&mdash;</span>
-    </div>
+    <div class="status-dot" id="dot"></div>
   </div>
 
-  <!-- Binding Ceremony (shown when UNBOUND) -->
+  <div class="status-row">
+    <span class="status-text" id="txt">Checking...</span>
+    <span class="crypto-tag" id="cryptoTag">&mdash;</span>
+  </div>
+
+  <!-- Binding Ceremony -->
   <div class="ceremony" id="ceremonyBox">
     <div class="ceremony-prompt">Who is in charge of this browser session?</div>
     <div class="ceremony-sub">Confirm to activate browser protection.</div>
     <button class="btn-bind" id="bindBtn">I am.</button>
   </div>
 
-  <!-- Authority state (shown after binding) -->
-  <div class="authority-box" id="authorityBox">
-    <div class="auth-status">
-      <div>
-        <div class="auth-label">Session</div>
-        <div class="auth-value" id="authSession">Detecting...</div>
-      </div>
-      <span class="auth-badge badge-unbound" id="authBadge">UNBOUND</span>
-    </div>
-    <div class="auth-status">
-      <div>
-        <div class="auth-label">Authority</div>
-        <div class="auth-value" id="authHolder">Not claimed</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Saves counter -->
-  <div class="saves">
-    <div class="saves-box">
-      <div class="saves-label">Interceptions</div>
-      <div class="saves-count" id="savesCount">0</div>
-      <div class="saves-sub">times we had your back</div>
-    </div>
-  </div>
-
-  <div class="stats">
+  <!-- Stats -->
+  <div class="stats" id="statsRow" style="animation:fadeIn .3s ease .1s both">
     <div class="stat"><div class="stat-val" id="sTotal">0</div><div class="stat-lbl">Decisions</div></div>
-    <div class="stat"><div class="stat-val" id="sAllow" style="color:#16a34a">0</div><div class="stat-lbl">Allowed</div></div>
+    <div class="stat"><div class="stat-val" id="sAllow" style="color:var(--green)">0</div><div class="stat-lbl">Allowed</div></div>
     <div class="stat"><div class="stat-val" id="sDeny" style="color:#dc2626">0</div><div class="stat-lbl">Stopped</div></div>
   </div>
 
+  <!-- Verb Grid -->
+  <div class="verb-grid" id="verbGridPopup" style="animation:fadeIn .3s ease .2s both">
+    <div class="vg-cell"><div class="vg-label" style="color:#1E3A8A">Send</div><div class="vg-count" style="color:#1E3A8A" id="pvSend">0</div></div>
+    <div class="vg-cell"><div class="vg-label" style="color:#F59E0B">Paste</div><div class="vg-count" style="color:#F59E0B" id="pvPaste">0</div></div>
+    <div class="vg-cell"><div class="vg-label" style="color:#C1440E">Upload</div><div class="vg-count" style="color:#C1440E" id="pvUpload">0</div></div>
+    <div class="vg-cell"><div class="vg-label" style="color:#065F46">Down</div><div class="vg-count" style="color:#065F46" id="pvDownload">0</div></div>
+    <div class="vg-cell"><div class="vg-label" style="color:#a855f7">Browse</div><div class="vg-count" style="color:#a855f7" id="pvBrowse">0</div></div>
+    <div class="vg-cell"><div class="vg-label" style="color:#14b8a6">Edit</div><div class="vg-count" style="color:#14b8a6" id="pvEdit">0</div></div>
+  </div>
+
+  <!-- Actions -->
   <div class="actions">
-    <a href="http://127.0.0.1:8788/audit?limit=50" target="_blank" class="btn btn-ledger">View Authority Ledger</a>
-    <button class="btn btn-reclaim" id="reclaimBtn">Reclaim Authority</button>
+    <a href="http://127.0.0.1:8788/audit?limit=50" target="_blank" class="btn btn-dark" style="text-decoration:none">Open Dashboard</a>
+    <button class="btn btn-danger" id="reportFPBtn">Report FP</button>
   </div>
 
   <div class="footer">
-    <a href="https://github.com/Al-Adnane/Kasbah-site" target="_blank">GitHub</a> &middot; v1.3.0 &middot; <span id="engineTag" style="font-size:10px;color:#16a34a">TF-IDF ML</span>
+    <a href="https://bekasbah.com" target="_blank">bekasbah.com</a> &middot; v2.0.0 &middot; <span id="engineTag" style="font-size:9px;color:var(--green);font-weight:700">TF-IDF ML</span>
+  </div>
+
+  <!-- False Positive Report Modal -->
+  <div class="modal-overlay" id="fpModal">
+    <div class="modal-box">
+      <div class="modal-title">Report False Positive</div>
+      <div class="modal-desc">Help us improve. What triggered the alert?</div>
+      <form class="fp-form" id="fpForm">
+        <input type="text" class="fp-input" id="fpPattern" placeholder="Pattern (e.g., 'password=test')" required>
+        <textarea class="fp-textarea" id="fpContext" placeholder="Context (optional): What were you trying to do?"></textarea>
+        <div class="fp-actions">
+          <button type="button" class="fp-cancel" id="fpCancel">Cancel</button>
+          <button type="submit" class="fp-submit">Send Report</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -132,16 +150,8 @@
     function updateUI() {
       if (isBound) {
         document.getElementById('ceremonyBox').classList.remove('show');
-        document.getElementById('authBadge').className = 'auth-badge badge-bound';
-        document.getElementById('authBadge').textContent = 'BOUND';
-        document.getElementById('authSession').textContent = 'Active';
-        document.getElementById('authHolder').textContent = 'You (personal)';
       } else {
         document.getElementById('ceremonyBox').classList.add('show');
-        document.getElementById('authBadge').className = 'auth-badge badge-unbound';
-        document.getElementById('authBadge').textContent = 'UNBOUND';
-        document.getElementById('authSession').textContent = 'Unbound';
-        document.getElementById('authHolder').textContent = 'Not claimed';
       }
     }
 
@@ -150,6 +160,7 @@
       var btn = this;
       btn.disabled = true;
       btn.textContent = 'Binding...';
+      btn.style.opacity = '.7';
 
       fetch(GUARD + '/events', {
         method: 'POST',
@@ -161,20 +172,20 @@
       }).then(function() {
         isBound = true;
         localStorage.setItem(BOUND_KEY, 'true');
-        btn.textContent = 'I am.';
-        btn.disabled = false;
-        updateUI();
+        btn.textContent = 'Bound ✓';
+        btn.style.background = '#065F46';
+        setTimeout(function() { btn.textContent = 'I am.'; btn.style.opacity = '1'; btn.style.background = ''; btn.disabled = false; updateUI(); }, 1200);
       }).catch(function(err) {
         btn.textContent = 'I am.';
         btn.disabled = false;
+        btn.style.opacity = '1';
         alert('Binding failed: ' + err.message + '\n\nMake sure the desktop guard is running.');
       });
     });
 
-    // Reclaim — the kill switch
+    // Reclaim
     document.getElementById('reclaimBtn').addEventListener('click', function() {
       if (!confirm('Reset your session? You can re-bind anytime.')) return;
-
       var btn = this;
       btn.disabled = true;
       btn.textContent = 'Reclaiming...';
@@ -188,45 +199,115 @@
         localStorage.setItem(BOUND_KEY, 'false');
         btn.disabled = false;
         btn.textContent = 'Reclaim Authority';
-        document.getElementById('authBadge').className = 'auth-badge badge-reclaimed';
-        document.getElementById('authBadge').textContent = 'RECLAIMED';
-        document.getElementById('authSession').textContent = 'Reclaimed';
-        document.getElementById('authHolder').textContent = 'Authority reclaimed';
-        // Show ceremony again
         document.getElementById('ceremonyBox').classList.add('show');
       }).catch(function() {
-        // Reclaim even if guard offline (sovereignty must be absolute)
         isBound = false;
         localStorage.setItem(BOUND_KEY, 'false');
         btn.disabled = false;
         btn.textContent = 'Reclaim Authority';
-        document.getElementById('authBadge').className = 'auth-badge badge-reclaimed';
-        document.getElementById('authBadge').textContent = 'RECLAIMED';
         document.getElementById('ceremonyBox').classList.add('show');
       });
     });
 
-    // Status polling + Saves counter
+    // Poll status + stats + verb counts
     function poll() {
+      // Status
       fetch(GUARD + '/status', {cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
         var ok = d.ok === true;
-        document.getElementById('dot').className = 'dot' + (ok ? ' on' : '');
-        document.getElementById('txt').textContent = ok ? 'Active' : 'Offline';
+        document.getElementById('dot').className = 'status-dot' + (ok ? ' on' : '');
+        document.getElementById('txt').textContent = ok ? 'Active — protecting you' : 'Offline';
         if (d.crypto) document.getElementById('cryptoTag').textContent = d.crypto.toUpperCase();
         if (d.classifier) document.getElementById('engineTag').textContent = d.classifier_type === 'statistical_ml' ? 'TF-IDF ML' : d.classifier;
         if (d.stats) {
-          document.getElementById('sTotal').textContent = d.stats.total || 0;
-          document.getElementById('sAllow').textContent = d.stats.allowed || 0;
-          document.getElementById('sDeny').textContent = d.stats.denied || 0;
-          // Saves counter
-          var saves = (d.stats.secrets_caught || 0) + (d.stats.denied || 0);
-          document.getElementById('savesCount').textContent = saves;
+          animCounter('sTotal', d.stats.total || 0);
+          animCounter('sAllow', d.stats.allowed || 0);
+          animCounter('sDeny', d.stats.denied || 0);
         }
       }).catch(function(){
-        document.getElementById('dot').className = 'dot';
+        document.getElementById('dot').className = 'status-dot';
         document.getElementById('txt').textContent = 'Offline';
       });
+
+      // Verb stats
+      fetch(GUARD + '/verb/stats', {cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+        if (!d.ok) return;
+        var vc = d.verb_counts || {};
+        animCounter('pvSend', vc.send || 0);
+        animCounter('pvPaste', vc.paste || 0);
+        animCounter('pvUpload', vc.upload || 0);
+        animCounter('pvDownload', vc.download || 0);
+        animCounter('pvBrowse', vc.browse || 0);
+        animCounter('pvEdit', vc.edit || 0);
+      }).catch(function(){});
     }
+
+    function animCounter(id, target) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var current = parseInt(el.textContent) || 0;
+      if (current === target) return;
+      var start = performance.now();
+      function step(ts) {
+        var p = Math.min((ts - start) / 350, 1);
+        el.textContent = Math.round(current + (target - current) * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // False Positive Reporting
+    var fpModal = document.getElementById('fpModal');
+    var fpForm = document.getElementById('fpForm');
+    var reportFPBtn = document.getElementById('reportFPBtn');
+    var fpCancel = document.getElementById('fpCancel');
+
+    reportFPBtn.addEventListener('click', function() {
+      fpModal.classList.add('show');
+      document.getElementById('fpPattern').focus();
+    });
+
+    fpCancel.addEventListener('click', function() {
+      fpModal.classList.remove('show');
+    });
+
+    fpModal.addEventListener('click', function(e) {
+      if (e.target === fpModal) fpModal.classList.remove('show');
+    });
+
+    fpForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var pattern = document.getElementById('fpPattern').value.trim();
+      var context = document.getElementById('fpContext').value.trim();
+
+      if (!pattern) {
+        alert('Please enter the pattern that triggered the alert.');
+        return;
+      }
+
+      // Send to observability endpoint
+      fetch('https://api.bekasbah.com/api/false-positives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pattern: pattern,
+          context: context,
+          extensionVersion: '2.0.0',
+          browser: 'chrome',
+          timestamp: new Date().toISOString()
+        })
+      }).then(function(r) {
+        if (r.ok) {
+          document.getElementById('fpPattern').value = '';
+          document.getElementById('fpContext').value = '';
+          fpModal.classList.remove('show');
+          alert('Thanks! Your report helps us improve detection.');
+        } else {
+          alert('Failed to send report. Please try again.');
+        }
+      }).catch(function() {
+        alert('Network error. Please check your connection.');
+      });
+    });
 
     updateUI();
     poll();

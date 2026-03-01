@@ -1064,6 +1064,82 @@ function scanRequestRisk(body) {
   return Math.min(score, 100);
 }
 
+// ══════════════════════════════════════════════════════════════
+// OBSERVABILITY: False Positive Collection & Analysis
+// ══════════════════════════════════════════════════════════════
+async function handleFalsePositive(request, env) {
+  try {
+    const body = await request.json();
+    const { pattern, context, extensionVersion, browser, timestamp } = body;
+
+    if (!pattern || typeof pattern !== 'string') {
+      return err('Missing or invalid pattern', 400);
+    }
+
+    // Store in KV — deduplication by pattern+hash
+    const key = `fp:${browser}:${new Date(timestamp).toISOString().split('T')[0]}:${pattern.slice(0, 20)}`;
+    const id = await env.KASBAH_KV.get(key) || `fp_${Math.random().toString(36).substr(2, 9)}`;
+
+    await env.KASBAH_KV.put(key, JSON.stringify({
+      id,
+      pattern,
+      context: context || '',
+      extensionVersion,
+      browser,
+      timestamp,
+      count: (await env.KASBAH_KV.get(key, 'json'))?.count ?
+             ((await env.KASBAH_KV.get(key, 'json')).count + 1) : 1
+    }), { expirationTtl: 86400 * 30 }); // 30-day retention
+
+    return json({ ok: true, message: 'False positive report received', id });
+  } catch (e) {
+    return err('Failed to process false positive: ' + e.message, 400);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// OBSERVABILITY: Sentry Error Event Collector
+// Privacy-first: NO URLs, NO user data, NO secrets in logs
+// ══════════════════════════════════════════════════════════════
+async function handleSentryEvent(request, env) {
+  try {
+    const body = await request.json();
+    const { type, message, stack, context } = body;
+
+    if (!type || !message) {
+      return err('Missing type or message', 400);
+    }
+
+    // Sanitize message (URLs already stripped by extension)
+    const sanitized = {
+      type,
+      message: (message || '').slice(0, 500),
+      stack: (stack || '').slice(0, 1000),
+      context: {
+        extensionVersion: context?.extensionVersion,
+        browser: context?.browser,
+        timestamp: new Date().toISOString(),
+        errorType: context?.errorType
+      }
+    };
+
+    // Store in KV for analysis (dedup by type + message hash)
+    const hash = sanitized.type + ':' + sanitized.message.slice(0, 30);
+    const key = `error:${hash}`;
+    const existing = await env.KASBAH_KV.get(key, 'json') || { count: 0, lastSeen: Date.now() };
+
+    await env.KASBAH_KV.put(key, JSON.stringify({
+      ...sanitized,
+      count: existing.count + 1,
+      lastSeen: Date.now()
+    }), { expirationTtl: 86400 * 7 }); // 7-day retention
+
+    return json({ ok: true, message: 'Error event recorded' });
+  } catch (e) {
+    return err('Failed to process error event: ' + e.message, 400);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     // Handle CORS preflight
@@ -1146,6 +1222,12 @@ export default {
         const { reliability = 1.0, brittleness = 0.0, harm = 0.0 } = body;
         const gate = apiGateCheck(Number(reliability), Number(brittleness), Number(harm));
         response = json({ ok: true, gate });
+      } else if (method === 'POST' && path === '/api/false-positives') {
+        // Observability: Collect false positive reports from extensions
+        response = await handleFalsePositive(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/api/sentry') {
+        // Observability: Sentry error tracking endpoint
+        response = await handleSentryEvent(_clonedRequest, env);
       } else {
         response = err('Not found', 404);
       }

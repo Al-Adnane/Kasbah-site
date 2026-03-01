@@ -691,9 +691,10 @@ function contextFilter(text) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// CORE: classify() — 12-Layer Detection Engine
+// CORE: _classifyCore() — 12-Layer Detection Engine
+// Wrapped by classify() with performance telemetry below
 // ══════════════════════════════════════════════════════════════
-function classify(text) {
+function _classifyCore(text) {
   // ── LAYER 9: Efficiency — Early exits ──
   if (!text || text.length === 0) {
     return { risk: 0, decision: "ALLOW", reason: "Empty text", content_hash: hybridHash(""),
@@ -1136,6 +1137,60 @@ function getRisk(text) {
 
 function getDecision(text) {
   return classify(text).decision;
+}
+
+// ══════════════════════════════════════════════════════════════
+// OBSERVABILITY: Performance Telemetry v2.0.0
+// Track detection latency for monitoring and optimization
+// Privacy-first: only aggregate statistics, never individual content
+// ══════════════════════════════════════════════════════════════
+var performanceMetrics = {
+  latencies: [],
+  maxLatencies: [],
+  currentBurst: 0
+};
+
+function reportDetectionLatency(latencyMs) {
+  if (typeof performance === 'undefined') return;
+
+  performanceMetrics.latencies.push(latencyMs);
+  performanceMetrics.currentBurst++;
+
+  // Keep only last 100 measurements
+  if (performanceMetrics.latencies.length > 100) {
+    performanceMetrics.latencies.shift();
+  }
+
+  // Track burst patterns (>5 detections in 1s) for behavioral analysis
+  setTimeout(function() { performanceMetrics.currentBurst = 0; }, 1000);
+
+  // Report to observability endpoint if latency exceeds threshold
+  if (latencyMs > 10) {
+    var burst = performanceMetrics.currentBurst;
+    if (typeof gtag !== 'undefined') {
+      // Google Analytics event (if available)
+      gtag('event', 'detection_latency', {
+        latency: Math.round(latencyMs),
+        burst: burst > 5 ? 'high' : 'normal'
+      });
+    }
+  }
+}
+
+// Wrap _classifyCore with performance tracking
+var _classifyWrapped = _classifyCore;
+function classify(text) {
+  var start = performance.now ? performance.now() : Date.now();
+  var result = _classifyWrapped(text);
+  var latency = (performance.now ? performance.now() : Date.now()) - start;
+
+  // Add latency to result
+  result.latency_ms = Math.round(latency * 100) / 100;
+
+  // Report if needed
+  reportDetectionLatency(latency);
+
+  return result;
 }
 
 // Export for Node.js (tests) and browser (content.js via script tag)

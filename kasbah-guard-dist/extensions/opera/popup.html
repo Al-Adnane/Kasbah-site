@@ -60,6 +60,21 @@
     .footer a:hover{color:var(--red)}
 
     .hide{display:none!important}
+
+    /* Modal Overlay */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal-overlay.show{display:flex;animation:fadeIn .2s ease}
+    .modal-box{background:var(--card);border-radius:14px;padding:20px;width:90%;max-width:350px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .modal-title{font-size:16px;font-weight:900;margin-bottom:8px;color:var(--ink)}
+    .modal-desc{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5}
+    .fp-form{display:flex;flex-direction:column;gap:10px}
+    .fp-input,.fp-textarea{padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;color:var(--ink)}
+    .fp-input:focus,.fp-textarea:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(193,68,14,.1)}
+    .fp-textarea{resize:vertical;min-height:60px}
+    .fp-actions{display:flex;gap:10px;margin-top:8px}
+    .fp-submit{flex:1;padding:10px;background:var(--red);color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px;transition:all .2s}
+    .fp-submit:hover{opacity:.9;transform:scale(1.01)}
+    .fp-cancel{flex:1;padding:10px;background:var(--border);color:var(--ink);border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px}
   </style>
 </head>
 <body>
@@ -104,11 +119,27 @@
   <!-- Actions -->
   <div class="actions">
     <a href="http://127.0.0.1:8788/audit?limit=50" target="_blank" class="btn btn-dark" style="text-decoration:none">Open Dashboard</a>
-    <button class="btn btn-danger" id="reclaimBtn">Reclaim Authority</button>
+    <button class="btn btn-danger" id="reportFPBtn">Report FP</button>
   </div>
 
   <div class="footer">
     <a href="https://bekasbah.com" target="_blank">bekasbah.com</a> &middot; v2.0.0 &middot; <span id="engineTag" style="font-size:9px;color:var(--green);font-weight:700">TF-IDF ML</span>
+  </div>
+
+  <!-- False Positive Report Modal -->
+  <div class="modal-overlay" id="fpModal">
+    <div class="modal-box">
+      <div class="modal-title">Report False Positive</div>
+      <div class="modal-desc">Help us improve. What triggered the alert?</div>
+      <form class="fp-form" id="fpForm">
+        <input type="text" class="fp-input" id="fpPattern" placeholder="Pattern (e.g., 'password=test')" required>
+        <textarea class="fp-textarea" id="fpContext" placeholder="Context (optional): What were you trying to do?"></textarea>
+        <div class="fp-actions">
+          <button type="button" class="fp-cancel" id="fpCancel">Cancel</button>
+          <button type="submit" class="fp-submit">Send Report</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -223,6 +254,60 @@
       }
       requestAnimationFrame(step);
     }
+
+    // False Positive Reporting
+    var fpModal = document.getElementById('fpModal');
+    var fpForm = document.getElementById('fpForm');
+    var reportFPBtn = document.getElementById('reportFPBtn');
+    var fpCancel = document.getElementById('fpCancel');
+
+    reportFPBtn.addEventListener('click', function() {
+      fpModal.classList.add('show');
+      document.getElementById('fpPattern').focus();
+    });
+
+    fpCancel.addEventListener('click', function() {
+      fpModal.classList.remove('show');
+    });
+
+    fpModal.addEventListener('click', function(e) {
+      if (e.target === fpModal) fpModal.classList.remove('show');
+    });
+
+    fpForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var pattern = document.getElementById('fpPattern').value.trim();
+      var context = document.getElementById('fpContext').value.trim();
+
+      if (!pattern) {
+        alert('Please enter the pattern that triggered the alert.');
+        return;
+      }
+
+      // Send to observability endpoint
+      fetch('https://api.bekasbah.com/api/false-positives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pattern: pattern,
+          context: context,
+          extensionVersion: '2.0.0',
+          browser: 'chrome',
+          timestamp: new Date().toISOString()
+        })
+      }).then(function(r) {
+        if (r.ok) {
+          document.getElementById('fpPattern').value = '';
+          document.getElementById('fpContext').value = '';
+          fpModal.classList.remove('show');
+          alert('Thanks! Your report helps us improve detection.');
+        } else {
+          alert('Failed to send report. Please try again.');
+        }
+      }).catch(function() {
+        alert('Network error. Please check your connection.');
+      });
+    });
 
     updateUI();
     poll();
