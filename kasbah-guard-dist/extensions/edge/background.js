@@ -53,7 +53,11 @@ self.addEventListener('unhandledrejection', (event) => {
 async function checkGuardStatus() {
   try {
     const start = performance.now();
-    const r = await fetch(`${GUARD_URL}/status`, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+    const r = await fetch(`${GUARD_URL}/status`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 3000  // 3 second timeout instead of hanging
+    });
     const latency = performance.now() - start;
 
     // Track slow Guard service
@@ -65,38 +69,60 @@ async function checkGuardStatus() {
     }
 
     const d = await r.json();
-    healthFailCount = 0;
+    healthFailCount = 0;  // Reset on success
     return d;
   } catch (error) {
     healthFailCount++;
 
-    // Track Guard service failures
-    if (healthFailCount >= 4) {
-      sendSentryError('guard_failure', `Guard health check failed (${healthFailCount} attempts)`, error.stack, {
+    // Only report after 12 failures (2 minutes of being offline)
+    // Grace period prevents spam when Guard starts up slowly
+    if (healthFailCount === 12) {
+      sendSentryError('guard_offline', `Guard service unavailable - entering offline mode`, error.stack, {
         healthFailCount,
-        errorType: 'guardConnectivity'
+        errorType: 'guardOffline'
       });
     }
 
-    return null;
+    // Return a safe default state (online with local-only mode)
+    // This allows extension to work even if Guard is not running
+    return {
+      ok: true,
+      mode: 'offline',
+      stats: { total: 0, allowed: 0, denied: 0 },
+      classifier_type: 'local_detection_only'
+    };
   }
 }
 
 async function updateBadge() {
   const data = await checkGuardStatus();
   const on = data && data.ok === true;
+  const offline = data && data.mode === 'offline';
 
   // Don't override flash badge
   if (badgeFlashTimeout) return;
 
-  if (healthFailCount >= 4) {
-    chrome.action.setBadgeText({ text: '!' });
+  if (healthFailCount >= 50) {
+    // Only show error after 50 failures (8+ minutes of being offline)
+    chrome.action.setBadgeText({ text: '✗' });
     chrome.action.setBadgeBackgroundColor({ color: '#dc2626' });
     return;
   }
 
-  chrome.action.setBadgeText({ text: on ? '\u2713' : '\u2717' });
-  chrome.action.setBadgeBackgroundColor({ color: on ? '#059669' : '#dc2626' });
+  // Show status based on Guard connection
+  if (offline) {
+    // Guard offline but extension still protecting locally
+    chrome.action.setBadgeText({ text: '○' });
+    chrome.action.setBadgeBackgroundColor({ color: '#f59e0b' });
+  } else if (on) {
+    // Guard online and connected
+    chrome.action.setBadgeText({ text: '✓' });
+    chrome.action.setBadgeBackgroundColor({ color: '#059669' });
+  } else {
+    // Attempting to connect
+    chrome.action.setBadgeText({ text: '?' });
+    chrome.action.setBadgeBackgroundColor({ color: '#6b7280' });
+  }
 }
 
 // Flash badge red with "!" for 3s on block events, then reset
