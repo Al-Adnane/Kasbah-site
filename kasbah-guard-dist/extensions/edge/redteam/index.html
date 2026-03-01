@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kasbah Guard - Red Team Simulator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #e2e8f0;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-bottom: 30px;
+      border-bottom: 2px solid #334155;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      color: #fff;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .icon {
+      font-size: 2em;
+      filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.5));
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 1.1em;
+      margin-bottom: 5px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .info-item {
+      background: rgba(30, 41, 59, 0.6);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 3px solid #0ea5e9;
+      font-size: 0.9em;
+    }
+
+    .info-item strong {
+      display: block;
+      color: #94a3b8;
+      font-size: 0.85em;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .info-item span {
+      font-size: 1.4em;
+      color: #0ea5e9;
+      font-weight: bold;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 30px 0;
+      justify-content: center;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 1em;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    .btn-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #progress-container {
+      display: none;
+      margin: 30px 0;
+      background: rgba(30, 41, 59, 0.6);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      font-size: 0.95em;
+    }
+
+    .progress-header strong {
+      color: #0ea5e9;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981 0%, #0ea5e9 100%);
+      width: 0%;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+
+    .current-test {
+      font-size: 0.85em;
+      color: #94a3b8;
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.5);
+      border-left: 2px solid #0ea5e9;
+      border-radius: 4px;
+    }
+
+    #results {
+      margin-top: 40px;
+    }
+
+    .results-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: rgba(30, 41, 59, 0.6);
+      padding: 20px;
+      border-radius: 8px;
+      border-top: 3px solid #0ea5e9;
+      text-align: center;
+    }
+
+    .stat-card.critical {
+      border-top-color: #ef4444;
+    }
+
+    .stat-card.high {
+      border-top-color: #f59e0b;
+    }
+
+    .stat-card.success {
+      border-top-color: #10b981;
+    }
+
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-card.critical .stat-value {
+      color: #ef4444;
+    }
+
+    .stat-card.high .stat-value {
+      color: #f59e0b;
+    }
+
+    .stat-card.success .stat-value {
+      color: #10b981;
+    }
+
+    .stat-label {
+      font-size: 0.85em;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section h2 {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #334155;
+    }
+
+    .section-icon {
+      font-size: 1.3em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(30, 41, 59, 0.4);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    thead {
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 2px solid #334155;
+    }
+
+    th {
+      padding: 12px 15px;
+      text-align: left;
+      font-weight: 600;
+      color: #94a3b8;
+      font-size: 0.85em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #1e293b;
+      font-size: 0.9em;
+    }
+
+    tbody tr:hover {
+      background: rgba(51, 65, 85, 0.3);
+    }
+
+    .severity-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75em;
+      text-transform: uppercase;
+    }
+
+    .severity-critical {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
+
+    .severity-high {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fcd34d;
+      border: 1px solid #f59e0b;
+    }
+
+    .severity-medium {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      border: 1px solid #3b82f6;
+    }
+
+    .result-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75em;
+      text-transform: uppercase;
+    }
+
+    .result-blocked {
+      background: rgba(16, 185, 129, 0.2);
+      color: #86efac;
+      border: 1px solid #10b981;
+    }
+
+    .result-compromised {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
+
+    .assessment-box {
+      background: rgba(30, 41, 59, 0.6);
+      border-left: 4px solid #0ea5e9;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .assessment-box.critical {
+      border-left-color: #ef4444;
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .assessment-box.success {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .assessment-title {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 10px;
+    }
+
+    .recommendation-item {
+      background: rgba(30, 41, 59, 0.4);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border-left: 3px solid #f59e0b;
+    }
+
+    .recommendation-item.critical {
+      border-left-color: #ef4444;
+    }
+
+    .recommendation-issue {
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 5px;
+    }
+
+    .recommendation-advice {
+      color: #cbd5e1;
+      font-size: 0.9em;
+    }
+
+    .no-failures {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid #10b981;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      color: #86efac;
+    }
+
+    .export-section {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 2px solid #334155;
+      color: #64748b;
+      font-size: 0.9em;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #334155;
+      border-top-color: #0ea5e9;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.8em;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      table {
+        font-size: 0.8em;
+      }
+
+      th, td {
+        padding: 8px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        <span class="icon">🔴</span>
+        Kasbah Guard - Red Team Simulator
+      </h1>
+      <p class="subtitle">Security Assessment & Attack Vector Testing</p>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <strong>Attack Vectors</strong>
+          <span id="vector-count">0</span>
+        </div>
+        <div class="info-item">
+          <strong>Categories</strong>
+          <span id="category-count">10</span>
+        </div>
+        <div class="info-item">
+          <strong>Test Status</strong>
+          <span id="test-status">Ready</span>
+        </div>
+        <div class="info-item">
+          <strong>Confidence</strong>
+          <span id="test-confidence">--</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="controls">
+      <button class="btn-primary" id="run-tests-btn" onclick="runTests()">
+        ▶ Start Red Team Testing
+      </button>
+      <button class="btn-secondary" id="download-json-btn" onclick="downloadJSON()" disabled>
+        📄 Download JSON Report
+      </button>
+      <button class="btn-secondary" id="download-txt-btn" onclick="downloadTXT()" disabled>
+        📋 Download Text Report
+      </button>
+      <button class="btn-secondary" id="clear-btn" onclick="clearResults()">
+        🗑️ Clear Results
+      </button>
+    </div>
+
+    <div id="progress-container">
+      <div class="progress-header">
+        <span>Running attack vector tests...</span>
+        <span><strong id="current">0</strong> / <strong id="total">50</strong></span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="current-test" id="current-test-name">
+        Initializing...
+      </div>
+    </div>
+
+    <div id="results"></div>
+
+    <footer>
+      <p>🔒 Kasbah Guard Red Team Assessment | © 2026 Kasbah Security</p>
+      <p>This tool is for authorized security testing only</p>
+    </footer>
+  </div>
+
+  <script src="simulator.js"></script>
+  <script>
+    let globalResults = null;
+    let simulator = null;
+
+    /**
+     * Initialize simulator and load vectors
+     */
+    async function initializeSimulator() {
+      simulator = new AttackSimulator();
+      const vectorCount = await simulator.loadVectors();
+      document.getElementById('vector-count').textContent = vectorCount;
+      document.getElementById('test-status').textContent = 'Ready';
+    }
+
+    /**
+     * Run all attack vector tests
+     */
+    async function runTests() {
+      if (!simulator) await initializeSimulator();
+
+      const runBtn = document.getElementById('run-tests-btn');
+      const progressContainer = document.getElementById('progress-container');
+
+      runBtn.disabled = true;
+      document.getElementById('run-tests-btn').textContent = '⏳ Testing...';
+      progressContainer.style.display = 'block';
+      document.getElementById('results').innerHTML = '';
+
+      // Set up progress callback
+      simulator.onProgress((progress) => {
+        const percentage = Math.round(100 * progress.current / progress.total);
+        document.getElementById('progress-bar').style.width = percentage + '%';
+        document.getElementById('current').textContent = progress.current;
+        document.getElementById('total').textContent = progress.total;
+        document.getElementById('current-test-name').textContent =
+          `Testing: ${progress.result.name} (${progress.result.category})`;
+      });
+
+      try {
+        globalResults = await simulator.runAllAttacks();
+        displayResults(globalResults);
+        document.getElementById('test-status').textContent = 'Complete ✓';
+
+        // Enable download buttons
+        document.getElementById('download-json-btn').disabled = false;
+        document.getElementById('download-txt-btn').disabled = false;
+
+      } catch (error) {
+        console.error('Test execution error:', error);
+        document.getElementById('results').innerHTML = `
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; padding: 20px; border-radius: 8px; color: #fca5a5;">
+            <strong>Error during testing:</strong> ${error.message}
+          </div>
+        `;
+        document.getElementById('test-status').textContent = 'Error ✗';
+      } finally {
+        runBtn.disabled = false;
+        document.getElementById('run-tests-btn').textContent = '▶ Start Red Team Testing';
+      }
+    }
+
+    /**
+     * Display comprehensive results
+     */
+    function displayResults(report) {
+      let html = '';
+
+      // Assessment box
+      const isSuccess = report.summary.success_rate === '100%';
+      const assessmentClass = isSuccess ? 'success' : 'critical';
+      html += `
+        <div class="section">
+          <h2><span class="section-icon">📊</span> Assessment Summary</h2>
+          <div class="assessment-box ${assessmentClass}">
+            <div class="assessment-title">${report.summary.assessment_level}</div>
+            <p>Success Rate: <strong>${report.summary.success_rate}</strong></p>
+          </div>
+        </div>
+      `;
+
+      // Summary stats
+      html += '<div class="section"><h2><span class="section-icon">📈</span> Test Statistics</h2>';
+      html += '<div class="results-summary">';
+      html += `
+        <div class="stat-card success">
+          <div class="stat-value">${report.summary.blocked}</div>
+          <div class="stat-label">Vectors Blocked</div>
+        </div>
+        <div class="stat-card critical">
+          <div class="stat-value">${report.summary.compromised}</div>
+          <div class="stat-label">Vectors Bypassed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${report.summary.total_vectors}</div>
+          <div class="stat-label">Total Tests</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${report.configuration.execution_time_seconds}s</div>
+          <div class="stat-label">Total Duration</div>
+        </div>
+      `;
+      html += '</div></div>';
+
+      // Severity breakdown
+      const severity = report.by_severity;
+      html += '<div class="section"><h2><span class="section-icon">🎯</span> Severity Breakdown</h2>';
+      html += '<table><thead><tr><th>Severity</th><th>Blocked</th><th>Compromised</th><th>Total</th></tr></thead><tbody>';
+      for (const [level, counts] of Object.entries(severity)) {
+        const total = counts.blocked + counts.compromised;
+        html += `
+          <tr>
+            <td><span class="severity-badge severity-${level}">${level}</span></td>
+            <td style="color: #86efac">${counts.blocked}</td>
+            <td style="color: #fca5a5">${counts.compromised}</td>
+            <td>${total}</td>
+          </tr>
+        `;
+      }
+      html += '</tbody></table></div>';
+
+      // Category breakdown
+      html += '<div class="section"><h2><span class="section-icon">🏷️</span> By Category</h2>';
+      html += '<table><thead><tr><th>Category</th><th>Total</th><th>Blocked</th><th>Bypassed</th></tr></thead><tbody>';
+      for (const [category, data] of Object.entries(report.by_category)) {
+        const percent = Math.round(100 * data.blocked / data.total);
+        html += `
+          <tr>
+            <td><strong>${category}</strong></td>
+            <td>${data.total}</td>
+            <td style="color: #86efac">${data.blocked}</td>
+            <td style="color: #fca5a5">${data.compromised}</td>
+          </tr>
+        `;
+      }
+      html += '</tbody></table></div>';
+
+      // Critical failures
+      if (report.critical_failures.length > 0) {
+        html += '<div class="section"><h2><span class="section-icon">⚠️</span> Critical Failures</h2>';
+        for (const failure of report.critical_failures) {
+          html += `
+            <div class="recommendation-item critical">
+              <div class="recommendation-issue">❌ ${failure.name}</div>
+              <div class="recommendation-advice">Category: ${failure.category} | CWE: ${failure.cwe}</div>
+            </div>
+          `;
+        }
+        html += '</div>';
+      }
+
+      // Recommendations
+      if (report.recommendations.length > 0 && report.recommendations[0].priority !== 'INFO') {
+        html += '<div class="section"><h2><span class="section-icon">🔧</span> Remediation Recommendations</h2>';
+        for (const rec of report.recommendations.slice(0, 10)) {
+          const priorityClass = rec.priority === 'P0' ? 'critical' : '';
+          html += `
+            <div class="recommendation-item ${priorityClass}">
+              <div class="recommendation-issue">[${rec.priority}] ${rec.issue}</div>
+              <div class="recommendation-advice">→ ${rec.recommendation}</div>
+            </div>
+          `;
+        }
+        html += '</div>';
+      } else if (report.recommendations[0].priority === 'INFO') {
+        html += `<div class="no-failures">✅ ${report.recommendations[0].recommendation}</div>`;
+      }
+
+      // Detailed results table
+      html += '<div class="section"><h2><span class="section-icon">📋</span> Detailed Results</h2>';
+      html += '<table><thead><tr><th>Vector ID</th><th>Name</th><th>Category</th><th>Severity</th><th>Status</th><th>Duration</th></tr></thead><tbody>';
+      for (const result of report.detailed_results) {
+        const statusClass = result.blocked ? 'blocked' : 'compromised';
+        const statusText = result.blocked ? 'BLOCKED' : 'COMPROMISED';
+        html += `
+          <tr>
+            <td><code>${result.vector_id}</code></td>
+            <td>${result.name}</td>
+            <td>${result.category}</td>
+            <td><span class="severity-badge severity-${result.severity}">${result.severity}</span></td>
+            <td><span class="result-badge result-${statusClass}">${statusText}</span></td>
+            <td>${result.duration_ms}ms</td>
+          </tr>
+        `;
+      }
+      html += '</tbody></table></div>';
+
+      // Export section
+      html += '<div class="export-section">';
+      html += `<p>Generated: ${report.summary.timestamp}</p>`;
+      html += '</div>';
+
+      document.getElementById('results').innerHTML = html;
+      document.getElementById('test-confidence').textContent = report.summary.success_rate;
+    }
+
+    /**
+     * Download results as JSON
+     */
+    function downloadJSON() {
+      if (!globalResults) {
+        alert('Run tests first');
+        return;
+      }
+
+      const json = JSON.stringify(globalResults, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      downloadFile(blob, 'kasbah-red-team-report.json');
+    }
+
+    /**
+     * Download results as text
+     */
+    function downloadTXT() {
+      if (!globalResults) {
+        alert('Run tests first');
+        return;
+      }
+
+      const report = globalResults;
+      let text = `KASBAH GUARD - RED TEAM SECURITY ASSESSMENT
+Generated: ${report.summary.timestamp}
+Detector Version: ${report.summary.detector_version}
+
+EXECUTIVE SUMMARY
+==================
+Total Attack Vectors: ${report.summary.total_vectors}
+Vectors Blocked: ${report.summary.blocked}
+Vectors Compromised: ${report.summary.compromised}
+Success Rate: ${report.summary.success_rate}
+Assessment: ${report.summary.assessment_level}
+
+SEVERITY BREAKDOWN
+==================`;
+
+      for (const [severity, counts] of Object.entries(report.by_severity)) {
+        text += `\n${severity.toUpperCase()}: ${counts.blocked} blocked, ${counts.compromised} compromised`;
+      }
+
+      text += '\n\nCRITICAL FAILURES\n==================\n';
+      if (report.critical_failures.length > 0) {
+        for (const f of report.critical_failures) {
+          text += `- ${f.name} (${f.category}) [${f.cwe}]\n`;
+        }
+      } else {
+        text += 'None - All critical attacks blocked\n';
+      }
+
+      text += '\nRECOMMENDATIONS\n===============\n';
+      for (const rec of report.recommendations.slice(0, 20)) {
+        if (rec.priority !== 'INFO') {
+          text += `[${rec.priority}] ${rec.issue}\n→ ${rec.recommendation}\n\n`;
+        }
+      }
+
+      text += '\n---\nReport prepared by Kasbah Guard Red Team Simulator\n';
+
+      const blob = new Blob([text], { type: 'text/plain' });
+      downloadFile(blob, 'kasbah-red-team-report.txt');
+    }
+
+    /**
+     * Download file utility
+     */
+    function downloadFile(blob, filename) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+
+    /**
+     * Clear results
+     */
+    function clearResults() {
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('progress-container').style.display = 'none';
+      document.getElementById('download-json-btn').disabled = true;
+      document.getElementById('download-txt-btn').disabled = true;
+      document.getElementById('test-status').textContent = 'Ready';
+      document.getElementById('test-confidence').textContent = '--';
+      globalResults = null;
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', initializeSimulator);
+  </script>
+</body>
+</html>

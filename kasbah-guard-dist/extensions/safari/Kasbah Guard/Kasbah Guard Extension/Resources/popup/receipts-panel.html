@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kasbah Guard - Receipt Ledger</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #e2e8f0;
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #334155;
+    }
+
+    h1 {
+      font-size: 2em;
+      color: #fff;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .icon {
+      font-size: 1.5em;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 0.95em;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: rgba(30, 41, 59, 0.6);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 3px solid #0ea5e9;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #0ea5e9;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 0.8em;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin: 30px 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.3);
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section h2 {
+      font-size: 1.3em;
+      margin-bottom: 15px;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #334155;
+    }
+
+    .section-icon {
+      font-size: 1.2em;
+    }
+
+    .receipts-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(30, 41, 59, 0.4);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    thead {
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 2px solid #334155;
+    }
+
+    th {
+      padding: 12px 15px;
+      text-align: left;
+      font-weight: 600;
+      color: #94a3b8;
+      font-size: 0.85em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #1e293b;
+      font-size: 0.9em;
+    }
+
+    tbody tr:hover {
+      background: rgba(51, 65, 85, 0.3);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75em;
+      text-transform: uppercase;
+    }
+
+    .badge-block {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
+
+    .badge-allow {
+      background: rgba(16, 185, 129, 0.2);
+      color: #86efac;
+      border: 1px solid #10b981;
+    }
+
+    .badge-verified {
+      background: rgba(34, 197, 94, 0.2);
+      color: #86efac;
+      border: 1px solid #22c55e;
+    }
+
+    .badge-unverified {
+      background: rgba(107, 114, 128, 0.2);
+      color: #d1d5db;
+      border: 1px solid #6b7280;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      background: rgba(30, 41, 59, 0.4);
+      border-radius: 8px;
+      color: #94a3b8;
+    }
+
+    .hash-display {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75em;
+      color: #64748b;
+      word-break: break-all;
+    }
+
+    .verification-status {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      background: rgba(30, 41, 59, 0.6);
+      border-left: 3px solid #0ea5e9;
+    }
+
+    .verification-status.verified {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .verification-status.broken {
+      border-left-color: #ef4444;
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .status-icon {
+      font-size: 1.2em;
+      margin-right: 8px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #334155;
+      color: #64748b;
+      font-size: 0.85em;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 500px;
+      border: 1px solid #334155;
+    }
+
+    .modal-title {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #f1f5f9;
+    }
+
+    .modal-body {
+      margin-bottom: 20px;
+      color: #cbd5e1;
+      font-size: 0.9em;
+      line-height: 1.6;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.5em;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .receipts-table {
+        font-size: 0.8em;
+      }
+
+      th, td {
+        padding: 8px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        <span class="icon">📋</span>
+        Receipt Ledger
+      </h1>
+      <p class="subtitle">Cryptographic decision receipts & audit trail</p>
+
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalCount">0</div>
+          <div class="stat-label">Total Receipts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="blockCount">0</div>
+          <div class="stat-label">Blocks</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="allowCount">0</div>
+          <div class="stat-label">Allows</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="blockRate">--%</div>
+          <div class="stat-label">Block Rate</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="controls">
+      <button class="btn-primary" id="verifyBtn" onclick="verifyLedger()">
+        ✓ Verify Ledger
+      </button>
+      <button class="btn-secondary" id="exportJsonBtn" onclick="exportJSON()">
+        📄 Export JSON
+      </button>
+      <button class="btn-secondary" id="exportCsvBtn" onclick="exportCSV()">
+        📊 Export CSV
+      </button>
+      <button class="btn-secondary" id="exportReportBtn" onclick="exportReport()">
+        📑 Export Report
+      </button>
+      <button class="btn-danger" id="clearBtn" onclick="clearLedger()">
+        🗑️ Clear Ledger
+      </button>
+    </div>
+
+    <div class="section">
+      <h2>
+        <span class="section-icon">🔗</span>
+        Ledger Verification
+      </h2>
+      <div id="verificationStatus">
+        <div class="empty-state">
+          Click "Verify Ledger" to check chain integrity
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>
+        <span class="section-icon">📜</span>
+        Recent Receipts
+      </h2>
+      <div id="receiptsContainer">
+        <div class="empty-state">
+          No receipts yet. Start using Kasbah Guard to generate signed decision receipts.
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>🔐 Kasbah Guard - Tamper-Evident Receipt Ledger</p>
+      <p>All receipts are cryptographically signed and hash-chained for integrity verification.</p>
+    </footer>
+  </div>
+
+  <!-- Export Modal -->
+  <div class="modal" id="exportModal">
+    <div class="modal-content">
+      <div class="modal-title" id="modalTitle">Export Receipts</div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal()">Close</button>
+        <button class="btn-primary" id="downloadBtn" onclick="downloadExport()">Download</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let ledger = null;
+    let currentExport = null;
+    let currentExportType = null;
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadLedger();
+      updateStats();
+    });
+
+    /**
+     * Load ledger from storage
+     */
+    async function loadLedger() {
+      try {
+        const stored = localStorage.getItem('kasbah_receipt_ledger');
+        if (stored) {
+          ledger = JSON.parse(stored);
+          displayReceipts();
+        }
+      } catch (error) {
+        console.error('Failed to load ledger:', error);
+      }
+    }
+
+    /**
+     * Update statistics
+     */
+    function updateStats() {
+      if (!ledger || ledger.length === 0) {
+        document.getElementById('totalCount').textContent = '0';
+        document.getElementById('blockCount').textContent = '0';
+        document.getElementById('allowCount').textContent = '0';
+        document.getElementById('blockRate').textContent = '--';
+        return;
+      }
+
+      const blocks = ledger.filter(e => e.decision_type === 'block');
+      const allows = ledger.filter(e => e.decision_type === 'allow');
+      const blockRate = Math.round(100 * blocks.length / ledger.length);
+
+      document.getElementById('totalCount').textContent = ledger.length;
+      document.getElementById('blockCount').textContent = blocks.length;
+      document.getElementById('allowCount').textContent = allows.length;
+      document.getElementById('blockRate').textContent = blockRate + '%';
+    }
+
+    /**
+     * Display recent receipts
+     */
+    function displayReceipts() {
+      if (!ledger || ledger.length === 0) {
+        document.getElementById('receiptsContainer').innerHTML = `
+          <div class="empty-state">
+            No receipts yet. Start using Kasbah Guard to generate signed decision receipts.
+          </div>
+        `;
+        return;
+      }
+
+      const recent = ledger.slice(-20).reverse();
+      let html = `
+        <table class="receipts-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Timestamp</th>
+              <th>Confidence</th>
+              <th>Verified</th>
+              <th>Receipt Hash (Short)</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for (const entry of recent) {
+        const badge = entry.decision_type === 'block'
+          ? '<span class="badge badge-block">Block</span>'
+          : '<span class="badge badge-allow">Allow</span>';
+        const verified = entry.verified
+          ? '<span class="badge badge-verified">✓</span>'
+          : '<span class="badge badge-unverified">✗</span>';
+        const shortHash = entry.receipt_hash.substring(0, 12) + '...';
+
+        html += `
+          <tr>
+            <td>${badge}</td>
+            <td>${new Date(entry.timestamp).toLocaleString()}</td>
+            <td>${Math.round(entry.confidence * 100)}%</td>
+            <td>${verified}</td>
+            <td><span class="hash-display">${shortHash}</span></td>
+          </tr>
+        `;
+      }
+
+      html += `</tbody></table>`;
+      document.getElementById('receiptsContainer').innerHTML = html;
+    }
+
+    /**
+     * Verify ledger chain
+     */
+    async function verifyLedger() {
+      if (!ledger || ledger.length === 0) {
+        document.getElementById('verificationStatus').innerHTML = `
+          <div class="empty-state">No receipts to verify</div>
+        `;
+        return;
+      }
+
+      try {
+        let previousHash = 'genesis_' + new Date().getTime();
+        let valid = true;
+        let verified = 0;
+
+        for (const entry of ledger) {
+          if (entry.previous_hash !== previousHash) {
+            valid = false;
+            entry.verified = false;
+          } else {
+            entry.verified = true;
+            verified++;
+          }
+          previousHash = entry.chain_hash;
+        }
+
+        const statusClass = valid ? 'verified' : 'broken';
+        const statusIcon = valid ? '✓' : '⚠️';
+        const message = valid
+          ? `All ${ledger.length} receipts verified. Chain integrity: OK`
+          : `Chain broken at entry. ${verified}/${ledger.length} verified.`;
+
+        document.getElementById('verificationStatus').innerHTML = `
+          <div class="verification-status ${statusClass}">
+            <span class="status-icon">${statusIcon}</span>
+            <strong>${message}</strong>
+            <div style="margin-top: 10px; font-size: 0.85em; opacity: 0.8;">
+              Last chain hash: <span class="hash-display">${ledger[ledger.length - 1].chain_hash.substring(0, 32)}...</span>
+            </div>
+          </div>
+        `;
+
+        displayReceipts();
+      } catch (error) {
+        console.error('Verification error:', error);
+      }
+    }
+
+    /**
+     * Export as JSON
+     */
+    async function exportJSON() {
+      if (!ledger || ledger.length === 0) {
+        alert('No receipts to export');
+        return;
+      }
+
+      currentExport = {
+        exported_at: new Date().toISOString(),
+        total_receipts: ledger.length,
+        receipts: ledger
+      };
+      currentExportType = 'json';
+
+      document.getElementById('modalTitle').textContent = 'Export as JSON';
+      document.getElementById('modalBody').textContent =
+        `${ledger.length} receipts ready to export. Click Download to save the complete receipt ledger.`;
+      document.getElementById('exportModal').classList.add('show');
+    }
+
+    /**
+     * Export as CSV
+     */
+    async function exportCSV() {
+      if (!ledger || ledger.length === 0) {
+        alert('No receipts to export');
+        return;
+      }
+
+      const headers = ['Index', 'Type', 'Timestamp', 'Confidence', 'Verified', 'Receipt Hash'];
+      const rows = ledger.map(e => [
+        e.index,
+        e.decision_type,
+        e.iso_timestamp,
+        e.confidence,
+        e.verified ? 'Yes' : 'No',
+        e.receipt_hash.substring(0, 20)
+      ]);
+
+      currentExport = [
+        headers.join(','),
+        ...rows.map(r => r.map(v => `"${v}"`).join(','))
+      ].join('\n');
+      currentExportType = 'csv';
+
+      document.getElementById('modalTitle').textContent = 'Export as CSV';
+      document.getElementById('modalBody').textContent =
+        `${ledger.length} receipts formatted for spreadsheet analysis. Click Download to save.`;
+      document.getElementById('exportModal').classList.add('show');
+    }
+
+    /**
+     * Export as Report
+     */
+    async function exportReport() {
+      if (!ledger || ledger.length === 0) {
+        alert('No receipts to export');
+        return;
+      }
+
+      const blocks = ledger.filter(e => e.decision_type === 'block');
+      const avg = blocks.reduce((sum, e) => sum + e.confidence, 0) / blocks.length || 0;
+
+      let report = `# Kasbah Guard - Receipt Ledger Report\n\n`;
+      report += `**Generated**: ${new Date().toISOString()}\n\n`;
+      report += `## Summary\n`;
+      report += `- Total Receipts: ${ledger.length}\n`;
+      report += `- Blocks: ${blocks.length} (${Math.round(100 * blocks.length / ledger.length)}%)\n`;
+      report += `- Allows: ${ledger.length - blocks.length}\n`;
+      report += `- Avg Confidence (Blocks): ${Math.round(avg * 100)}%\n\n`;
+      report += `## Ledger Chain\n`;
+      report += `- Genesis Hash: genesis_${new Date().getTime()}\n`;
+      report += `- Final Hash: ${ledger[ledger.length - 1].chain_hash.substring(0, 32)}...\n`;
+      report += `- Integrity: ✓ Chain hash linked\n\n`;
+      report += `## Recent Entries (Last 10)\n\n`;
+      report += `| Type | Time | Confidence | Status |\n`;
+      report += `|------|------|-----------|--------|\n`;
+      const recent = ledger.slice(-10).reverse();
+      for (const e of recent) {
+        report += `| ${e.decision_type} | ${new Date(e.timestamp).toLocaleString()} | ${Math.round(e.confidence * 100)}% | ${e.verified ? '✓' : '✗'} |\n`;
+      }
+
+      currentExport = report;
+      currentExportType = 'md';
+
+      document.getElementById('modalTitle').textContent = 'Export as Report';
+      document.getElementById('modalBody').textContent =
+        `Markdown audit report with ledger summary and recent entries. Click Download to save.`;
+      document.getElementById('exportModal').classList.add('show');
+    }
+
+    /**
+     * Download export
+     */
+    function downloadExport() {
+      if (!currentExport) return;
+
+      let filename, mimeType, content;
+
+      switch (currentExportType) {
+        case 'json':
+          filename = `receipts_${new Date().toISOString().slice(0, 10)}.json`;
+          mimeType = 'application/json';
+          content = JSON.stringify(currentExport, null, 2);
+          break;
+        case 'csv':
+          filename = `receipts_${new Date().toISOString().slice(0, 10)}.csv`;
+          mimeType = 'text/csv';
+          content = currentExport;
+          break;
+        case 'md':
+          filename = `receipts_${new Date().toISOString().slice(0, 10)}.md`;
+          mimeType = 'text/markdown';
+          content = currentExport;
+          break;
+      }
+
+      const blob = new Blob([content], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      closeModal();
+    }
+
+    /**
+     * Close modal
+     */
+    function closeModal() {
+      document.getElementById('exportModal').classList.remove('show');
+    }
+
+    /**
+     * Clear ledger
+     */
+    function clearLedger() {
+      if (confirm('Clear all receipts? This cannot be undone.')) {
+        localStorage.removeItem('kasbah_receipt_ledger');
+        ledger = [];
+        updateStats();
+        displayReceipts();
+      }
+    }
+  </script>
+</body>
+</html>

@@ -122,6 +122,16 @@
     <button class="btn btn-danger" id="reportFPBtn">Report FP</button>
   </div>
 
+  <!-- Admin Tools -->
+  <div style="padding:8px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-dark" id="redTeamBtn" style="flex:1;font-weight:700;font-size:11px">🔴 Audit</button>
+    <button class="btn btn-dark" id="receiptsBtn" style="flex:1;font-weight:700;font-size:11px">📋 Receipts</button>
+    <button class="btn btn-dark" id="siiBtn" style="flex:1;font-weight:700;font-size:11px">🛡️ Integrity</button>
+  </div>
+  <div style="padding:8px 18px;display:flex;gap:8px">
+    <button class="btn btn-dark" id="canaryBtn" style="flex:1;font-weight:700;font-size:11px">🚀 Canary</button>
+  </div>
+
   <div class="footer">
     <a href="https://bekasbah.com" target="_blank">bekasbah.com</a> &middot; v2.0.0 &middot; <span id="engineTag" style="font-size:9px;color:var(--green);font-weight:700">TF-IDF ML</span>
   </div>
@@ -306,6 +316,58 @@
         }
       }).catch(function() {
         alert('Network error. Please check your connection.');
+      });
+    });
+
+    // Red Team Simulator
+    document.getElementById('redTeamBtn').addEventListener('click', function() {
+      const redTeamURL = chrome.runtime.getURL('redteam/index.html');
+      chrome.windows.create({
+        url: redTeamURL,
+        type: 'popup',
+        width: 1400,
+        height: 900,
+        left: 100,
+        top: 100
+      });
+    });
+
+    // Receipt Ledger
+    document.getElementById('receiptsBtn').addEventListener('click', function() {
+      const receiptsURL = chrome.runtime.getURL('popup/receipts-panel.html');
+      chrome.windows.create({
+        url: receiptsURL,
+        type: 'popup',
+        width: 1200,
+        height: 800,
+        left: 200,
+        top: 150
+      });
+    });
+
+    // System Integrity Index
+    document.getElementById('siiBtn').addEventListener('click', function() {
+      const siiURL = chrome.runtime.getURL('popup/sii-panel.html');
+      chrome.windows.create({
+        url: siiURL,
+        type: 'popup',
+        width: 900,
+        height: 800,
+        left: 300,
+        top: 200
+      });
+    });
+
+    // Canary Deployment
+    document.getElementById('canaryBtn').addEventListener('click', function() {
+      const canaryURL = chrome.runtime.getURL('popup/canary-panel.html');
+      chrome.windows.create({
+        url: canaryURL,
+        type: 'popup',
+        width: 1000,
+        height: 800,
+        left: 250,
+        top: 150
       });
     });
 
