@@ -44,7 +44,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["redteam/*", "popup/*"],
+      "resources": ["redteam/*", "popup/*", "i18n/*"],
       "matches": ["<all_urls>"]
     }
   ]

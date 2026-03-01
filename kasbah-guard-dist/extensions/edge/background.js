@@ -3,6 +3,33 @@ const GUARD_URL = 'http://127.0.0.1:8788';
 let healthFailCount = 0;
 let badgeFlashTimeout = null;
 
+// ── Localization (Multi-language support) ──
+let userLanguage = 'en';
+let messages = {};
+
+async function initializeLocalization() {
+  try {
+    const response = await fetch(chrome.runtime.getURL('i18n/messages.json'));
+    messages = await response.json();
+
+    // Detect browser language
+    const browserLang = (navigator.language || 'en').split('-')[0].toLowerCase();
+    const supported = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh'];
+    userLanguage = supported.includes(browserLang) ? browserLang : 'en';
+
+    // Store language preference
+    chrome.storage.local.set({ userLanguage });
+    console.log(`[Kasbah] Language initialized: ${userLanguage}`);
+  } catch (error) {
+    console.error('[Kasbah] Localization init failed:', error);
+    userLanguage = 'en';
+  }
+}
+
+function getMessage(key) {
+  return messages[userLanguage]?.[key] || messages['en']?.[key] || key;
+}
+
 // ── Sentry Error Tracking (v2.0.0) ────────────────────────────────────────
 // Privacy-first error tracking: no URLs, no user data, no secrets
 const SENTRY_ENDPOINT = 'https://api.bekasbah.com/api/sentry';
@@ -138,6 +165,7 @@ function flashBadge() {
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log('[Kasbah Guard] Extension v2.0.0 installed — 6-verb interception across 30+ AI platforms');
+  initializeLocalization();
   updateBadge();
   chrome.storage.local.set({ guardEnabled: true, notifications: true, version: '2.0.0' });
 });
@@ -154,6 +182,9 @@ chrome.runtime.onSuspend.addListener(() => {
 });
 
 chrome.runtime.onStartup.addListener(() => {
+  // Initialize localization on startup
+  initializeLocalization();
+
   // Restore state after browser restart / extension re-enable
   chrome.storage.local.get(['lastSuspend', 'guardEnabled'], (data) => {
     if (data.lastSuspend) {
