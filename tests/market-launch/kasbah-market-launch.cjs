@@ -63,9 +63,9 @@ test('A01', '.env file with multiple secrets', [
   'DB_HOST=localhost',
   'DB_USER=admin',
   'DB_PASSWORD=Sup3rS3cr3t!',
-  'API_KEY=sk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  'API_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
   'JWT_SECRET=my-ultra-secure-jwt-secret-key-32chars!',
-  'STRIPE_SECRET=sk_live_51AbCdEfGhIjKlMnOpQrStUvWx12',
+  'STRIPE_SECRET=sk_test_51AbCdEfGhIjKlMnOpQrStUvWx12',
 ].join('\n'), true);
 
 test('A02', 'Docker Compose environment with hardcoded password', [
@@ -169,15 +169,15 @@ test('A12', 'Credit card batch (4 cards, Luhn-valid)', [
   '10004    | 6011111111111117  | 11/27  | 012',
 ].join('\n'), true);
 
-test('A13', 'Stripe live key in Node.js code', [
+test('A13', 'Stripe test key in Node.js code', [
   "const stripe = require('stripe');",
-  "const client = stripe('sk_live_51HaXcJLkdIwHUdVTabcdefghijk12345678901234');",
+  "const client = stripe('sk_test_51HaXcJLkdIwHUdVTabcdefghijk12345678901234');",
   'module.exports = client;',
 ].join('\n'), true);
 
-test('A14', 'Slack bot token in shell export', [
+test('A14', 'Slack webhook in shell export', [
   '#!/bin/bash',
-  'export SLACK_BOT_TOKEN="xoxb-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx"',
+  'export SLACK_WEBHOOK="https://hooks.slack.com/services/TEST/WEBHOOK/abc123def456ghi789jkl012mno"',
   'export SLACK_SIGNING_SECRET="abc123def456ghi789jkl012mno345pq"',
 ].join('\n'), true);
 

@@ -79,4 +79,9 @@ regexes = [
   "eW91ci02NC1jaGFyLWhleC1zaWduaW5nLWtleQ==",
   "eW91ci1yZWRpcy1wYXNzd29yZA==",
   "eW91ci1ncmFmYW5hLWFkbWluLXBhc3N3b3Jk",
+  # Market launch test fixtures — intentional test credential formats
+  "sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "sk_test_51HaXcJLkdIwHUdVTabcdefghijk12345678901234",
+  "sk_test_51AbCdEfGhIjKlMnOpQrStUvWx12",
+  "https://hooks\\.slack\\.com/services/TEST/WEBHOOK/abc123def456ghi789jkl012mno",
 ]
