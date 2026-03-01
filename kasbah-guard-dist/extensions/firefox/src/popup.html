@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kasbah Guard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 320px;
+        padding: 12px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f8f9fa;
+        color: #333;
+      }
+
+      h1 {
+        font-size: 16px;
+        margin-bottom: 8px;
+        color: #c1440e;
+      }
+
+      .status {
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .status.safe {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .status.warning {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+
+      .status.danger {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .control-group {
+        margin-bottom: 12px;
+        padding: 8px;
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+
+      .control-group label {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        margin-bottom: 4px;
+        cursor: pointer;
+      }
+
+      .control-group input[type='checkbox'],
+      .control-group input[type='radio'] {
+        margin-right: 6px;
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+      }
+
+      .control-group input[type='checkbox']:focus,
+      .control-group input[type='radio']:focus,
+      button:focus {
+        outline: 3px solid #c1440e;
+        outline-offset: 2px;
+      }
+
+      button {
+        width: 100%;
+        padding: 8px 12px;
+        background: #c1440e;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-bottom: 6px;
+        transition: background 0.2s;
+      }
+
+      button:hover {
+        background: #a03309;
+      }
+
+      button:active {
+        background: #8a2a07;
+      }
+
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      .accessibility-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #c1440e;
+      }
+
+      .accessibility-header h3 {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #c1440e;
+      }
+
+      .accessibility-icon {
+        font-size: 14px;
+      }
+
+      .settings-grid {
+        display: grid;
+        gap: 6px;
+      }
+
+      .setting-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .setting-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #555;
+      }
+
+      .keyboard-shortcuts {
+        font-size: 11px;
+        padding: 6px;
+        background: #f5f5f5;
+        border-radius: 3px;
+        margin-top: 8px;
+        border: 1px solid #eee;
+      }
+
+      .keyboard-shortcuts dt {
+        font-weight: 600;
+        color: #333;
+        margin-top: 4px;
+      }
+
+      .keyboard-shortcuts dd {
+        margin-left: 12px;
+        color: #666;
+      }
+
+      .language-select {
+        width: 100%;
+        padding: 6px;
+        font-size: 12px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        background: white;
+        cursor: pointer;
+      }
+
+      .language-select:focus {
+        outline: 3px solid #c1440e;
+        outline-offset: 2px;
+      }
+
+      .detection-result {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 8px;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+
+      .detection-result.high-risk {
+        border-left: 4px solid #dc3545;
+      }
+
+      .detection-result.medium-risk {
+        border-left: 4px solid #ffc107;
+      }
+
+      .detection-result.low-risk {
+        border-left: 4px solid #28a745;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .action-buttons button {
+        flex: 1;
+        margin-bottom: 0;
+        padding: 6px;
+        font-size: 12px;
+      }
+
+      /* Accessibility enhancements */
+      :focus-visible {
+        outline: 3px solid #c1440e;
+        outline-offset: 2px;
+      }
+
+      /* High contrast mode support */
+      @media (prefers-contrast: more) {
+        button,
+        input,
+        select {
+          border: 2px solid currentColor;
+        }
+
+        .control-group {
+          border: 2px solid #000;
+        }
+      }
+
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+
+      /* Dark mode support */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1e1e1e;
+          color: #e0e0e0;
+        }
+
+        .control-group {
+          background: #2d2d2d;
+          border-color: #444;
+        }
+
+        .status {
+          filter: invert(1) hue-rotate(180deg);
+        }
+
+        .language-select {
+          background: #333;
+          color: #e0e0e0;
+          border-color: #444;
+        }
+
+        .keyboard-shortcuts {
+          background: #2d2d2d;
+          border-color: #444;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🛡️ Kasbah Guard</h1>
+
+    <!-- Current Status -->
+    <div id="statusContainer" class="status safe">
+      <span id="statusText">Scanning...</span>
+    </div>
+
+    <!-- Accessibility Settings Section -->
+    <div class="control-group">
+      <div class="accessibility-header">
+        <span class="accessibility-icon">♿</span>
+        <h3>Accessibility</h3>
+      </div>
+
+      <div class="settings-grid">
+        <!-- Language Selection -->
+        <div class="setting-item">
+          <label class="setting-label" for="languageSelect">
+            🌐 Language
+          </label>
+          <select id="languageSelect" class="language-select">
+            <option value="auto">Auto-detect</option>
+            <option value="en">English</option>
+            <option value="es">Español (Spanish)</option>
+            <option value="fr">Français (French)</option>
+            <option value="de">Deutsch (German)</option>
+            <option value="ja">日本語 (Japanese)</option>
+            <option value="zh">中文 (Chinese)</option>
+            <option value="pt">Português (Portuguese)</option>
+            <option value="ru">Русский (Russian)</option>
+            <option value="ar">العربية (Arabic)</option>
+          </select>
+        </div>
+
+        <!-- Screen Reader Support -->
+        <label>
+          <input
+            type="checkbox"
+            id="screenReaderEnabled"
+            checked
+            aria-label="Enable screen reader announcements"
+          />
+          📢 Screen Reader Support
+        </label>
+
+        <!-- Audio Alerts -->
+        <label>
+          <input
+            type="checkbox"
+            id="audioAlertsEnabled"
+            checked
+            aria-label="Enable audio alerts"
+          />
+          🔔 Audio Alerts
+        </label>
+
+        <!-- Voice Feedback -->
+        <label>
+          <input
+            type="checkbox"
+            id="voiceFeedbackEnabled"
+            aria-label="Enable voice feedback (text-to-speech)"
+          />
+          🎤 Voice Feedback (TTS)
+        </label>
+
+        <!-- High Contrast Mode (info) -->
+        <label>
+          <input
+            type="checkbox"
+            id="highContrastInfo"
+            disabled
+            aria-label="High contrast mode (system setting)"
+          />
+          🎨 High Contrast (System)
+        </label>
+
+        <!-- Reduced Motion (info) -->
+        <label>
+          <input
+            type="checkbox"
+            id="reducedMotionInfo"
+            disabled
+            aria-label="Reduced motion mode (system setting)"
+          />
+          ⏸️ Reduced Motion (System)
+        </label>
+      </div>
+
+      <!-- Keyboard Shortcuts Help -->
+      <div class="keyboard-shortcuts">
+        <strong>⌨️ Keyboard Shortcuts:</strong>
+        <dl>
+          <dt>?</dt>
+          <dd>Show help</dd>
+          <dt>Alt+D</dt>
+          <dd>Toggle detection</dd>
+          <dt>Alt+V</dt>
+          <dd>Toggle voice</dd>
+          <dt>Esc</dt>
+          <dd>Close popup</dd>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Detection Controls -->
+    <div class="control-group">
+      <h3 style="font-size: 13px; margin-bottom: 8px">⚙️ Controls</h3>
+      <button id="scanPageBtn" aria-label="Scan current page for secrets">
+        🔍 Scan Page
+      </button>
+      <button id="redactBtn" aria-label="Toggle redaction of secrets">
+        ✏️ Redact Selection
+      </button>
+      <button id="reportFpBtn" aria-label="Report false positive detection">
+        📋 Report False Positive
+      </button>
+    </div>
+
+    <!-- Recent Detections (if any) -->
+    <div id="detectionsContainer"></div>
+
+    <script src="accessibility.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
