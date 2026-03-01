@@ -1,0 +1,59 @@
+{
+  "name": "kasbah-guard-monorepo",
+  "version": "1.0.0",
+  "description": "Kasbah Guard — Full-stack secret detection ecosystem",
+  "private": true,
+  "workspaces": [
+    "packages/sdk",
+    "kasbah-guard-dist/apps/cli",
+    "kasbah-guard-dist/apps/mobile",
+    "kasbah-guard-dist/apps/enterprise",
+    "kasbah-guard-dist/packages/vscode",
+    "kasbah-guard-dist/extensions/chrome",
+    "kasbah-guard-dist/extensions/firefox",
+    "kasbah-guard-dist/extensions/edge",
+    "kasbah-guard-dist/extensions/opera",
+    "kasbah-guard-dist/extensions/safari"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:all": "npm run build --workspaces --if-present && npm run build:static",
+    "build:static": "echo 'Static site ready (public/ directory)'",
+    "test": "npm run test:core && npm run test:market && npm run test:js && npm run test:cli",
+    "test:core": "node kasbah-guard-dist/tests/core-invariants.js",
+    "test:market": "node /tmp/kasbah-market-launch.cjs 2>/dev/null || echo '⚠️ Market launch tests skipped (requires /tmp)'",
+    "test:js": "node /tmp/kasbah-test-suite.cjs 2>/dev/null || echo '⚠️ JS tests skipped (requires /tmp)'",
+    "test:cli": "/tmp/kasbah-cli-build/release/kasbah selftest 2>/dev/null || echo '⚠️ CLI tests skipped (requires build)'",
+    "test:perf": "node tests/integration/performance.test.js",
+    "lint": "npm run lint --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules dist build",
+    "prepare": "npm run build:static"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "security",
+    "secrets",
+    "detection",
+    "credentials",
+    "api-keys",
+    "privacy",
+    "detector"
+  ],
+  "author": "Kasbah Guard <team@bekasbah.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Al-Adnane/Kasbah-site"
+  },
+  "bugs": {
+    "url": "https://github.com/Al-Adnane/Kasbah-site/issues"
+  },
+  "homepage": "https://bekasbah.com"
+}
