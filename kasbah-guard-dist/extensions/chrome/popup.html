@@ -124,8 +124,9 @@
 
   <!-- Admin Tools -->
   <div style="padding:8px 18px;border-top:1px solid var(--border);display:flex;gap:8px">
-    <button class="btn btn-dark" id="redTeamBtn" style="flex:1;font-weight:700;font-size:11px">🔴 Security Audit</button>
+    <button class="btn btn-dark" id="redTeamBtn" style="flex:1;font-weight:700;font-size:11px">🔴 Audit</button>
     <button class="btn btn-dark" id="receiptsBtn" style="flex:1;font-weight:700;font-size:11px">📋 Receipts</button>
+    <button class="btn btn-dark" id="siiBtn" style="flex:1;font-weight:700;font-size:11px">🛡️ Integrity</button>
   </div>
 
   <div class="footer">
@@ -338,6 +339,19 @@
         height: 800,
         left: 200,
         top: 150
+      });
+    });
+
+    // System Integrity Index
+    document.getElementById('siiBtn').addEventListener('click', function() {
+      const siiURL = chrome.runtime.getURL('popup/sii-panel.html');
+      chrome.windows.create({
+        url: siiURL,
+        type: 'popup',
+        width: 900,
+        height: 800,
+        left: 300,
+        top: 200
       });
     });
 
