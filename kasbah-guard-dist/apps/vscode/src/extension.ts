@@ -15,7 +15,7 @@ import { KasbahStatusBar } from './statusbar';
 import { VERSION, ENGINE_VERSION } from '@kasbah/guard';
 
 // Tamper-detection: verify engine version on activation (Moat B)
-const EXPECTED_ENGINE = '3.6.0';
+const EXPECTED_ENGINE = '1.0.0';
 
 export function activate(context: vscode.ExtensionContext) {
   // ── Moat B: Tamper check ───────────────────────────────────────────────

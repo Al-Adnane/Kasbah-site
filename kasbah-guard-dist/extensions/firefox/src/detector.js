@@ -31,7 +31,7 @@
 // ══════════════════════════════════════════════════════════════
 // LAYER 6: Pattern Version + Integrity Tracking
 // ══════════════════════════════════════════════════════════════
-var PATTERN_VERSION = "3.6.0";
+var PATTERN_VERSION = "1.0.0";
 var PATTERN_EPOCH = 1772236800; // 2026-02-27
 
 // Feature flags for backward-compatible return objects
