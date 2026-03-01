@@ -25,6 +25,7 @@ paths = [
   "kasbah-guard-dist/tests/",
   "kasbah-guard-dist/apps/desktop/dist/",
   "kasbah-guard-dist/apps/desktop/src-tauri/src/guard.rs",
+  "kasbah-guard-dist/apps/desktop/src-tauri/src/redact.rs",
   "kasbah-guard-dist/extensions/.*/src/detector.js",
   "kasbah-guard-dist/extensions/safari/.*detector.js",
   "kasbah-guard-dist/apps/desktop/src-tauri/extension/src/detector.js",
