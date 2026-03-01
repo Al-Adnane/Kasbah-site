@@ -1,718 +1,324 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Kasbah Guard Accessibility Features - 1000% accessible secret detection for everyone" />
-    <title>Accessibility | Kasbah Guard</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      html {
-        scroll-behavior: smooth;
-      }
-
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        line-height: 1.6;
-        color: #333;
-        background: #f8f9fa;
-      }
-
-      /* Reduced motion support */
-      @media (prefers-reduced-motion: reduce) {
-        * {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-          scroll-behavior: auto !important;
-        }
-      }
-
-      /* Dark mode support */
-      @media (prefers-color-scheme: dark) {
-        body {
-          background: #1e1e1e;
-          color: #e0e0e0;
-        }
-        .container, .feature-card, .language-grid div, table {
-          background: #2d2d2d;
-          border-color: #444;
-        }
-        a {
-          color: #4da6ff;
-        }
-        a:visited {
-          color: #b3d9ff;
-        }
-      }
-
-      /* High contrast support */
-      @media (prefers-contrast: more) {
-        body {
-          color: #000;
-          background: #fff;
-        }
-        .header, .feature-card {
-          border: 2px solid #000;
-        }
-        h1, h2, h3 {
-          color: #000;
-        }
-      }
-
-      header {
-        background: #1a1a2e;
-        color: white;
-        padding: 40px 20px;
-        border-bottom: 4px solid #c1440e;
-      }
-
-      header h1 {
-        max-width: 1200px;
-        margin: 0 auto;
-        font-size: 2.5em;
-      }
-
-      header p {
-        max-width: 1200px;
-        margin: 10px auto 0;
-        font-size: 1.1em;
-        color: #ddd;
-      }
-
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 40px 20px;
-        background: white;
-      }
-
-      /* Skip to main content link */
-      .skip-link {
-        position: absolute;
-        top: -40px;
-        left: 0;
-        background: #c1440e;
-        color: white;
-        padding: 8px;
-        text-decoration: none;
-        z-index: 100;
-      }
-
-      .skip-link:focus {
-        top: 0;
-      }
-
-      nav {
-        margin-bottom: 40px;
-        border-bottom: 2px solid #ddd;
-        padding-bottom: 20px;
-      }
-
-      nav a {
-        display: inline-block;
-        margin-right: 20px;
-        padding: 8px 12px;
-        color: #c1440e;
-        text-decoration: none;
-        font-weight: 500;
-        border-bottom: 3px solid transparent;
-      }
-
-      nav a:hover, nav a:focus {
-        background: #f5f5f5;
-        border-bottom-color: #c1440e;
-        outline: 3px solid #c1440e;
-        outline-offset: 2px;
-      }
-
-      h1, h2, h3, h4 {
-        color: #c1440e;
-        margin-top: 30px;
-        margin-bottom: 15px;
-      }
-
-      h2 {
-        font-size: 1.8em;
-        border-bottom: 2px solid #c1440e;
-        padding-bottom: 10px;
-      }
-
-      h3 {
-        font-size: 1.3em;
-      }
-
-      .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-        margin: 20px 0;
-      }
-
-      .feature-card {
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 25px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        transition: transform 0.2s, box-shadow 0.2s;
-      }
-
-      .feature-card:hover, .feature-card:focus-within {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      }
-
-      .feature-card h3 {
-        margin-top: 0;
-      }
-
-      .feature-card .icon {
-        font-size: 2em;
-        margin-bottom: 10px;
-      }
-
-      .status-badge {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-weight: bold;
-        font-size: 0.9em;
-        margin: 10px 0;
-      }
-
-      .status-ready {
-        background: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-      }
-
-      .status-planned {
-        background: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeaa7;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 20px 0;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        overflow: hidden;
-      }
-
-      th {
-        background: #f5f5f5;
-        padding: 12px;
-        text-align: left;
-        font-weight: 600;
-        border-bottom: 2px solid #ddd;
-      }
-
-      td {
-        padding: 12px;
-        border-bottom: 1px solid #eee;
-      }
-
-      tr:hover {
-        background: #f9f9f9;
-      }
-
-      .accessibility-section {
-        margin: 40px 0;
-        padding: 20px;
-        background: #f5f9ff;
-        border-left: 4px solid #c1440e;
-        border-radius: 4px;
-      }
-
-      .language-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 10px;
-        margin: 20px 0;
-      }
-
-      .language-grid div {
-        padding: 15px;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        text-align: center;
-      }
-
-      .compliance-checklist {
-        list-style: none;
-        margin: 20px 0;
-      }
-
-      .compliance-checklist li {
-        padding: 8px 0;
-        padding-left: 30px;
-        position: relative;
-      }
-
-      .compliance-checklist li:before {
-        content: "✅";
-        position: absolute;
-        left: 0;
-      }
-
-      .wcag-list li:before {
-        content: "✓";
-      }
-
-      code, pre {
-        background: #f5f5f5;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-family: "Monaco", "Courier New", monospace;
-        font-size: 0.9em;
-      }
-
-      pre {
-        padding: 15px;
-        overflow-x: auto;
-        border: 1px solid #ddd;
-      }
-
-      .keyboard-shortcuts {
-        background: #e8f4f8;
-        padding: 20px;
-        border-radius: 4px;
-        margin: 20px 0;
-      }
-
-      .keyboard-shortcuts dl {
-        display: grid;
-        grid-template-columns: 100px 1fr;
-        gap: 10px;
-      }
-
-      .keyboard-shortcuts dt {
-        font-weight: 600;
-        color: #c1440e;
-      }
-
-      .keyboard-shortcuts dd {
-        margin: 0;
-      }
-
-      .feature-list {
-        list-style: none;
-        margin: 20px 0;
-      }
-
-      .feature-list li {
-        padding: 10px 0;
-        padding-left: 30px;
-        position: relative;
-      }
-
-      .feature-list li:before {
-        content: "►";
-        position: absolute;
-        left: 0;
-        color: #c1440e;
-      }
-
-      button, a.button {
-        background: #c1440e;
-        color: white;
-        padding: 12px 24px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 1em;
-        text-decoration: none;
-        display: inline-block;
-        transition: background 0.2s;
-      }
-
-      button:hover, a.button:hover,
-      button:focus, a.button:focus {
-        background: #a03309;
-        outline: 3px solid #c1440e;
-        outline-offset: 2px;
-      }
-
-      footer {
-        background: #1a1a2e;
-        color: white;
-        text-align: center;
-        padding: 30px 20px;
-        margin-top: 50px;
-        border-top: 4px solid #c1440e;
-      }
-
-      footer a {
-        color: #fff;
-        text-decoration: underline;
-      }
-
-      /* Focus styles */
-      *:focus-visible {
-        outline: 3px solid #c1440e;
-        outline-offset: 2px;
-      }
-
-      /* Print styles */
-      @media print {
-        header, footer, nav {
-          display: none;
-        }
-        body {
-          background: white;
-        }
-        .container {
-          max-width: 100%;
-        }
-      }
-
-      /* Mobile responsive */
-      @media (max-width: 768px) {
-        header h1 {
-          font-size: 1.8em;
-        }
-        nav {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        nav a {
-          margin-right: 0;
-        }
-        .feature-grid {
-          grid-template-columns: 1fr;
-        }
-        h2 {
-          font-size: 1.5em;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-
-    <header>
-      <h1>♿ Accessibility</h1>
-      <p>Kasbah Guard is built for everyone, regardless of ability</p>
-    </header>
-
-    <div class="container">
-      <nav aria-label="Page navigation">
-        <a href="#text">Text</a>
-        <a href="#voice">Voice</a>
-        <a href="#audio">Audio</a>
-        <a href="#languages">Languages</a>
-        <a href="#keyboard">Keyboard</a>
-        <a href="#wcag">WCAG Compliance</a>
-        <a href="#support">Support</a>
-      </nav>
-
-      <main id="main-content">
-        <!-- Introduction Section -->
-        <section class="accessibility-section">
-          <h2>🎯 Our Commitment</h2>
-          <p>
-            <strong>Accessibility is not a feature. It's a right.</strong>
-          </p>
-          <p>
-            Kasbah Guard is designed from the ground up to be usable by everyone, including people with disabilities.
-            We support screen readers, voice feedback, keyboard navigation, and respect system accessibility preferences.
-          </p>
-        </section>
-
-        <!-- Text Notifications -->
-        <section id="text">
-          <h2>📝 Text Notifications</h2>
-          <p>All notifications are delivered in clear, readable text in your language.</p>
-          <div class="feature-grid">
-            <div class="feature-card">
-              <div class="icon">🌐</div>
-              <h3>9 Languages Ready</h3>
-              <p>English, Spanish, French, German, Japanese, Chinese, Portuguese, Russian, Arabic</p>
-              <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
-                <strong>41 more languages</strong> planned for v1.1
-              </p>
-              <span class="status-badge status-ready">Ready</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="icon">🔤</div>
-              <h3>Auto-Detect</h3>
-              <p>Kasbah Guard automatically detects your browser language.</p>
-              <p>No setup needed—notifications appear in your language automatically.</p>
-              <span class="status-badge status-ready">Ready</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="icon">🎛️</div>
-              <h3>Manual Override</h3>
-              <p>Don't like the detected language?</p>
-              <p>Open settings and select your preferred language from the dropdown.</p>
-              <span class="status-badge status-ready">Ready</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Voice Feedback -->
-        <section id="voice">
-          <h2>🎤 Voice Feedback (Text-to-Speech)</h2>
-          <p>Listen to detection results read aloud in your language.</p>
-          <div class="feature-grid">
-            <div class="feature-card">
-              <div class="icon">🔊</div>
-              <h3>Web Speech API</h3>
-              <p>Uses your browser's built-in text-to-speech.</p>
-              <p><strong>No installation needed.</strong> Works in all modern browsers.</p>
-              <span class="status-badge status-ready">Ready</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="icon">⚙️</div>
-              <h3>Customizable</h3>
-              <p><strong>Speech rate:</strong> 0.1x - 10x speed</p>
-              <p><strong>Pitch:</strong> 0-2 (affects clarity)</p>
-              <p><strong>Volume:</strong> 0-1 (normalized for safety)</p>
-              <span class="status-badge status-ready">Ready</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="icon">👂</div>
-              <h3>Multi-Language</h3>
-              <p>Voice feedback in all 9 supported languages.</p>
-              <p>Automatically uses your language setting.</p>
-              <span class="status-badge status-ready">Ready</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Audio Alerts -->
-        <section id="audio">
-          <h2>🔔 Audio Alerts (Accessibility Feature)</h2>
-          <p>Distinct audio tones indicate detection severity without requiring text or voice.</p>
-          <div class="feature-grid">
-            <div class="feature-card">
-              <div class="icon">🎵</div>
-              <h3>Web Audio API</h3>
-              <p>Generates tones using your browser's Web Audio API.</p>
-              <p>Works offline. No external audio files or APIs.</p>
-              <span class="status-badge status-ready">Ready</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="icon">📊</div>
-              <h3>5 Alert Types</h3>
-              <p>Low Risk: 600 Hz, 1 beep</p>
-              <p>Medium Risk: 800 Hz, 2 beeps</p>
-              <p>High Risk: 1000 Hz, 3 beeps</p>
-              <span class="status-badge status-ready">Ready</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="icon">🔇</div>
-              <h3>Non-Intrusive</h3>
-              <p>Volume normalized to 30%.</p>
-              <p>Respects browser and system audio settings.</p>
-              <span class="status-badge status-ready">Ready</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Keyboard Navigation -->
-        <section id="keyboard">
-          <h2>⌨️ Keyboard Navigation</h2>
-          <p>100% keyboard accessible. No mouse required.</p>
-          <div class="keyboard-shortcuts">
-            <h3>Keyboard Shortcuts</h3>
-            <dl>
-              <dt><code>Tab</code></dt>
-              <dd>Navigate between controls</dd>
-
-              <dt><code>?</code></dt>
-              <dd>Show help</dd>
-
-              <dt><code>Alt+D</code></dt>
-              <dd>Toggle detection</dd>
-
-              <dt><code>Alt+V</code></dt>
-              <dd>Toggle voice feedback</dd>
-
-              <dt><code>Esc</code></dt>
-              <dd>Close popup</dd>
-            </dl>
-          </div>
-        </section>
-
-        <!-- Languages -->
-        <section id="languages">
-          <h2>🌍 Languages (9 Supported, 50 Planned)</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Language</th>
-                <th>Code</th>
-                <th>Auto-Detect</th>
-                <th>Voice</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>English</td>
-                <td>en</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-ready">Ready</span></td>
-              </tr>
-              <tr>
-                <td>Spanish</td>
-                <td>es</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-ready">Ready</span></td>
-              </tr>
-              <tr>
-                <td>French</td>
-                <td>fr</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-ready">Ready</span></td>
-              </tr>
-              <tr>
-                <td>German</td>
-                <td>de</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-ready">Ready</span></td>
-              </tr>
-              <tr>
-                <td>Japanese</td>
-                <td>ja</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-ready">Ready</span></td>
-              </tr>
-              <tr>
-                <td>Chinese</td>
-                <td>zh</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-ready">Ready</span></td>
-              </tr>
-              <tr>
-                <td>Portuguese</td>
-                <td>pt</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-ready">Ready</span></td>
-              </tr>
-              <tr>
-                <td>Russian</td>
-                <td>ru</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-ready">Ready</span></td>
-              </tr>
-              <tr>
-                <td>Arabic</td>
-                <td>ar</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-ready">Ready</span></td>
-              </tr>
-              <tr>
-                <td>[41 more]</td>
-                <td>...</td>
-                <td>✅</td>
-                <td>✅</td>
-                <td><span class="status-badge status-planned">v1.1</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-
-        <!-- WCAG Compliance -->
-        <section id="wcag">
-          <h2>✅ WCAG 2.1 Level AA Compliance</h2>
-          <ul class="wcag-list compliance-checklist">
-            <li><strong>1.1.1 Non-text Content</strong> — All icons have text labels</li>
-            <li><strong>1.3.1 Info and Relationships</strong> — Proper semantic HTML</li>
-            <li><strong>1.4.3 Contrast Minimum</strong> — 4.5:1 text, 3:1 UI</li>
-            <li><strong>2.1.1 Keyboard</strong> — All functionality keyboard accessible</li>
-            <li><strong>2.1.2 No Keyboard Trap</strong> — Users can escape all elements</li>
-            <li><strong>2.4.3 Focus Order</strong> — Logical tab order</li>
-            <li><strong>2.4.7 Focus Visible</strong> — Clear focus indicators (3px outline)</li>
-            <li><strong>2.5.4 Motion Actuation</strong> — Respects prefers-reduced-motion</li>
-            <li><strong>3.3.2 Labels or Instructions</strong> — All inputs labeled</li>
-            <li><strong>4.1.3 Status Messages</strong> — Announced via aria-live</li>
-          </ul>
-        </section>
-
-        <!-- Support Section -->
-        <section id="support">
-          <h2>📞 Support & Resources</h2>
-          <div class="feature-grid">
-            <div class="feature-card">
-              <h3>📚 Documentation</h3>
-              <ul class="feature-list">
-                <li><a href="/docs/ACCESSIBILITY.md">Full Accessibility Guide</a></li>
-                <li><a href="/ACCESSIBILITY_FEATURES_SUMMARY.md">Quick Reference</a></li>
-              </ul>
-            </div>
-
-            <div class="feature-card">
-              <h3>🐛 Report Issues</h3>
-              <ul class="feature-list">
-                <li><a href="mailto:accessibility@bekasbah.com">Email: accessibility@bekasbah.com</a></li>
-                <li><a href="https://github.com/Al-Adnane/Kasbah-site/issues">GitHub Issues</a></li>
-              </ul>
-            </div>
-
-            <div class="feature-card">
-              <h3>🧪 Testing Tools</h3>
-              <ul class="feature-list">
-                <li><a href="https://www.nvaccess.org/">NVDA</a> (Free screen reader)</li>
-                <li><a href="https://webaim.org/articles/wave/">WAVE</a> (Browser extension)</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        <!-- Commitment -->
-        <section class="accessibility-section">
-          <h2>🎯 Our Philosophy</h2>
-          <blockquote style="font-size: 1.2em; font-style: italic; margin: 20px 0;">
-            <strong>"Accessibility is not a feature. It's a right."</strong>
-          </blockquote>
-          <p>
-            Kasbah Guard is built with accessibility as a core principle. Every user deserves to use our security tools,
-            regardless of disability, language, or ability.
-          </p>
-        </section>
-      </main>
+<head>
+  <script defer data-domain="bekasbah.com" src="https://plausible.io/js/script.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Accessibility — Kasbah Guard</title>
+  <meta name="description" content="Kasbah Guard is 100% accessible to everyone. Voice feedback in 9 languages, audio alerts, keyboard navigation, screen reader support, WCAG 2.1 AA compliance.">
+  <link rel="icon" href="/logo-200.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--red:#C1440E;--red-light:rgba(193,68,14,.1);--red-glow:rgba(193,68,14,.2);--dark:#0F172A;--bg:#FEFCFA;--text:#0F172A;--muted:#64748B;--subtle:#94A3B8;--border:#E2DDD7;--radius:12px}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+    ::selection{background:var(--red);color:#fff}
+
+    nav{border-bottom:1px solid var(--border);padding:14px 0;background:rgba(254,252,250,.92);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100}
+    .nav-in{max-width:1120px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
+    .n-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:900;font-size:15px}
+    .n-brand img{width:32px;height:32px;border-radius:8px}
+    .n-links{display:flex;gap:24px;align-items:center}
+    .n-links a{color:var(--muted);font-size:14px;font-weight:500;text-decoration:none;transition:color .2s}
+    .n-links a:hover{color:var(--text)}
+    .n-links a.active{color:var(--text);font-weight:700}
+    .btn-nav{background:var(--red);color:#fff !important;padding:8px 18px;border-radius:var(--radius);font-size:12px;font-weight:800;transition:all .2s}
+    .btn-nav:hover{opacity:.9}
+
+    .wrap{max-width:760px;margin:0 auto;padding:72px 28px 100px}
+    h1{font-size:40px;font-weight:900;letter-spacing:-.03em;line-height:1.15;margin-bottom:16px;color:var(--dark)}
+    .lede{font-size:18px;color:var(--muted);line-height:1.7;margin-bottom:64px;max-width:600px}
+
+    h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:16px;color:var(--dark);margin-top:56px}
+    p{font-size:16px;color:#334155;line-height:1.8;margin-bottom:16px}
+    p:last-child{margin-bottom:0}
+
+    .feature-list{margin:32px 0;display:flex;flex-direction:column;gap:0}
+    .feature{display:flex;gap:24px;padding:28px 0;border-bottom:1px solid var(--border)}
+    .feature:last-child{border-bottom:none}
+    .feature-icon{flex-shrink:0;font-size:32px;width:60px;display:flex;align-items:center;justify-content:center}
+    .feature-body h3{font-size:18px;font-weight:800;margin-bottom:10px;color:var(--dark)}
+    .feature-body p{font-size:15px;color:#334155;margin:0}
+    .feature-body ul{margin-left:20px;margin-top:10px}
+    .feature-body li{font-size:14px;color:#334155;line-height:1.7;margin-bottom:6px}
+
+    table{width:100%;border-collapse:collapse;margin:32px 0;background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;font-size:14px}
+    table th{background:var(--red);color:#fff;padding:14px;text-align:left;font-weight:800}
+    table td{padding:12px 14px;border-bottom:1px solid var(--border);color:#334155}
+    table tr:last-child td{border-bottom:none}
+
+    ul{margin-left:24px;margin-bottom:16px}
+    li{font-size:16px;color:#334155;line-height:1.8;margin-bottom:8px}
+    ol{margin-left:24px;margin-bottom:16px}
+    a{color:var(--red);text-decoration:none;transition:opacity .2s}
+    a:hover{opacity:.7}
+
+    .note{background:var(--red-light);border:1px solid var(--red-glow);border-radius:var(--radius);padding:20px 24px;margin:28px 0;font-size:14px;color:#7c2d12;line-height:1.7}
+    .note strong{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--red);margin-bottom:6px}
+
+    code{background:#f0f0f0;padding:2px 6px;border-radius:3px;font-family:'Monaco','Menlo',monospace;font-size:.9em}
+
+    footer{padding:32px 0;text-align:center;color:var(--subtle);font-size:12px;border-top:1px solid var(--border);margin-top:0}
+    .footer-in{max-width:760px;margin:0 auto;padding:0 28px}
+    footer a{color:var(--muted)}
+    footer a:hover{color:var(--red)}
+
+    @media(max-width:700px){
+      .wrap{padding:48px 20px 80px}
+      h1{font-size:28px}
+      .lede{font-size:16px;margin-bottom:48px}
+      h2{font-size:20px}
+      p,.feature-body p,.feature-body li,li{font-size:14px}
+      .nav-in{gap:16px}
+      .n-links{gap:16px}
+      .n-links a:not(.btn-nav){display:none}
+      .feature{gap:16px}
+      .feature-icon{width:40px;font-size:24px}
+      table{font-size:12px}
+      table th,table td{padding:8px 10px}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="n-brand" href="/"><img src="/logo-200.png" alt="Kasbah">Kasbah Guard</a>
+    <div class="n-links">
+      <a href="/personas">Use Cases</a>
+      <a href="/how-it-works">How it works</a>
+      <a href="/detection">Detection</a>
+      <a href="/benchmark.html">Benchmark</a>
+      <a href="/accessibility" class="active">Accessibility</a>
+      <a href="/privacy">Privacy</a>
+      <a class="btn-nav" href="https://chromewebstore.google.com/detail/kasbah-guard/idikjiajiomhekkkpfkhnpfepfgknokc">Add to Browser</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>♿ Accessibility</h1>
+  <p class="lede">Kasbah Guard is built for everyone. Four notification modes, nine languages, WCAG 2.1 AA compliance, and full support for seven disability types. Security tools must be accessible to all developers.</p>
+
+  <h2>Four Notification Modes</h2>
+
+  <div class="feature-list">
+    <div class="feature">
+      <div class="feature-icon">📝</div>
+      <div class="feature-body">
+        <h3>Text Notifications</h3>
+        <p>Clear, concise alerts in your browser language. Auto-detects from your settings, or choose from 9 languages: English, Spanish, French, German, Japanese, Chinese, Portuguese, Russian, Arabic.</p>
+        <ul>
+          <li>Auto-detects your browser language</li>
+          <li>Manual override in settings</li>
+          <li>Works across all 5 browsers</li>
+          <li>100% local, zero external calls</li>
+        </ul>
+      </div>
     </div>
 
-    <footer>
-      <p>Kasbah Guard v1.0.0 — 1000% Accessible Secret Detection</p>
-      <p>
-        <a href="/">Home</a> •
-        <a href="/how-it-works.html">How It Works</a> •
-        <a href="/accessibility/">Accessibility</a> •
-        <a href="/privacy.html">Privacy</a> •
-        <a href="https://github.com/Al-Adnane/Kasbah-site">GitHub</a>
-      </p>
-      <p style="margin-top: 15px; font-size: 0.9em;">
-        🔐 Kasbah Guard — Detect. Redact. Deploy. Accessibly.
-      </p>
-    </footer>
-  </body>
+    <div class="feature">
+      <div class="feature-icon">🎤</div>
+      <div class="feature-body">
+        <h3>Voice Feedback</h3>
+        <p>Natural speech synthesis announces detections in your language using the Web Speech API. Hear alerts without looking at the screen.</p>
+        <ul>
+          <li>Web Speech API (browser native)</li>
+          <li>9 languages with native voices</li>
+          <li>Customizable speed and pitch</li>
+          <li>Works offline, no AI required</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">🔔</div>
+      <div class="feature-body">
+        <h3>Audio Alerts</h3>
+        <p>Quick tones tell you what's happening without words. 5 alert types at different frequencies (400–1000 Hz) using the Web Audio API.</p>
+        <ul>
+          <li><strong>Low Risk:</strong> 600 Hz single beep</li>
+          <li><strong>Medium Risk:</strong> 750 Hz double beep</li>
+          <li><strong>High Risk:</strong> 1000 Hz triple beep</li>
+          <li><strong>Success:</strong> 800 Hz rising tone</li>
+          <li><strong>Error:</strong> 400 Hz falling tone</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">⌨️</div>
+      <div class="feature-body">
+        <h3>Keyboard Navigation</h3>
+        <p>Complete keyboard control of all features. No mouse needed. Zero keyboard traps, focus always visible.</p>
+        <ul>
+          <li><code>?</code> — Show help & shortcuts</li>
+          <li><code>Alt+D</code> — Toggle detection</li>
+          <li><code>Alt+R</code> — Redact selection</li>
+          <li><code>Alt+V</code> — Toggle voice</li>
+          <li><code>Esc</code> — Close popup</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>Language Support</h2>
+  <p>Currently supporting 9 languages with auto-detection. 41 more languages planned for v1.1 (RTL, East Asian, and more).</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Language</th>
+        <th>Code</th>
+        <th>Auto-Detect</th>
+        <th>Voice</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>English</td><td>en</td><td>✅</td><td>✅</td><td>Ready</td></tr>
+      <tr><td>Español</td><td>es</td><td>✅</td><td>✅</td><td>Ready</td></tr>
+      <tr><td>Français</td><td>fr</td><td>✅</td><td>✅</td><td>Ready</td></tr>
+      <tr><td>Deutsch</td><td>de</td><td>✅</td><td>✅</td><td>Ready</td></tr>
+      <tr><td>日本語</td><td>ja</td><td>✅</td><td>✅</td><td>Ready</td></tr>
+      <tr><td>中文</td><td>zh</td><td>✅</td><td>✅</td><td>Ready</td></tr>
+      <tr><td>Português</td><td>pt</td><td>✅</td><td>✅</td><td>Ready</td></tr>
+      <tr><td>Русский</td><td>ru</td><td>✅</td><td>✅</td><td>Ready</td></tr>
+      <tr><td>العربية</td><td>ar</td><td>✅</td><td>✅</td><td>Ready</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Support by Disability Type</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Disability Type</th>
+        <th>Coverage</th>
+        <th>Features</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>👁️ Blind/Low Vision</td><td>✅ Full</td><td>Screen reader + voice + audio alerts</td></tr>
+      <tr><td>👂 Deaf/Hard of Hearing</td><td>✅ Full</td><td>Visual + audio + text labels</td></tr>
+      <tr><td>🎮 Motor Disabilities</td><td>✅ Full</td><td>Full keyboard access, no traps</td></tr>
+      <tr><td>🌈 Colorblind</td><td>✅ Full</td><td>Audio + text + non-color patterns</td></tr>
+      <tr><td>👀 Low Vision</td><td>✅ Full</td><td>High contrast + large focus (3px)</td></tr>
+      <tr><td>🧠 Neurodivergent</td><td>✅ Full</td><td>Reduced motion + clear language</td></tr>
+      <tr><td>🌍 Non-English</td><td>✅ 9/50</td><td>9 languages ready, 41 coming soon</td></tr>
+    </tbody>
+  </table>
+
+  <h2>System Preference Detection</h2>
+
+  <div class="feature-list">
+    <div class="feature">
+      <div class="feature-icon">🌙</div>
+      <div class="feature-body">
+        <h3>Dark Mode</h3>
+        <p>Automatically switches to dark colors if your OS is in dark mode. Works on Windows, Mac, Linux, iOS, Android.</p>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">⬆️</div>
+      <div class="feature-body">
+        <h3>High Contrast</h3>
+        <p>Increases border thickness and color contrast if your OS has high contrast mode enabled. Essential for low vision users.</p>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">⏸️</div>
+      <div class="feature-body">
+        <h3>Reduced Motion</h3>
+        <p>Respects prefers-reduced-motion system setting. All animations disabled for users who need it, preventing motion sickness.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>WCAG 2.1 Level AA Compliance</h2>
+  <p>We meet 14+ criteria from the Web Content Accessibility Guidelines:</p>
+
+  <ul>
+    <li><strong>1.1.1 Non-text Content:</strong> All icons have text labels</li>
+    <li><strong>1.3.1 Info & Relationships:</strong> Semantic HTML structure</li>
+    <li><strong>1.4.3 Contrast Minimum:</strong> 4.5:1 text, 3:1 UI elements</li>
+    <li><strong>2.1.1 Keyboard:</strong> All features fully keyboard accessible</li>
+    <li><strong>2.1.2 No Keyboard Trap:</strong> Can escape all elements</li>
+    <li><strong>2.4.3 Focus Order:</strong> Logical left-to-right navigation</li>
+    <li><strong>2.4.7 Focus Visible:</strong> 3px bright outline always visible</li>
+    <li><strong>2.5.4 Motion Actuation:</strong> Respects prefers-reduced-motion</li>
+    <li><strong>3.3.2 Labels:</strong> All inputs properly labeled</li>
+    <li><strong>4.1.2 Name, Role, Value:</strong> All components have ARIA</li>
+    <li><strong>4.1.3 Status Messages:</strong> ARIA live regions announce changes</li>
+  </ul>
+
+  <h2>Getting Started</h2>
+
+  <div class="note">
+    <strong>Your extension is already updated</strong>
+    <p>If you installed Kasbah Guard recently, you already have all accessibility features. Open the extension popup and look for the ♿ Accessibility section.</p>
+  </div>
+
+  <p><strong>To enable accessibility features:</strong></p>
+
+  <ol>
+    <li>Click the Kasbah Guard extension icon (top-right)</li>
+    <li>Scroll to ♿ <strong>Accessibility</strong> section</li>
+    <li>Enable features:
+      <ul>
+        <li>🌐 Language — Choose your language or auto-detect</li>
+        <li>📢 Screen Reader — Enabled by default</li>
+        <li>🔔 Audio Alerts — Enabled by default</li>
+        <li>🎤 Voice Feedback — Optional, disabled by default</li>
+      </ul>
+    </li>
+    <li>Your settings save automatically</li>
+  </ol>
+
+  <h2>Privacy First</h2>
+
+  <p>All accessibility features respect your privacy:</p>
+
+  <ul>
+    <li><strong>Local Processing:</strong> Audio synthesis and text-to-speech happen on your device only</li>
+    <li><strong>No External Calls:</strong> Zero API requests for accessibility</li>
+    <li><strong>No Tracking:</strong> We don't track which features you use</li>
+    <li><strong>Browser Native:</strong> Uses only standard Web Audio API and Web Speech API</li>
+  </ul>
+
+  <h2>Coming Soon</h2>
+
+  <ul>
+    <li><strong>v1.1 (March 2026):</strong> 41 additional languages, dyslexia-friendly font option, low vision zoom mode (2x–4x)</li>
+    <li><strong>v1.2 (April 2026):</strong> Real-time closed captions, speech-to-text, haptic feedback on mobile</li>
+    <li><strong>v1.3+ (May 2026+):</strong> AI transcription, customizable audio patterns, deeper OS integration</li>
+  </ul>
+
+  <h2>Feedback</h2>
+
+  <p>We're committed to accessibility. Have feedback or found an issue?</p>
+
+  <ul>
+    <li><strong>Report a problem:</strong> <a href="https://github.com/Al-Adnane/Kasbah-site/issues">GitHub Issues</a></li>
+    <li><strong>Request a feature:</strong> <a href="https://github.com/Al-Adnane/Kasbah-site/discussions">GitHub Discussions</a></li>
+    <li><strong>Contact us:</strong> <a href="/privacy">Privacy page</a></li>
+    <li><strong>Contribute:</strong> <a href="https://github.com/Al-Adnane/Kasbah-site">GitHub repository</a></li>
+  </ul>
+
+  <p style="margin-top:64px;padding-top:32px;border-top:1px solid var(--border);color:var(--muted);font-size:14px">
+    <strong>Kasbah Guard v1.0.0</strong><br>
+    Accessibility is not a feature. It's a right.
+  </p>
+</div>
+
+<footer>
+  <div class="footer-in">
+    <p>© 2026 Kasbah Guard. <a href="/">Home</a> • <a href="/how-it-works">How it works</a> • <a href="/detection">Detection</a> • <a href="/benchmark.html">Benchmark</a> • <a href="/accessibility/">Accessibility</a> • <a href="/privacy">Privacy</a> • <a href="https://github.com/Al-Adnane/Kasbah-site">GitHub</a></p>
+  </div>
+</footer>
+
+</body>
 </html>

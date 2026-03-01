@@ -85,4 +85,12 @@ regexes = [
   "sk_test_51HaXcJLkdIwHUdVTabcdefghijk12345678901234",
   "sk_test_51AbCdEfGhIjKlMnOpQrStUvWx12",
   "https://hooks\\.slack\\.com/services/TEST/WEBHOOK/abc123def456ghi789jkl012mno",
+  # redact.rs test data — test credit cards and API keys for unit tests
+  "4111111111111111",
+  "sk-proj-abc123def456ghi789",
+  "mySecretPassword123",
+  # SDK and VS Code extension documentation examples
+  "sk-proj-abc123",
+  "sk-proj-abc123def456",
+  "sk-proj-abc123def456ghi789",
 ]
