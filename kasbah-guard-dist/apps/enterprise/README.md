@@ -1,50 +1,129 @@
-# Kasbah Guard Enterprise
+# Kasbah Guard Enterprise Dashboard v1.0.0
 
-Multi-user sensitive data governance dashboard built on top of the Kasbah Detection Engine.
+Complete management console for Kasbah Guard secret detection.
 
-## Product Spec
+**Features:**
+- 📊 **Dashboard** — Real-time stats and overview
+- 📋 **Policies** — Create and manage detection policies
+- 📝 **Audit Logs** — View all detections and team activities
+- 👥 **Team Management** — Add members, assign roles, control access
+- 🔌 **Ecosystem** — Visualize 22 nature-inspired PPP modules
+- 🧩 **Proofs** — Zero-knowledge proofs for detection verification
 
-### Core Features
-- **Multi-user management** — Invite team members, assign roles (admin, analyst, viewer)
-- **Policy management** — Set org-wide thresholds, custom pattern rules, allow/deny lists
-- **Audit log viewer** — Full immutable audit trail of all detection events with content hashes
-- **Team policies** — Per-team overrides on detection sensitivity and redaction rules
-- **Real-time dashboard** — Live risk event feed across all connected products
-- **API key management** — Issue and revoke API keys for CLI/SDK integrations
-
-### Detection Integration
-Uses `@kasbah/guard` SDK (kasbah-kernel v3.5.0, 23 invariants) for all detection.
-
-All events are stored with content hashes (never raw text) — privacy-preserving by design.
-
-### Tech Stack
-- **Frontend:** Next.js 14, React 18, TypeScript
-- **Detection:** `@kasbah/guard` SDK
-- **Auth:** NextAuth.js (org SSO + email)
-- **DB:** PostgreSQL (audit logs, policies, users)
-- **API:** Next.js API routes + tRPC
-
-## Getting Started
+## Quick Start
 
 ```bash
+# Install dependencies
 npm install
+
+# Start development server (port 3001)
 npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Visit: http://localhost:3001
 
 ## Architecture
 
+- **Frontend**: Next.js 14 (React 18 + TypeScript)
+- **API Client**: Typed axios client with retry logic
+- **State Management**: React hooks + localStorage
+- **Styling**: Vanilla CSS with CSS variables
+
+## API Integration
+
+Dashboard calls the Kasbah API at `https://api.bekasbah.com`:
+
 ```
-src/
-├── app/
-│   ├── page.tsx              # Dashboard overview
-│   ├── policies/             # Policy management UI
-│   │   └── page.tsx
-│   ├── audit/                # Audit log viewer
-│   │   └── page.tsx
-│   └── team/                 # Team member management
-│       └── page.tsx
-└── lib/
-    └── kasbah-client.ts      # @kasbah/guard SDK integration
+GET  /api/stats                   → Dashboard stats
+GET  /api/policies                → List policies
+POST /api/policies                → Create policy
+PUT  /api/policies/:id            → Update policy
+DELETE /api/policies/:id          → Delete policy
+
+GET  /api/audit/recent            → Audit logs
+GET  /api/team                    → Team members
+POST /api/team                    → Add member
+PUT  /api/team/:id                → Update member
+DELETE /api/team/:id              → Remove member
+
+GET  /health                      → API health check
 ```
+
+## Environment Variables
+
+```
+NEXT_PUBLIC_API_BASE_URL=https://api.bekasbah.com
+```
+
+## Pages
+
+### Dashboard (`/`)
+- Overview stats
+- Quick links to other pages
+- Health status
+
+### Policies (`/policies`)
+- List all policies
+- Create new policy
+- Edit existing policies
+- Delete policies
+
+### Audit Logs (`/audit`)
+- View detection history
+- Filter by date, type, user
+- Export logs
+
+### Team (`/team`)
+- Manage team members
+- Assign roles (admin, member, viewer)
+- Control access
+
+### Ecosystem (`/ecosystem`)
+- Visualize 22 PPP modules
+- View module details and performance
+- API integration stats
+
+### Proofs (`/proofs`)
+- Zero-knowledge proof verification
+- Detection proof validation
+- Cryptographic verification
+
+## Development
+
+```bash
+# Type checking
+tsc --noEmit
+
+# Linting
+npm run lint
+
+# Format code
+npx prettier --write .
+```
+
+## Deployment
+
+```bash
+# Build
+npm run build
+
+# Deploy to Vercel (or any Next.js hosting)
+vercel
+```
+
+## Security
+
+✅ **No Secrets Transmitted** — All processing via API
+✅ **JWT Authentication** — Bearer token in Authorization header
+✅ **HTTPS Only** — All API calls encrypted
+✅ **Role-Based Access** — admin/member/viewer roles
+
+## License
+
+MIT

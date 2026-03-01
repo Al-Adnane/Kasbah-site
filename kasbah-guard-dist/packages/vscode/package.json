@@ -1,0 +1,134 @@
+{
+  "name": "kasbah-guard",
+  "displayName": "Kasbah Guard",
+  "description": "Real-time secret detection in VS Code. Detect API keys, passwords, credit cards, and 50+ secret formats as you type.",
+  "version": "1.0.0",
+  "publisher": "kasbah-guard",
+  "author": "Kasbah Guard <team@bekasbah.com>",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Security",
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "security",
+    "secrets",
+    "detection",
+    "credentials",
+    "api-keys",
+    "passwords",
+    "privacy"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "kasbah.scanFile",
+        "title": "Scan Current File",
+        "category": "Kasbah"
+      },
+      {
+        "command": "kasbah.scanWorkspace",
+        "title": "Scan Entire Workspace",
+        "category": "Kasbah"
+      },
+      {
+        "command": "kasbah.redactSelection",
+        "title": "Redact Sensitive Text",
+        "category": "Kasbah"
+      },
+      {
+        "command": "kasbah.reportFalsePositive",
+        "title": "Report False Positive",
+        "category": "Kasbah"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "kasbah.scanFile",
+        "key": "ctrl+shift+k",
+        "mac": "cmd+shift+k"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Kasbah Guard",
+      "properties": {
+        "kasbah.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Kasbah Guard secret detection"
+        },
+        "kasbah.threshold": {
+          "type": "number",
+          "default": 40,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Risk threshold to show warnings (0-100)"
+        },
+        "kasbah.scanOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scan file on save"
+        },
+        "kasbah.scanOnPaste": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when pasting potential secrets"
+        },
+        "kasbah.ignorePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "*.test.*",
+            "*.spec.*",
+            "**/node_modules/**"
+          ],
+          "description": "File patterns to ignore"
+        }
+      }
+    },
+    "statusBar": [
+      {
+        "id": "kasbah.statusBar",
+        "alignment": "right",
+        "priority": 100
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc && esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --target=node16",
+    "compile": "tsc",
+    "watch": "tsc -w",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0",
+    "esbuild": "^0.19.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "@kasbah/guard": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Al-Adnane/Kasbah-site"
+  },
+  "bugs": {
+    "url": "https://github.com/Al-Adnane/Kasbah-site/issues"
+  },
+  "homepage": "https://bekasbah.com"
+}

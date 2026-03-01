@@ -1,26 +1,25 @@
 {
-  "name": "kasbah-enterprise",
+  "name": "@kasbah/enterprise",
   "version": "1.0.0",
-  "private": true,
-  "description": "Kasbah Guard Enterprise — Multi-user dashboard with audit logs and team policies",
+  "description": "Kasbah Guard Enterprise Dashboard — Policies, Audit Logs, Team Management",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "start": "next start -p 3001",
+    "lint": "next lint"
   },
   "dependencies": {
     "next": "^14.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@kasbah/guard": "workspace:*"
+    "@kasbah/guard": "^1.0.0",
+    "axios": "^1.6.0",
+    "date-fns": "^2.30.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "typescript": "^5.3.0",
+    "typescript": "^5.0.0",
     "eslint": "^8.0.0",
     "eslint-config-next": "^14.0.0"
   }
