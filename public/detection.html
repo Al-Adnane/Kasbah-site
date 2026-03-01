@@ -43,7 +43,7 @@
     .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
     .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
     .detect-cat{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px}
-    .detect-cat .icon{font-size:24px;margin-bottom:8px}
+    .detect-cat .icon{width:32px;height:32px;margin-bottom:12px;color:var(--red)}
     .detect-cat h3{margin-bottom:4px;font-size:14px}
     .detect-cat p{font-size:13px;color:var(--muted);margin-bottom:0}
     .platform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
@@ -191,47 +191,76 @@
 
   <div class="grid-3">
     <div class="detect-cat">
-      <div class="icon">🆔</div>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+        <line x1="2" y1="9" x2="22" y2="9"></line>
+      </svg>
       <h3>Identity documents</h3>
       <p>Passports, national IDs, driver's licenses, birth certificates — 18 languages</p>
     </div>
     <div class="detect-cat">
-      <div class="icon">💰</div>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+        <line x1="1" y1="10" x2="23" y2="10"></line>
+      </svg>
       <h3>Financial data</h3>
       <p>Credit cards (Luhn-validated), bank accounts, IBANs, wire transfers, invoices</p>
     </div>
     <div class="detect-cat">
-      <div class="icon">🏥</div>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+        <path d="M12 6v6l4 2"></path>
+      </svg>
       <h3>Medical records</h3>
       <p>Patient records, prescriptions, psychiatric notes, insurance claims — 12 languages</p>
     </div>
     <div class="detect-cat">
-      <div class="icon">📊</div>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="2" x2="12" y2="22"></line>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+      </svg>
       <h3>Tax documents</h3>
       <p>SSNs, tax IDs, W-2s, 1040s, 1099s, NIF, SIRET — 12 languages</p>
     </div>
     <div class="detect-cat">
-      <div class="icon">🔑</div>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="6" cy="6" r="2"></circle>
+        <circle cx="18" cy="6" r="2"></circle>
+        <path d="M6 8v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"></path>
+        <path d="M6 8h12M9 12h6"></path>
+      </svg>
       <h3>API keys &amp; secrets</h3>
       <p>GitHub PATs (classic & fine-grained), AWS keys, OpenAI/Anthropic keys, Slack/Discord webhooks, SendGrid/Twilio tokens, Vercel/Linear/Supabase/Netlify keys, PyPI/npm tokens, bearer tokens, .env secrets, connection strings</p>
     </div>
     <div class="detect-cat">
-      <div class="icon">🔐</div>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+      </svg>
       <h3>Cryptocurrency</h3>
       <p>BTC/ETH private keys, wallet addresses (legacy + Bech32), seed phrases, PEM keys</p>
     </div>
     <div class="detect-cat">
-      <div class="icon">🛡️</div>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
       <h3>Insurance</h3>
       <p>Auto, health, life, home, and property insurance policies and claims</p>
     </div>
     <div class="detect-cat">
-      <div class="icon">⚠️</div>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
       <h3>Injection attacks</h3>
       <p>SQL injection, shell commands, prompt injection — catches code exfiltration</p>
     </div>
     <div class="detect-cat">
-      <div class="icon">📧</div>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+        <polyline points="22,6 12,13 2,6"></polyline>
+      </svg>
       <h3>Bulk data</h3>
       <p>Contact lists (5+ emails), database connection strings with credentials</p>
     </div>
