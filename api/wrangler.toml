@@ -17,3 +17,9 @@ id = "f4c1faaf59de42daafe691ac5875bc8b"
 [[kv_namespaces]]
 binding = "SESSIONS"
 id = "fe0ebf04d465464b94db671bf1831667"
+
+[[kv_namespaces]]
+binding = "KASBAH_KV"
+id = "REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID"
+# Used by: /api/false-positives (FP reports, 30-day TTL), /api/sentry (errors, 7-day TTL)
+# To get the ID: https://dash.cloudflare.com → Workers KV → Create Namespace → copy the ID

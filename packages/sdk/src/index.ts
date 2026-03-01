@@ -21,6 +21,7 @@
  */
 
 export { classify, redact, classifyBatch, getRiskLevelFromScore, getDecisionFromScore } from './classify';
+export { validateIntent, validateIntentLocal, generateProof, verifyProof } from './intent';
 
 export type {
   ClassificationResult,
@@ -31,6 +32,8 @@ export type {
   SecretCategory,
   RedactionResult,
   RedactionDetail,
+  IntentValidationResult,
+  ZKDetectionProof,
 } from './types';
 
 // Version constant

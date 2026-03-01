@@ -55,8 +55,8 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 
 1. **detector.js**: Run `node /tmp/kasbah-market-launch.cjs` — must pass 58/58
 2. **detector.js**: selfTest() must return 23/23
-3. **detector.js**: All 6 copies MD5 = `d9cd10f93c97c8de5078b0e9e98437fa`
-4. **content.js**: All 7 copies MD5 = `4d58ff74028499237b80a3c5bffd781b`
+3. **detector.js**: All 6 copies MD5 = `054ff81a84955026444b945bffd1d0d8`
+4. **content.js**: All 7 copies MD5 = `51961596422dd31bf0b1ce6e016e413a`
 5. **CLI**: `/tmp/kasbah-cli-build/release/kasbah selftest` → 10/10
 6. **Website**: All pages must return 200 on bekasbah.com
 7. **API**: `curl https://api.bekasbah.com/health` → `{"ok":true}`
@@ -85,9 +85,9 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 
 ### Engine
 - **detector.js PATTERN_VERSION**: `3.5.2`
-- **detector.js MD5** (all 6 copies): `d9cd10f93c97c8de5078b0e9e98437fa`
-- **content.js MD5** (all 7 copies): `4d58ff74028499237b80a3c5bffd781b`
-- **selfTest()**: 23/23 PASS
+- **detector.js MD5** (all 6 copies): `054ff81a84955026444b945bffd1d0d8`
+- **content.js MD5** (all 7 copies): `51961596422dd31bf0b1ce6e016e413a`
+- **selfTest()**: 29/29 PASS
 - **Market launch**: 58/58 PASS
 - **SDK ENGINE_VERSION**: `3.5.2`
 - **VS Code EXPECTED_ENGINE**: `3.5.2`
@@ -176,7 +176,7 @@ Moats: `GET /health` · `POST /moat/gate`
 5. **Same-site bypass**: NEVER remove (keeps extension from breaking AI platforms).
 6. **Approval window**: NEVER remove ("Proceed Anyway" would double-block without it).
 7. **Image paste intercept**: NEVER remove (only defense against screenshot exfiltration).
-8. **selfTest**: Must remain 23/23 after ANY detector.js change.
+8. **selfTest**: Must remain 29/29 after ANY detector.js change.
 9. **Market launch**: Must remain 58/58 after ANY detector.js change.
 10. **CLI selftest**: Must remain 10/10 after ANY CLI/kernel change.
 11. **Stripe**: PERMANENTLY REMOVED. Never re-add for any reason.

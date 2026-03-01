@@ -319,6 +319,7 @@ var SSN_RE = /\b(?!000|666|9\d{2})\d{3}[-\s]\d{2}[-\s]\d{4}\b/;
 var GH_PAT_RE = /\bgh[pshoru]_[A-Za-z0-9]{36,}\b/;
 var AWS_KEY_RE = /\bAKIA[0-9A-Z]{16}\b/;
 var OPENAI_KEY_RE = /\bsk-[A-Za-z0-9\-_]{20,}\b/;
+var SLACK_WEBHOOK_RE = /hooks\.slack\.com\/services\/[^\/\s"']{3,}\/[^\/\s"']{3,}\/[a-zA-Z0-9]{15,}/i;
 
 // ── TIER 1b: Critical Documents — 100+ LANGUAGE SUPPORT ──
 var PASSPORT_RE = /(?:passport|passeport|pasaporte|passaporte|paspoor|reisepass|passaporto|paspoort|paszport|جواز\s*(?:ال)?سفر|护照|паспорт|パスポート|여권|διαβατήριο|pasaport)[\s\S]{0,60}?[A-Z0-9]{5,12}/i;
@@ -349,7 +350,7 @@ var CONNSTR_RE = /(?:mongodb|postgres(?:ql)?|mysql|redis|amqp|mssql):\/\/[^\s"'<
 // ══════════════════════════════════════════════════════════════
 var _ALL_PATTERNS = [PASSPORT_RE, VISA_RE, NATIONAL_ID_RE, DRIVERS_LICENSE_RE,
   MEDICAL_RE, BANK_ACCOUNT_RE, TAX_ID_RE, BIRTH_CERT_RE, CRYPTO_RE, INSURANCE_RE,
-  CC_RE, SSN_RE, GH_PAT_RE, AWS_KEY_RE, OPENAI_KEY_RE, BEARER_RE, INJECTION_RE, SHELL_RE,
+  CC_RE, SSN_RE, GH_PAT_RE, AWS_KEY_RE, OPENAI_KEY_RE, SLACK_WEBHOOK_RE, BEARER_RE, INJECTION_RE, SHELL_RE,
   EMAIL_RE, CONNSTR_RE];
 function computePatternHash() {
   var combined = _ALL_PATTERNS.map(function(r) { return r.source; }).join("|");
@@ -655,6 +656,7 @@ function classify(text) {
   var has_aws_key = AWS_KEY_RE.test(tn); // use tn (newlines preserved) so line-end word boundaries work
   var has_private_key = t.includes("-----BEGIN") && t.includes("PRIVATE KEY-----");
   var has_openai_key = OPENAI_KEY_RE.test(tc);
+  var has_slack_webhook = SLACK_WEBHOOK_RE.test(tn);
 
   if (has_cc) tiers_triggered.push("T1:cc");
   if (has_ssn) tiers_triggered.push("T1:ssn");
@@ -662,6 +664,7 @@ function classify(text) {
   if (has_aws_key) tiers_triggered.push("T1:aws_key");
   if (has_private_key) tiers_triggered.push("T1:private_key");
   if (has_openai_key) tiers_triggered.push("T1:openai_key");
+  if (has_slack_webhook) tiers_triggered.push("T2:slack_webhook");
 
   // ── TIER 1b: Critical Documents — 100+ LANGUAGE SUPPORT ──
   var has_passport = PASSPORT_RE.test(tn);
@@ -775,6 +778,7 @@ function classify(text) {
   if (has_conn)           { score += 75; reasons.push("database connection string"); }
   if (has_jwt)            { score += 40; reasons.push("JWT token"); }
   if (has_bearer_token)   { score += 45; reasons.push("bearer token"); }
+  if (has_slack_webhook)  { score += 65; reasons.push("Slack webhook URL"); }
 
   // Tier 3: WARN-level signals
   if (has_password_assign){ score += 45; reasons.push("password assignment"); }
@@ -972,6 +976,10 @@ function selfTest() {
   // v1.0.0 NEW TEST 28: Risk score is number
   var t28_r = classify("test").risk;
   results.push({ name: "risk_field", pass: typeof t28_r === "number" });
+
+  // v1.0.0 NEW TEST 29: Slack webhook URL detection
+  var t29 = classify('export SLACK_WEBHOOK="https://hooks.slack.com/services/T12345/B67890/abcdefghijklmnopqrstuvwx"');
+  results.push({ name: "slack_webhook_detected", pass: t29.decision !== "ALLOW" });
 
   return {
     passed: results.filter(function(r) { return r.pass; }).length,

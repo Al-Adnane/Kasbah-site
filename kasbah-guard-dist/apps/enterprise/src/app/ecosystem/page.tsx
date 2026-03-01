@@ -225,7 +225,7 @@ export default function EcosystemPage() {
         <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>About PPP Nature Modules</h2>
         <p style={{ color: '#8888aa', fontSize: 13, lineHeight: 1.8, margin: 0 }}>
           Privacy-Preserving Protection (PPP) modules are the 6 nature-inspired security techniques
-          embedded in Kasbah Guard&apos;s detector engine (v3.5.2). Each module mirrors a biological
+          embedded in Kasbah Guard&apos;s detector engine (v1.0.0). Each module mirrors a biological
           survival strategy — from mycelium networks to firefly synchronisation — applied to the
           problem of detecting sensitive data leakage. The 22 modules shown here represent the full
           PPP research pipeline, from production-active modules to emerging experiments.
@@ -234,7 +234,7 @@ export default function EcosystemPage() {
         </p>
         <div style={{ marginTop: 16, display: 'flex', gap: 24 }}>
           {[
-            { dot: '#22c55e', label: 'Active — deployed in detector.js v3.5.2' },
+            { dot: '#22c55e', label: 'Active — deployed in detector.js v1.0.0' },
             { dot: '#888',    label: 'Dormant — implemented, not yet deployed' },
             { dot: '#f59e0b', label: 'Emerging — research phase' },
           ].map(({ dot, label }) => (

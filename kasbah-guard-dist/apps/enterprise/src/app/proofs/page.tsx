@@ -81,7 +81,7 @@ export default function ProofsPage() {
         },
         body: JSON.stringify({
           detection_result: {
-            model_id: 'detector-js-v3.5.2',
+            model_id: 'detector-js-v1.0.0',
             risk_score: 0.12,
             decision: 'ALLOW',
             timestamp: Date.now(),
@@ -268,7 +268,7 @@ export default function ProofsPage() {
       <div style={card}>
         <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 600 }}>How ZK Proofs Work in Kasbah Guard</h2>
         <ol style={{ color: '#8888aa', lineHeight: 2, paddingLeft: 20, margin: 0, fontSize: 14 }}>
-          <li>Detection runs locally (detector.js v3.5.2 or kasbah-kernel)</li>
+          <li>Detection runs locally (detector.js v1.0.0 or kasbah-kernel)</li>
           <li>Result fields (model_id, risk_score, decision, timestamp, content_hash) are hashed with SHA-256</li>
           <li>A Merkle tree is built over these hashes → root hash = proof commitment</li>
           <li>Proof bytes contain the Merkle path from leaf to root</li>

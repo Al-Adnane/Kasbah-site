@@ -504,11 +504,11 @@ var pv = (det.match(/PATTERN_VERSION\s*=\s*["']([^"']+)["']/) || [])[1];
 if (pv === '1.0.0') { passed++; console.log('  \u2705 [F02] PATTERN_VERSION = "' + pv + '"'); }
 else { failed++; failures.push({id:'F02',label:'PATTERN_VERSION',expected:'1.0.0',got:pv||'?'}); console.log('  \u274c [F02] PATTERN_VERSION = "' + pv + '"'); }
 
-// F03: selfTest 23/23
+// F03: selfTest 29/29
 total++;
 var st = selfTest();
-if (st.passed === 28 && st.total === 28) { passed++; console.log('  \u2705 [F03] selfTest() 28/28 \u2014 all invariants pass'); }
-else { failed++; failures.push({id:'F03',label:'selfTest',expected:'28/28',got:st.passed+'/'+st.total}); console.log('  \u274c [F03] selfTest() ' + st.passed + '/' + st.total); }
+if (st.passed === 29 && st.total === 29) { passed++; console.log('  \u2705 [F03] selfTest() 29/29 \u2014 all invariants pass'); }
+else { failed++; failures.push({id:'F03',label:'selfTest',expected:'29/29',got:st.passed+'/'+st.total}); console.log('  \u274c [F03] selfTest() ' + st.passed + '/' + st.total); }
 
 // F04: SDK ENGINE_VERSION = 1.0.0
 total++;

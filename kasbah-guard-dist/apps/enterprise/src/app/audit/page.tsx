@@ -58,7 +58,7 @@ export default function AuditPage() {
           </div>
         </div>
         <div style={styles.engineBadge}>
-          Engine v3.5.2 · 23 invariants
+          Engine v1.0.0 · 28 invariants
         </div>
       </header>
 

@@ -61,7 +61,9 @@
       "css": [
         "src/styles.css"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
     }
   ],
   "action": {
