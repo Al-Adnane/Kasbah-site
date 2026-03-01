@@ -123,10 +123,13 @@
   </div>
 
   <!-- Admin Tools -->
-  <div style="padding:8px 18px;border-top:1px solid var(--border);display:flex;gap:8px">
+  <div style="padding:8px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-dark" id="redTeamBtn" style="flex:1;font-weight:700;font-size:11px">🔴 Audit</button>
     <button class="btn btn-dark" id="receiptsBtn" style="flex:1;font-weight:700;font-size:11px">📋 Receipts</button>
     <button class="btn btn-dark" id="siiBtn" style="flex:1;font-weight:700;font-size:11px">🛡️ Integrity</button>
+  </div>
+  <div style="padding:8px 18px;display:flex;gap:8px">
+    <button class="btn btn-dark" id="canaryBtn" style="flex:1;font-weight:700;font-size:11px">🚀 Canary</button>
   </div>
 
   <div class="footer">
@@ -352,6 +355,19 @@
         height: 800,
         left: 300,
         top: 200
+      });
+    });
+
+    // Canary Deployment
+    document.getElementById('canaryBtn').addEventListener('click', function() {
+      const canaryURL = chrome.runtime.getURL('popup/canary-panel.html');
+      chrome.windows.create({
+        url: canaryURL,
+        type: 'popup',
+        width: 1000,
+        height: 800,
+        left: 250,
+        top: 150
       });
     });
 
