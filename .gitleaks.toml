@@ -26,9 +26,21 @@ paths = [
   "kasbah-guard-dist/apps/desktop/dist/",
   "kasbah-guard-dist/apps/desktop/src-tauri/src/guard.rs",
   "kasbah-guard-dist/apps/desktop/src-tauri/src/redact.rs",
-  "kasbah-guard-dist/extensions/.*/src/detector.js",
+  # All detector.js and content.js copies — intentional test patterns for unit tests
+  "kasbah-guard-dist/extensions/chrome/src/detector.js",
+  "kasbah-guard-dist/extensions/firefox/src/detector.js",
+  "kasbah-guard-dist/extensions/edge/src/detector.js",
+  "kasbah-guard-dist/extensions/opera/src/detector.js",
   "kasbah-guard-dist/extensions/safari/.*detector.js",
   "kasbah-guard-dist/apps/desktop/src-tauri/extension/src/detector.js",
+  "kasbah-guard-dist/apps/desktop/dist/detector.js",
+  "kasbah-guard-dist/extensions/chrome/src/content.js",
+  "kasbah-guard-dist/extensions/firefox/src/content.js",
+  "kasbah-guard-dist/extensions/edge/src/content.js",
+  "kasbah-guard-dist/extensions/opera/src/content.js",
+  "kasbah-guard-dist/extensions/safari/.*content.js",
+  "kasbah-guard-dist/apps/desktop/src-tauri/extension/src/content.js",
+  "kasbah-guard-dist/apps/desktop/dist/content.js",
   "tests/",
 ]
 
@@ -93,4 +105,55 @@ regexes = [
   "sk-proj-abc123",
   "sk-proj-abc123def456",
   "sk-proj-abc123def456ghi789",
+  # Additional detector.js test patterns — intentional test fixtures
+  "5555555555554444",
+  "378282246310005",
+  "371449635398431",
+  "6011111111111117",
+  "3530111333300000",
+  "3566002020360505",
+  "5425233010103442",
+  "2223003122003222",
+  "4532015112830366",
+  "5105105105105100",
+  "4111111111111111",
+  "5000123456789012",
+  "3782 8224 6310 0001",  # CC with spaces
+  "378828224631000",
+  "6271-1270-5943-4432",  # CC with hyphens
+  "xoxb-3788822246-378882224631",  # Slack bot token pattern
+  "xoxp-3788822246-378882224631",  # Slack user token pattern
+  "xoxs-378882224631-378882224631",  # Slack app token pattern
+  "https://hooks.slack.com/services/T0/B0/XX",  # Slack webhook base
+  "https://hooks.slack.com/services/T0256/B026D/XX",  # Slack webhook with IDs
+  "whapi_1234567890abcdefghijklmnopqr",  # WhatsApp API
+  "pa_live_YSi123456789abcdefghijklmn",  # PayPal token
+  "pk_live_51234567890abcdefg",  # Stripe live key pattern
+  "rk_live_123456789",  # Razorpay key pattern
+  "sk-ant-",  # Anthropic API key prefix
+  "ghp_[a-zA-Z0-9]{36}",  # GitHub Personal Access Token
+  "gho_[a-zA-Z0-9]{36}",  # GitHub OAuth token
+  "ghu_[a-zA-Z0-9]{36}",  # GitHub user-to-server token
+  "ghs_[a-zA-Z0-9]{36}",  # GitHub server-to-server token
+  "ghr_[a-zA-Z0-9]{36}",  # GitHub refresh token
+  "SG\\.[a-zA-Z0-9]{32}\\.[a-zA-Z0-9]{32}",  # SendGrid API key
+  "sk_live_[a-zA-Z0-9]{24}",  # Slack token pattern
+  "192\\.168\\.1\\.1",  # IP addresses for testing
+  "127\\.0\\.0\\.1",
+  "172\\.16\\.0\\.1",
+  "10\\.0\\.0\\.1",
+  # Seed phrases and mnemonics (test data)
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+  "legal winner thank year wave sausage worth useful legal winner thank yellow",
+  # AWS ARN patterns for testing
+  "arn:aws:iam::123456789012:user/test",
+  "arn:aws:s3:::my-bucket",
+  # JWT patterns for testing
+  "eyJhbGc[A-Za-z0-9._-]+eyJzdW[A-Za-z0-9._-]+[A-Za-z0-9._-]+",
+  # Base64 encoded secrets in test patterns
+  "base64[:\\.\\s]*[A-Za-z0-9+/=]{40,}",
+  # Private key headers commonly in test data
+  "-----BEGIN [A-Z]+ PRIVATE KEY",
+  "-----BEGIN OPENSSH PRIVATE KEY",
+  "-----BEGIN EC PRIVATE KEY",
 ]

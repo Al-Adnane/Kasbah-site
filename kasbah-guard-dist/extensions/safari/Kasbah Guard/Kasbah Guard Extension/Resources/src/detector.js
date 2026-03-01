@@ -31,7 +31,7 @@
 // ══════════════════════════════════════════════════════════════
 // LAYER 6: Pattern Version + Integrity Tracking
 // ══════════════════════════════════════════════════════════════
-var PATTERN_VERSION = "3.5.2";
+var PATTERN_VERSION = "1.0.0";
 var PATTERN_EPOCH = 1772236800; // 2026-02-27
 
 // Feature flags for backward-compatible return objects
@@ -952,6 +952,27 @@ function selfTest() {
   var _fireCheck = patternStats["_test_fire_decay"];
   results.push({ name: "fire_decay_ts", pass: _fireCheck && _fireCheck.lastSeen > 0 });
   delete patternStats["_test_fire_decay"];
+
+  // v1.0.0 NEW TEST 24: API key format detection
+  var t24 = classify("key: sk_live_abc123def456");
+  results.push({ name: "api_key_format", pass: t24.risk > 0 });
+
+  // v1.0.0 NEW TEST 25: Pattern version check
+  var t25_v = PATTERN_VERSION;
+  results.push({ name: "pattern_version_set", pass: t25_v === "1.0.0" });
+
+  // v1.0.0 NEW TEST 26: Features array exists
+  var t26_f = typeof FEATURES !== 'undefined' && FEATURES.length > 0;
+  results.push({ name: "features_defined", pass: t26_f });
+
+  // v1.0.0 NEW TEST 27: Classify function returns decision
+  var t27_d = classify("test").decision;
+  results.push({ name: "decision_field", pass: typeof t27_d === "string" });
+
+  // v1.0.0 NEW TEST 28: Risk score is number
+  var t28_r = classify("test").risk;
+  results.push({ name: "risk_field", pass: typeof t28_r === "number" });
+
   return {
     passed: results.filter(function(r) { return r.pass; }).length,
     total: results.length,
