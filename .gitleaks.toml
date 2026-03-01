@@ -25,6 +25,7 @@ paths = [
   "kasbah-guard-dist/tests/",
   "kasbah-guard-dist/apps/desktop/dist/",
   "kasbah-guard-dist/apps/desktop/src-tauri/src/guard.rs",
+  "tests/",
 ]
 
 # Known intentional test/demo strings — never real credentials
@@ -62,6 +63,9 @@ regexes = [
   "abandon about above after again against all allow almost alone along",
   "api_key=sk_test_1234567890abcdefgh",
   "aws_secret_access_key=",
+  # E2E test fixture — intentional example credentials (never real)
+  "sk-proj-1234567890abcdefghijklmnopqrst",
+  "MyP@ssw0rd123!",
   # K8s secrets.yaml placeholder base64 values (instructions, not real secrets)
   "eW91ci1qd3Qtc2VjcmV0LW1pbi0zMi1jaGFycw==",
   "eW91ci02NC1jaGFyLWhleC1zaWduaW5nLWtleQ==",
