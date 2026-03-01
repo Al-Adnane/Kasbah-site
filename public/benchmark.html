@@ -349,8 +349,37 @@
 
   <h2>How We Measure Accuracy</h2>
 
+  <h3 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--dark);margin-top:0">Verified Test Results</h3>
+
+  <table style="margin-bottom:32px">
+    <thead>
+      <tr>
+        <th>Test Suite</th>
+        <th>Pass Rate</th>
+        <th>Command</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="row-label">Core Detection Invariants</td>
+        <td class="kasbah-col metric">23/23 (100%)</td>
+        <td><code>kasbah selftest</code> (CLI)</td>
+      </tr>
+      <tr>
+        <td class="row-label">Market Launch Stress Tests</td>
+        <td class="kasbah-col metric">58/58 (100%)</td>
+        <td>Comprehensive detection suite</td>
+      </tr>
+      <tr>
+        <td class="row-label">JavaScript Detector Suite</td>
+        <td class="kasbah-col metric">70/70 (100%)</td>
+        <td>50 positive + 20 stress tests</td>
+      </tr>
+    </tbody>
+  </table>
+
   <div class="methodology">
-    <h3>28 Verifiable Test Invariants (100% Pass Rate)</h3>
+    <h3>28 Detection Categories Covered</h3>
     <ul class="methodology-list">
       <li>Core credential detection (SSN, CC, AWS keys, GitHub PAT)</li>
       <li>New secret formats (13 types: Anthropic, Discord, Vercel, Linear, etc.)</li>
@@ -361,7 +390,7 @@
       <li>Cross-line correlation (split secrets across lines)</li>
       <li>Pattern integrity & self-test invariants</li>
     </ul>
-    <p style="margin-top:16px;font-size:13px;color:#334155"><strong>Note:</strong> These tests are public and reproducible. Run <code>kasbah selftest</code> in the CLI to verify locally.</p>
+    <p style="margin-top:16px;font-size:13px;color:#334155"><strong>Reproduce Locally:</strong> These tests are public and reproducible. Run <code>kasbah selftest</code> in the CLI to verify our accuracy claims in your own environment.</p>
   </div>
 
   <h2>Real-World Performance</h2>
