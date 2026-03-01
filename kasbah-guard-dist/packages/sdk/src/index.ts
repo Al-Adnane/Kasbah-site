@@ -45,4 +45,4 @@ export { validateIntent, validateIntentLocal, generateProof, verifyProof } from 
 export const VERSION = '1.0.0';
 
 /** Detection engine version (mirrors detector.js PATTERN_VERSION) */
-export const ENGINE_VERSION = '3.5.2';
+export const ENGINE_VERSION = '3.6.0';

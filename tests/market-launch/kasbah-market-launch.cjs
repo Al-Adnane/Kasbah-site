@@ -1,6 +1,6 @@
 'use strict';
 // ═══════════════════════════════════════════════════════════════════
-//  Kasbah Guard — Market Launch Stress Test  v3.5.2
+//  Kasbah Guard — Market Launch Stress Test  v3.6.0
 //
 //  Sections:
 //    A: 20 adversarial real-world positive tests  (must DETECT ≥40)
@@ -497,32 +497,32 @@ var allSame = hashes.every(function(h){return h===hashes[0];}) && hashes[0]!=='E
 if (allSame) { passed++; console.log('  \u2705 [F01] All 6 detector.js copies identical \u2014 MD5 ' + hashes[0]); }
 else { failed++; failures.push({id:'F01',label:'detector.js integrity',expected:'6 same hashes',got:[...new Set(hashes)].join(', ')}); console.log('  \u274c [F01] detector.js copies DIVERGED'); }
 
-// F02: PATTERN_VERSION = 3.5.2
+// F02: PATTERN_VERSION = 3.6.0
 total++;
 var det = fs.readFileSync(COPIES[0],'utf8');
 var pv = (det.match(/PATTERN_VERSION\s*=\s*["']([^"']+)["']/) || [])[1];
-if (pv === '3.5.2') { passed++; console.log('  \u2705 [F02] PATTERN_VERSION = "' + pv + '"'); }
-else { failed++; failures.push({id:'F02',label:'PATTERN_VERSION',expected:'3.5.2',got:pv||'?'}); console.log('  \u274c [F02] PATTERN_VERSION = "' + pv + '"'); }
+if (pv === '3.6.0') { passed++; console.log('  \u2705 [F02] PATTERN_VERSION = "' + pv + '"'); }
+else { failed++; failures.push({id:'F02',label:'PATTERN_VERSION',expected:'3.6.0',got:pv||'?'}); console.log('  \u274c [F02] PATTERN_VERSION = "' + pv + '"'); }
 
 // F03: selfTest 23/23
 total++;
 var st = selfTest();
-if (st.passed === 23 && st.total === 23) { passed++; console.log('  \u2705 [F03] selfTest() 23/23 \u2014 all invariants pass'); }
-else { failed++; failures.push({id:'F03',label:'selfTest',expected:'23/23',got:st.passed+'/'+st.total}); console.log('  \u274c [F03] selfTest() ' + st.passed + '/' + st.total); }
+if (st.passed === 28 && st.total === 28) { passed++; console.log('  \u2705 [F03] selfTest() 28/28 \u2014 all invariants pass'); }
+else { failed++; failures.push({id:'F03',label:'selfTest',expected:'28/28',got:st.passed+'/'+st.total}); console.log('  \u274c [F03] selfTest() ' + st.passed + '/' + st.total); }
 
-// F04: SDK ENGINE_VERSION = 3.5.2
+// F04: SDK ENGINE_VERSION = 3.6.0
 total++;
 var sdk = fs.readFileSync('/Users/mac/Desktop/KasbahFinal/Kasbah-site/kasbah-guard-dist/packages/sdk/src/index.ts','utf8');
 var ev = (sdk.match(/ENGINE_VERSION\s*=\s*['"]([^'"]+)['"]/) || [])[1];
-if (ev === '3.5.2') { passed++; console.log('  \u2705 [F04] SDK ENGINE_VERSION = "' + ev + '"'); }
-else { failed++; failures.push({id:'F04',label:'SDK ENGINE_VERSION',expected:'3.5.2',got:ev||'?'}); console.log('  \u274c [F04] SDK ENGINE_VERSION = "' + ev + '"'); }
+if (ev === '3.6.0') { passed++; console.log('  \u2705 [F04] SDK ENGINE_VERSION = "' + ev + '"'); }
+else { failed++; failures.push({id:'F04',label:'SDK ENGINE_VERSION',expected:'3.6.0',got:ev||'?'}); console.log('  \u274c [F04] SDK ENGINE_VERSION = "' + ev + '"'); }
 
-// F05: VS Code EXPECTED_ENGINE = 3.5.2
+// F05: VS Code EXPECTED_ENGINE = 3.6.0
 total++;
 var vsc = fs.readFileSync('/Users/mac/Desktop/KasbahFinal/Kasbah-site/kasbah-guard-dist/apps/vscode/src/extension.ts','utf8');
 var ee = (vsc.match(/EXPECTED_ENGINE\s*=\s*['"]([^'"]+)['"]/) || [])[1];
-if (ee === '3.5.2') { passed++; console.log('  \u2705 [F05] VS Code EXPECTED_ENGINE = "' + ee + '"'); }
-else { failed++; failures.push({id:'F05',label:'VS Code EXPECTED_ENGINE',expected:'3.5.2',got:ee||'?'}); console.log('  \u274c [F05] VS Code EXPECTED_ENGINE = "' + ee + '"'); }
+if (ee === '3.6.0') { passed++; console.log('  \u2705 [F05] VS Code EXPECTED_ENGINE = "' + ee + '"'); }
+else { failed++; failures.push({id:'F05',label:'VS Code EXPECTED_ENGINE',expected:'3.6.0',got:ee||'?'}); console.log('  \u274c [F05] VS Code EXPECTED_ENGINE = "' + ee + '"'); }
 
 
 // ═══════════════════════════════════════════════════════════════════
