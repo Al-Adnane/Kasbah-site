@@ -31,11 +31,11 @@
 // ══════════════════════════════════════════════════════════════
 // LAYER 6: Pattern Version + Integrity Tracking
 // ══════════════════════════════════════════════════════════════
-var PATTERN_VERSION = "1.0.0";
+var PATTERN_VERSION = "3.5.2";
 var PATTERN_EPOCH = 1772236800; // 2026-02-27
 
 // Feature flags for backward-compatible return objects
-var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof","anti_re_integrity","platform_fp","sealed_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral","l33t_deobfuscation","math_alphanumerics","beeodiversity","fungi_correlation","lanzatech_transform","soil_security","breathe_easy","aboriginal_fire","ml_entropy_scoring","context_filter","anthropic_key","github_fine_pat","twilio_key","slack_webhook","sendgrid_key","discord_token"];
+var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof","anti_re_integrity","platform_fp","sealed_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral","l33t_deobfuscation","math_alphanumerics","beeodiversity","fungi_correlation","lanzatech_transform","soil_security","breathe_easy","aboriginal_fire"];
 
 // ══════════════════════════════════════════════════════════════
 // Decision Mode — ENFORCED (production) or SIMULATED (testing)
@@ -319,18 +319,6 @@ var SSN_RE = /\b(?!000|666|9\d{2})\d{3}[-\s]\d{2}[-\s]\d{4}\b/;
 var GH_PAT_RE = /\bgh[pshoru]_[A-Za-z0-9]{36,}\b/;
 var AWS_KEY_RE = /\bAKIA[0-9A-Z]{16}\b/;
 var OPENAI_KEY_RE = /\bsk-[A-Za-z0-9\-_]{20,}\b/;
-var ANTHROPIC_KEY_RE = /\bsk-ant-[a-zA-Z0-9\-_]{20,}\b/;
-var GH_FINE_PAT_RE = /\bgithub_pat_[A-Za-z0-9_]{22,}\b/;
-var TWILIO_RE = /\bSK[0-9a-fA-F]{32}\b/;
-var SLACK_WEBHOOK_RE = /https:\/\/hooks\.slack\.com\/services\/T[A-Z0-9]+\/B[A-Z0-9]+\/[A-Za-z0-9]+/;
-var SENDGRID_RE = /\bSG\.[A-Za-z0-9\-_]{22,}\.[A-Za-z0-9\-_]{22,}\b/;
-var DISCORD_TOKEN_RE = /[MN][A-Za-z\d]{23,}\.[\w-]{6}\.[\w-]{27,}/;
-var VERCEL_TOKEN_RE = /\bvercel_[A-Za-z0-9]{24,}\b/;
-var LINEAR_RE = /\blin_api_[A-Za-z0-9]{30,}\b/;
-var SUPABASE_RE = /\bsbp_[a-zA-Z0-9]{20,}\b/;
-var NETLIFY_RE = /\bnfp_[a-zA-Z0-9]{36,}\b/;
-var PYPI_RE = /\bpypi-[A-Za-z0-9\-_]{16,}\b/;
-var NPM_RE = /\bnpm_[A-Za-z0-9]{36,}\b/;
 
 // ── TIER 1b: Critical Documents — 100+ LANGUAGE SUPPORT ──
 var PASSPORT_RE = /(?:passport|passeport|pasaporte|passaporte|paspoor|reisepass|passaporto|paspoort|paszport|جواز\s*(?:ال)?سفر|护照|паспорт|パスポート|여권|διαβατήριο|pasaport)[\s\S]{0,60}?[A-Z0-9]{5,12}/i;
@@ -362,9 +350,7 @@ var CONNSTR_RE = /(?:mongodb|postgres(?:ql)?|mysql|redis|amqp|mssql):\/\/[^\s"'<
 var _ALL_PATTERNS = [PASSPORT_RE, VISA_RE, NATIONAL_ID_RE, DRIVERS_LICENSE_RE,
   MEDICAL_RE, BANK_ACCOUNT_RE, TAX_ID_RE, BIRTH_CERT_RE, CRYPTO_RE, INSURANCE_RE,
   CC_RE, SSN_RE, GH_PAT_RE, AWS_KEY_RE, OPENAI_KEY_RE, BEARER_RE, INJECTION_RE, SHELL_RE,
-  EMAIL_RE, CONNSTR_RE, ANTHROPIC_KEY_RE, GH_FINE_PAT_RE, TWILIO_RE, SLACK_WEBHOOK_RE,
-  SENDGRID_RE, DISCORD_TOKEN_RE, VERCEL_TOKEN_RE, LINEAR_RE, SUPABASE_RE, NETLIFY_RE,
-  PYPI_RE, NPM_RE];
+  EMAIL_RE, CONNSTR_RE];
 function computePatternHash() {
   var combined = _ALL_PATTERNS.map(function(r) { return r.source; }).join("|");
   return hybridHash(combined);
@@ -601,100 +587,9 @@ function breatheEasyFilter(lower, reasons, score) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// ML ENTROPY SCORING — Naive Bayes-inspired statistical classifier
-// Multi-feature analysis: Shannon entropy, char-class transitions,
-// unique ratio, English bigram frequency. Reduces FPR from 2-3% to <0.5%.
+// CORE: classify() — 10-Layer Detection Engine
 // ══════════════════════════════════════════════════════════════
-var _COMMON_BIGRAMS = {th:1,he:1,in:1,er:1,an:1,re:1,on:1,at:1,en:1,nd:1,ti:1,es:1,or:1,te:1,of:1,ed:1,is:1,it:1,al:1,ar:1,st:1,to:1,nt:1,ng:1,se:1,ha:1,as:1,ou:1,io:1,le:1,ve:1,co:1,me:1,de:1,hi:1,ri:1,ro:1,ic:1,ne:1,ea:1,ra:1,ce:1};
-
-function mlEntropyScore(text, entropy) {
-  var len = text.length;
-  if (len < 16) return { score: 0, confidence: 0, reason: null };
-
-  // Feature 1: Character class transition rate (secrets have high transitions)
-  var transitions = 0, prevClass = -1;
-  for (var i = 0; i < len; i++) {
-    var c = text.charCodeAt(i);
-    var cls = c >= 48 && c <= 57 ? 0 : c >= 65 && c <= 90 ? 1 : c >= 97 && c <= 122 ? 2 : 3;
-    if (prevClass >= 0 && cls !== prevClass) transitions++;
-    prevClass = cls;
-  }
-  var transitionRate = transitions / Math.max(1, len - 1);
-
-  // Feature 2: Unique character ratio (secrets use diverse charset)
-  var seen = {};
-  for (var j = 0; j < len; j++) seen[text[j]] = 1;
-  var uniqueRatio = Object.keys(seen).length / len;
-
-  // Feature 3: English bigram frequency (low = likely not natural language)
-  var bigramHits = 0, bigramTotal = 0;
-  var low = text.toLowerCase();
-  for (var k = 0; k < low.length - 1; k++) {
-    var bi = low[k] + low[k + 1];
-    if (bi[0] >= 'a' && bi[0] <= 'z' && bi[1] >= 'a' && bi[1] <= 'z') {
-      bigramTotal++;
-      if (_COMMON_BIGRAMS[bi]) bigramHits++;
-    }
-  }
-  var bigramScore = bigramTotal > 0 ? bigramHits / bigramTotal : 0;
-
-  // Feature 4: Consecutive same-class run ratio (prose has long alpha runs)
-  var maxRun = 1, curRun = 1;
-  for (var m = 1; m < len; m++) {
-    var ca = text.charCodeAt(m), cb = text.charCodeAt(m - 1);
-    var clsA = ca >= 48 && ca <= 57 ? 0 : ca >= 65 && ca <= 90 ? 1 : ca >= 97 && ca <= 122 ? 2 : 3;
-    var clsB = cb >= 48 && cb <= 57 ? 0 : cb >= 65 && cb <= 90 ? 1 : cb >= 97 && cb <= 122 ? 2 : 3;
-    if (clsA === clsB) { curRun++; if (curRun > maxRun) maxRun = curRun; }
-    else curRun = 1;
-  }
-  var avgRunRatio = maxRun / len; // low = high mixing = secret-like
-
-  // Scoring — each feature contributes independently
-  var s = 0;
-  if (entropy >= 4.5) s += 15; else if (entropy >= 4.0) s += 8; else if (entropy >= 3.5) s += 3;
-  if (transitionRate >= 0.6) s += 12; else if (transitionRate >= 0.4) s += 6;
-  if (uniqueRatio >= 0.7) s += 10; else if (uniqueRatio >= 0.5) s += 5;
-  if (bigramScore < 0.1) s += 15; else if (bigramScore < 0.2) s += 8;
-  if (avgRunRatio < 0.1) s += 5; // very short runs = high mixing
-
-  // Penalties for natural text indicators
-  if (bigramScore >= 0.3) s -= 10;
-  if (text.indexOf(' ') >= 0 && text.split(' ').length >= 3) s -= 5;
-  if (avgRunRatio >= 0.3) s -= 5; // long runs = prose
-
-  s = Math.max(0, s);
-  var confidence = Math.min(s / 50, 1.0);
-  return {
-    score: s,
-    confidence: confidence,
-    reason: s >= 20 ? "ml-entropy (conf=" + confidence.toFixed(2) + ")" : null
-  };
-}
-
-// ══════════════════════════════════════════════════════════════
-// CONTEXT FILTER — Suppress false positives in code comments,
-// test fixtures, templates, and documentation patterns.
-// ══════════════════════════════════════════════════════════════
-function contextFilter(text) {
-  // Code comment — single-line only (multi-line text starting with # is likely YAML/config, not a comment)
-  if (/^\s*(?:\/\/|#(?!!)|\*|--|;)\s/.test(text) && text.indexOf('\n') === -1) return { isContext: true, type: "comment", weight: 0.5 };
-  // Test/mock patterns
-  if (/\b(?:mock|stub|fixture|testcase|it\s*\(|describe\s*\(|assert|expect\s*\(|jest|mocha|chai)\b/i.test(text))
-    return { isContext: true, type: "test_code", weight: 0.6 };
-  // Template placeholders
-  if (/[=:]\s*<[^>]+>/.test(text) || /[=:]\s*\{\{[^}]+\}\}/.test(text) || /[=:]\s*\$\{[^}]+\}/.test(text))
-    return { isContext: true, type: "template", weight: 0.3 };
-  // Placeholder values
-  if (/[=:]\s*(?:your[_-]|changeme|replace[_-]|todo|fixme|xxx|insert[_-])/i.test(text))
-    return { isContext: true, type: "placeholder", weight: 0.3 };
-  return { isContext: false, type: null, weight: 1.0 };
-}
-
-// ══════════════════════════════════════════════════════════════
-// CORE: _classifyCore() — 12-Layer Detection Engine
-// Wrapped by classify() with performance telemetry below
-// ══════════════════════════════════════════════════════════════
-function _classifyCore(text) {
+function classify(text) {
   // ── LAYER 9: Efficiency — Early exits ──
   if (!text || text.length === 0) {
     return { risk: 0, decision: "ALLOW", reason: "Empty text", content_hash: hybridHash(""),
@@ -761,37 +656,12 @@ function _classifyCore(text) {
   var has_private_key = t.includes("-----BEGIN") && t.includes("PRIVATE KEY-----");
   var has_openai_key = OPENAI_KEY_RE.test(tc);
 
-  var has_anthropic_key = ANTHROPIC_KEY_RE.test(tc);
-  var has_gh_fine_pat = GH_FINE_PAT_RE.test(tc);
-  var has_twilio = TWILIO_RE.test(tc);
-  var has_slack_webhook = SLACK_WEBHOOK_RE.test(tc);
-  var has_sendgrid = SENDGRID_RE.test(tc);
-  var has_discord_token = DISCORD_TOKEN_RE.test(tc);
-  var has_vercel = VERCEL_TOKEN_RE.test(tc);
-  var has_linear = LINEAR_RE.test(tc);
-  var has_supabase = SUPABASE_RE.test(tc);
-  var has_netlify = NETLIFY_RE.test(tc);
-  var has_pypi = PYPI_RE.test(tc);
-  var has_npm = NPM_RE.test(tc);
-
   if (has_cc) tiers_triggered.push("T1:cc");
   if (has_ssn) tiers_triggered.push("T1:ssn");
   if (has_github_pat) tiers_triggered.push("T1:github_pat");
-  if (has_gh_fine_pat) tiers_triggered.push("T1:github_fine_pat");
   if (has_aws_key) tiers_triggered.push("T1:aws_key");
   if (has_private_key) tiers_triggered.push("T1:private_key");
   if (has_openai_key) tiers_triggered.push("T1:openai_key");
-  if (has_anthropic_key) tiers_triggered.push("T1:anthropic_key");
-  if (has_twilio) tiers_triggered.push("T1:twilio");
-  if (has_slack_webhook) tiers_triggered.push("T1:slack_webhook");
-  if (has_sendgrid) tiers_triggered.push("T1:sendgrid");
-  if (has_discord_token) tiers_triggered.push("T1:discord_token");
-  if (has_vercel) tiers_triggered.push("T1:vercel");
-  if (has_linear) tiers_triggered.push("T1:linear");
-  if (has_supabase) tiers_triggered.push("T1:supabase");
-  if (has_netlify) tiers_triggered.push("T1:netlify");
-  if (has_pypi) tiers_triggered.push("T1:pypi");
-  if (has_npm) tiers_triggered.push("T1:npm");
 
   // ── TIER 1b: Critical Documents — 100+ LANGUAGE SUPPORT ──
   var has_passport = PASSPORT_RE.test(tn);
@@ -886,18 +756,6 @@ function _classifyCore(text) {
   if (has_github_pat)     { score += 80; reasons.push("GitHub PAT"); }
   if (has_aws_key)        { score += 80; reasons.push("AWS access key"); }
   if (has_openai_key)     { score += 70; reasons.push("OpenAI API key"); }
-  if (has_anthropic_key)  { score += 80; reasons.push("Anthropic API key"); }
-  if (has_gh_fine_pat)    { score += 80; reasons.push("GitHub fine-grained PAT"); }
-  if (has_twilio)         { score += 75; reasons.push("Twilio API key"); }
-  if (has_slack_webhook)  { score += 75; reasons.push("Slack webhook URL"); }
-  if (has_sendgrid)       { score += 75; reasons.push("SendGrid API key"); }
-  if (has_discord_token)  { score += 80; reasons.push("Discord bot token"); }
-  if (has_vercel)         { score += 70; reasons.push("Vercel token"); }
-  if (has_linear)         { score += 70; reasons.push("Linear API key"); }
-  if (has_supabase)       { score += 75; reasons.push("Supabase key"); }
-  if (has_netlify)        { score += 70; reasons.push("Netlify token"); }
-  if (has_pypi)           { score += 70; reasons.push("PyPI API token"); }
-  if (has_npm)            { score += 70; reasons.push("npm token"); }
 
   // Tier 1b: Critical documents — 100+ LANGUAGE SUPPORT
   if (has_passport)       { score += 85; reasons.push("passport number"); }
@@ -925,7 +783,6 @@ function _classifyCore(text) {
   if (has_shell)          { score += 45; reasons.push("dangerous command"); }
   if (has_concat_bypass)  { score += 60; reasons.push("string concatenation bypass"); }
   if (has_env_secret && keyword_hits >= 3) { score += 45; reasons.push("env/shell secret pattern"); }
-  else if (has_env_secret && entropy >= 3.5 && /[=:]\s*["']?[A-Za-z0-9+\/\-_]{12,}/.test(t)) { score += 40; reasons.push("env secret assignment"); }
   if (has_api_key_word && entropy <= 3.5) { score += 40; reasons.push("API key keyword"); }
 
   // Bulk email detection
@@ -941,20 +798,9 @@ function _classifyCore(text) {
   if (entropy > 5.0 && special_ratio > 0.2) { score += 10; reasons.push("high entropy + special chars"); }
   if (upper_ratio > 0.4 && digit_ratio > 0.2) { score += 8; reasons.push("mixed case + numbers"); }
 
-  // ── ML Entropy Scoring: replace simple threshold with multi-feature classifier ──
-  var ml = mlEntropyScore(t, entropy);
-  if (ml.score >= 20 && reasons.length === 0 && t.length >= 20) {
-    score += ml.score; reasons.push(ml.reason);
-  } else if (ml.score >= 30 && reasons.length > 0) {
-    // Amplify existing detections with high ML confidence
-    score += Math.round(ml.score * 0.3); reasons.push("ml-amplified");
-  }
-
-  // ── Context Filter: suppress false positives in templates/comments/tests ──
-  var ctx = contextFilter(t);
-  if (ctx.isContext && score > 0 && (score < 80 || ctx.type === "template" || ctx.type === "placeholder")) {
-    score = Math.round(score * ctx.weight);
-    reasons.push("context-filtered (" + ctx.type + ")");
+  // Enhanced entropy threshold — catch unknown/novel secrets
+  if (entropy >= 4.0 && t.length >= 20 && reasons.length === 0) {
+    score += 25; reasons.push("high-entropy unknown content");
   }
 
   // ── PPP #19 LanzaTech: Encoded payload detection ──
@@ -1106,21 +952,6 @@ function selfTest() {
   var _fireCheck = patternStats["_test_fire_decay"];
   results.push({ name: "fire_decay_ts", pass: _fireCheck && _fireCheck.lastSeen > 0 });
   delete patternStats["_test_fire_decay"];
-  // v3.6.0: Anthropic API key detection
-  var t24 = classify("ANTHROPIC_API_KEY=sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890");
-  results.push({ name: "anthropic_key_deny", pass: t24.decision === "DENY" });
-  // v3.6.0: GitHub fine-grained PAT detection
-  var t25 = classify("token: github_pat_11ABCDEFG0123456789_abcdefghijklmnopqrstuvwxyz0123456789ABCD");
-  results.push({ name: "gh_fine_pat_deny", pass: t25.decision === "DENY" });
-  // v3.6.0: SendGrid API key detection
-  var t26 = classify("SENDGRID_API_KEY=SG.abcdefghijklmnopqrstuvwx.yz0123456789ABCDEFGHIJKLMNOPqr");
-  results.push({ name: "sendgrid_key_deny", pass: t26.decision === "DENY" });
-  // v3.6.0: ML entropy — template placeholders should NOT trigger
-  var t27 = classify("API_KEY=<your-api-key-here>");
-  results.push({ name: "context_template_allow", pass: t27.risk < 70 });
-  // v3.6.0: ML entropy — random hex string should trigger
-  var t28 = classify("secret=a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4");
-  results.push({ name: "ml_entropy_detect", pass: t28.risk >= 40 });
   return {
     passed: results.filter(function(r) { return r.pass; }).length,
     total: results.length,
@@ -1139,60 +970,6 @@ function getDecision(text) {
   return classify(text).decision;
 }
 
-// ══════════════════════════════════════════════════════════════
-// OBSERVABILITY: Performance Telemetry v2.0.0
-// Track detection latency for monitoring and optimization
-// Privacy-first: only aggregate statistics, never individual content
-// ══════════════════════════════════════════════════════════════
-var performanceMetrics = {
-  latencies: [],
-  maxLatencies: [],
-  currentBurst: 0
-};
-
-function reportDetectionLatency(latencyMs) {
-  if (typeof performance === 'undefined') return;
-
-  performanceMetrics.latencies.push(latencyMs);
-  performanceMetrics.currentBurst++;
-
-  // Keep only last 100 measurements
-  if (performanceMetrics.latencies.length > 100) {
-    performanceMetrics.latencies.shift();
-  }
-
-  // Track burst patterns (>5 detections in 1s) for behavioral analysis
-  setTimeout(function() { performanceMetrics.currentBurst = 0; }, 1000);
-
-  // Report to observability endpoint if latency exceeds threshold
-  if (latencyMs > 10) {
-    var burst = performanceMetrics.currentBurst;
-    if (typeof gtag !== 'undefined') {
-      // Google Analytics event (if available)
-      gtag('event', 'detection_latency', {
-        latency: Math.round(latencyMs),
-        burst: burst > 5 ? 'high' : 'normal'
-      });
-    }
-  }
-}
-
-// Wrap _classifyCore with performance tracking
-var _classifyWrapped = _classifyCore;
-function classify(text) {
-  var start = performance.now ? performance.now() : Date.now();
-  var result = _classifyWrapped(text);
-  var latency = (performance.now ? performance.now() : Date.now()) - start;
-
-  // Add latency to result
-  result.latency_ms = Math.round(latency * 100) / 100;
-
-  // Report if needed
-  reportDetectionLatency(latency);
-
-  return result;
-}
-
 // Export for Node.js (tests) and browser (content.js via script tag)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -1202,7 +979,6 @@ if (typeof module !== 'undefined' && module.exports) {
     verifyPatternIntegrity, selfTest, luhnCheck, normalizeHomoglyphs,
     checkBehavioral, detectStringConcatBypass,
     lanzatechTransform, beeodiversityBoost, soilSecurityAggregate, fungiCorrelation, breatheEasyFilter,
-    mlEntropyScore, contextFilter,
     PATTERN_VERSION, DECISION_MODE, FEATURES
   };
 }
