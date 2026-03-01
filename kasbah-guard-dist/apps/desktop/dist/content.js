@@ -865,30 +865,54 @@
 
     // Allow = secondary / ghost (left)
     var allowBtn = document.createElement("button");
+    allowBtn.type = "button";
     allowBtn.textContent = "Proceed Anyway";
-    allowBtn.style.cssText = "font:600 13px system-ui;padding:10px 18px;border-radius:10px;cursor:pointer;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;transition:all .2s";
-    allowBtn.onmouseover = function() { allowBtn.style.borderColor = "#cbd5e1"; allowBtn.style.color = "#1e293b"; };
-    allowBtn.onmouseout  = function() { allowBtn.style.borderColor = "#e2e8f0"; allowBtn.style.color = "#64748b"; };
+    allowBtn.style.cssText = "font:600 13px system-ui;padding:10px 18px;border-radius:10px;cursor:pointer;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;transition:all .2s;pointer-events:auto;user-select:none";
+
+    var allowBtnHover = function() { allowBtn.style.borderColor = "#cbd5e1"; allowBtn.style.color = "#1e293b"; };
+    var allowBtnUnhover = function() { allowBtn.style.borderColor = "#e2e8f0"; allowBtn.style.color = "#64748b"; };
+    allowBtn.addEventListener("mouseover", allowBtnHover, true);
+    allowBtn.addEventListener("mouseout", allowBtnUnhover, true);
 
     // Block = PRIMARY red (right) — Kasbah brand color
     var blockBtn = document.createElement("button");
+    blockBtn.type = "button";
     blockBtn.textContent = "Block — Stay Safe";
-    blockBtn.style.cssText = "font:800 13px system-ui;padding:10px 22px;border-radius:10px;cursor:pointer;border:0;background:linear-gradient(135deg,#C1440E,#9a350b);color:#fff;transition:all .2s;box-shadow:0 2px 8px rgba(193,68,14,.3)";
-    blockBtn.onmouseover = function() { blockBtn.style.boxShadow = "0 4px 14px rgba(193,68,14,.45)"; blockBtn.style.transform = "translateY(-1px)"; };
-    blockBtn.onmouseout  = function() { blockBtn.style.boxShadow = "0 2px 8px rgba(193,68,14,.3)"; blockBtn.style.transform = ""; };
+    blockBtn.style.cssText = "font:800 13px system-ui;padding:10px 22px;border-radius:10px;cursor:pointer;border:0;background:linear-gradient(135deg,#C1440E,#9a350b);color:#fff;transition:all .2s;box-shadow:0 2px 8px rgba(193,68,14,.3);pointer-events:auto;user-select:none";
+
+    var blockBtnHover = function() { blockBtn.style.boxShadow = "0 4px 14px rgba(193,68,14,.45)"; blockBtn.style.transform = "translateY(-1px)"; };
+    var blockBtnUnhover = function() { blockBtn.style.boxShadow = "0 2px 8px rgba(193,68,14,.3)"; blockBtn.style.transform = ""; };
+    blockBtn.addEventListener("mouseover", blockBtnHover, true);
+    blockBtn.addEventListener("mouseout", blockBtnUnhover, true);
     var hasCritical = false; // kept for logging
 
-    blockBtn.onmousedown = function () { blockBtn.style.transform = "scale(.96)"; };
-    blockBtn.onmouseup = function () { blockBtn.style.transform = ""; };
-    allowBtn.onmousedown = function () { allowBtn.style.transform = "scale(.96)"; };
-    allowBtn.onmouseup = function () { allowBtn.style.transform = ""; };
+    var blockBtnDown = function () { blockBtn.style.transform = "scale(.96)"; };
+    var blockBtnUp = function () { blockBtn.style.transform = ""; };
+    var allowBtnDown = function () { allowBtn.style.transform = "scale(.96)"; };
+    var allowBtnUp = function () { allowBtn.style.transform = ""; };
 
-    blockBtn.onclick = function () {
-      try { if (onBlock) onBlock(); } finally { overlay.remove(); }
+    blockBtn.addEventListener("mousedown", blockBtnDown, true);
+    blockBtn.addEventListener("mouseup", blockBtnUp, true);
+    allowBtn.addEventListener("mousedown", allowBtnDown, true);
+    allowBtn.addEventListener("mouseup", allowBtnUp, true);
+
+    var handleBlockClick = function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      try { if (onBlock) onBlock(); } catch(e) { console.error("[Kasbah] onBlock error:", e); }
+      try { overlay.remove(); } catch(e) {}
     };
-    allowBtn.onclick = function () {
-      try { if (onAllow) onAllow(); } finally { overlay.remove(); }
+    var handleAllowClick = function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      try { if (onAllow) onAllow(); } catch(e) { console.error("[Kasbah] onAllow error:", e); }
+      try { overlay.remove(); } catch(e) {}
     };
+
+    blockBtn.addEventListener("click", handleBlockClick, true);
+    allowBtn.addEventListener("click", handleAllowClick, true);
 
     row.appendChild(allowBtn);  // ghost — left
     row.appendChild(blockBtn);  // primary red — right
