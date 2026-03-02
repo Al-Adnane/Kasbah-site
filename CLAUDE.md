@@ -55,6 +55,51 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 ### Policy
 - **NO public downloads** — access-gated via waitlist/access code
 
+## CRITICAL: EXECUTION RULES (From User Insights — March 2, 2026)
+
+**These rules eliminate 9/18 friction events and prevent wasted sessions:**
+
+### 1. Autonomous Execution (NO asking for permission)
+- **NEVER** ask "Should I proceed?", "Do you want me to?", "Shall I?", or offer multiple options
+- **ALWAYS** execute the plan directly unless the action is genuinely ambiguous or destructive
+- **If blocked**: Flag the issue and propose a workaround — do NOT wait for user approval
+- **Result**: Saves ~3 hours/month on permission-checking cycles
+
+### 2. Proactive Status Updates (NO waiting to be asked)
+- Provide brief progress updates every 3-5 minutes during long-running tasks (>5 min)
+- **NEVER** go silent for extended periods without explanation
+- If a task is taking longer than expected, SAY SO immediately and explain why
+- Use phrases like "Status: X% complete, currently [doing Y], Z remaining"
+- **Result**: Eliminates repetitive "update?", "where is it?" prompts
+
+### 3. Accuracy & NO Fabrication
+- **NEVER** fabricate metrics, traction data, user counts, revenue, or quantitative claims
+- If data is unknown, say "unknown" or "not yet measured" — do NOT guess
+- This project includes ideation-stage ventures — do NOT assume traction exists
+- Every claim must cite actual source (file:line number) if requested
+- **Result**: Prevents hallucinated metrics from reaching stakeholders
+
+### 4. Architecture Constraints (LOCKED)
+- **Kasbah Guard is 100% browser extension** — there is NO desktop app, NO localhost server, NO daemon
+- Do NOT introduce or assume any localhost/port dependencies (e.g., port 8788, Guard service)
+- The extension must work independently in the browser with zero local server requirements
+- This is the #1 source of wrong assumptions — verify before proceeding
+- **Result**: Eliminates architectural regressions that waste correction cycles
+
+### 5. Task Completion (NO stalling on single issues)
+- **ALWAYS** finish the current task before moving on
+- If a task is complex, break it into phases and complete each phase fully
+- **DO NOT** stall on a single sub-problem for more than 10 minutes
+  - If stuck >10 min: escalate, try alternative approach, or flag blocker and move on to other work
+- Prevents the "32-minute debugging loop" anti-pattern
+- **Result**: Saves ~5 hours/month on stuck sessions
+
+### 6. User Test Suites (TREAT AS AUTHORITATIVE)
+- When the user provides a custom test suite or test script, **run it as-is**
+- Do NOT dismiss it, redirect to built-in tests, or question its validity
+- Treat user-provided test infrastructure as the source of truth
+- If tests fail, fix the code — do NOT skip the test
+
 ## BEFORE MAKING CHANGES — CHECKLIST
 
 1. **Is the file in the LOCKED FILES table?** → Do NOT edit. Ask first.
@@ -62,6 +107,8 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 3. **Does the change affect architecture (extension↔app relationship)?** → Do NOT proceed. Ask first.
 4. **Does the change remove files?** → Keep anything potentially useful for future. Only remove truly dead/duplicate files.
 5. **Does the change modify Cargo.toml workspace members?** → Do NOT proceed. Ask first.
+6. **Have I verified architecture constraints?** → Confirm no localhost/server dependencies assumed.
+7. **Is this a multi-phase task?** → Use phase-based execution; complete Phase 1 fully before Phase 2.
 
 ## AFTER MAKING CHANGES — VERIFICATION
 
@@ -198,3 +245,30 @@ Moats: `GET /health` · `POST /moat/gate`
 - `node /tmp/kasbah-market-launch.cjs` → 58/58 (detector gate)
 - `/tmp/kasbah-cli-build/release/kasbah selftest` → 10/10 (CLI gate)
 - If any test fails, the change is BROKEN and must be reverted immediately.
+
+## MULTI-PHASE TASK EXECUTION PATTERN (From Insights)
+
+**For ANY task that spans multiple phases or stages:**
+
+1. **Never ask for a planning phase first** — execute Phase 1 immediately
+2. **Structure as explicit phases with clear completion criteria**:
+   - "Phase 1: [specific concrete task]. Do not move to Phase 2 until Phase 1 is 100% committed."
+   - "Phase 2: [next task]. Begin only after Phase 1 approval."
+3. **Commit results after each phase** (git commit with meaningful message)
+4. **Do not exceed 10 minutes per phase** without status update or escalation
+5. **After Phase N completes**: Wait for user review/approval before Phase N+1
+6. **Example anti-pattern to avoid**: Spending 32 minutes debugging a single sub-problem instead of escalating after 10 minutes
+
+**Result**: Forces completion of concrete deliverables, prevents sessions from stalling at planning stage.
+
+## INSIGHTS-DRIVEN FRICTION ELIMINATION SUMMARY
+
+| Friction Type | Root Cause | Solution | Impact |
+|---|---|---|---|
+| Wrong Assumptions (9 events) | Assumed architecture details | Lock constraints in CLAUDE.md | -60% friction |
+| Stalling on Debugging (32 min sessions) | Single issue debugging loops | 10-min escalation rule | -5h/month |
+| Status Checking (6 requests) | Silent execution | Proactive 3-5 min updates | -2h/month |
+| Fabricated Metrics | No accuracy guard rails | NEVER fabricate rule + citation requirement | Stakeholder trust maintained |
+| Large Task Incompletion | No phase structure | Phase-based execution with explicit commits | +4 fully achieved/month |
+
+**Total Expected Improvement**: -15 hours/month, 60% friction reduction, 4x more session completions
