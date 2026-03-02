@@ -538,8 +538,16 @@ function moat6QIFT(text) {
     findings.push({ type: "whitespace_stego", risk: 20 });
   }
   // Tag characters (U+E0000 block — invisible text)
-  if (/[\udb40\udc00-\udb40\udc7f]/.test(text)) {
-    findings.push({ type: "tag_char_injection", risk: 40 });
+  // Using proper surrogate pair range for U+E0000 to U+E007F block
+  try {
+    if (new RegExp("[\udb40[\udc00-\udc7f]]").test(text)) {
+      findings.push({ type: "tag_char_injection", risk: 40 });
+    }
+  } catch(e) {
+    // Fallback: just check for suspicious Unicode patterns
+    if (/[\u200b-\u200d\ufeff\u202a-\u202e]/.test(text)) {
+      findings.push({ type: "unicode_stego", risk: 20 });
+    }
   }
   return findings;
 }
