@@ -2460,6 +2460,133 @@ async function handleListAllUsers(request, env) {
   }
 }
 
+// ── Public: Join waitlist ──
+async function handleWaitlistSignup(request, env) {
+  try {
+    const body = await request.json();
+    const email = (body.email || '').trim().toLowerCase();
+
+    if (!email || !email.includes('@')) {
+      return err('Valid email required', 400);
+    }
+
+    // Store in KASBAH_KV with key: waitlist:{email}
+    const key = `waitlist:${email}`;
+    const data = JSON.stringify({
+      email: email,
+      signupDate: new Date().toISOString(),
+      timestamp: Date.now()
+    });
+
+    await env.KASBAH_KV.put(key, data, { expirationTtl: 7776000 }); // 90 days
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        message: 'Thanks! We\'ll email you when Kasbah Guard is ready.',
+        email: email
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS
+        }
+      }
+    );
+  } catch (e) {
+    return err('Failed to join waitlist: ' + e.message, 500);
+  }
+}
+
+// ── Admin: List all waitlist signups ──
+async function handleListWaitlist(request, env) {
+  try {
+    const listResult = await env.KASBAH_KV.list({ prefix: 'waitlist:' });
+    const waitlist = [];
+
+    for (const key of listResult.keys) {
+      try {
+        const data = await env.KASBAH_KV.get(key.name);
+        if (data) {
+          const entry = JSON.parse(data);
+          waitlist.push(entry);
+        }
+      } catch (parseErr) {
+        console.error('Failed to parse waitlist entry:', parseErr);
+      }
+    }
+
+    // Sort by signup date (newest first)
+    waitlist.sort((a, b) => {
+      const dateA = new Date(a.signupDate).getTime();
+      const dateB = new Date(b.signupDate).getTime();
+      return dateB - dateA;
+    });
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        count: waitlist.length,
+        waitlist: waitlist
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS
+        }
+      }
+    );
+  } catch (e) {
+    return err('Failed to list waitlist: ' + e.message, 500);
+  }
+}
+
+// ── Admin: Export waitlist as CSV ──
+async function handleExportWaitlist(request, env) {
+  try {
+    const listResult = await env.KASBAH_KV.list({ prefix: 'waitlist:' });
+    const waitlist = [];
+
+    for (const key of listResult.keys) {
+      try {
+        const data = await env.KASBAH_KV.get(key.name);
+        if (data) {
+          const entry = JSON.parse(data);
+          waitlist.push(entry);
+        }
+      } catch (parseErr) {
+        console.error('Failed to parse waitlist entry:', parseErr);
+      }
+    }
+
+    // Sort by signup date (newest first)
+    waitlist.sort((a, b) => {
+      const dateA = new Date(a.signupDate).getTime();
+      const dateB = new Date(b.signupDate).getTime();
+      return dateB - dateA;
+    });
+
+    // Generate CSV
+    const csv = [
+      ['Email', 'Signup Date'].join(','),
+      ...waitlist.map(w => [`"${w.email}"`, `"${w.signupDate}"`].join(','))
+    ].join('\n');
+
+    return new Response(csv, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="kasbah-waitlist-${new Date().toISOString().split('T')[0]}.csv"`,
+        ...CORS_HEADERS
+      }
+    });
+  } catch (e) {
+    return err('Failed to export waitlist: ' + e.message, 500);
+  }
+}
+
 // ── Admin: Export all users as CSV ──
 async function handleExportUsers(request, env) {
   try {
@@ -2742,6 +2869,15 @@ export default {
       } else if (method === 'GET' && path === '/api/admin/users/export') {
         // Admin: Export all users as CSV
         response = await handleExportUsers(request, env);
+      } else if (method === 'POST' && path === '/waitlist') {
+        // Public: Join waitlist (from website)
+        response = await handleWaitlistSignup(_clonedRequest, env);
+      } else if (method === 'GET' && path === '/api/admin/waitlist') {
+        // Admin: View all waitlist signups
+        response = await handleListWaitlist(request, env);
+      } else if (method === 'GET' && path === '/api/admin/waitlist/export') {
+        // Admin: Export waitlist as CSV
+        response = await handleExportWaitlist(request, env);
       } else {
         response = err('Not found', 404);
       }
