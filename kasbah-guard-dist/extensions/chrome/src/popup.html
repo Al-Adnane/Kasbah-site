@@ -394,7 +394,44 @@
     <!-- Recent Detections (if any) -->
     <div id="detectionsContainer"></div>
 
+    <!-- PHASE A TASK 2: Compliance Proof Display -->
+    <div id="proof-section" style="display:none; margin-top: 12px; padding: 10px; background: #f0f0f0; border-radius: 5px; border: 1px solid #ddd;">
+      <h3 style="font-size: 13px; margin-bottom: 8px; color: #155724;">✅ Compliance Proof Generated</h3>
+      <div style="font-size: 11px; color: #333;">
+        <p style="margin-bottom: 4px;">
+          <strong>Proof ID:</strong> <span id="proof-id" style="word-break: break-all; font-family: monospace;">-</span>
+        </p>
+        <p style="margin-bottom: 4px;">
+          <strong>Quantum Signature:</strong>
+          <span id="quantum-status" style="margin-left: 4px;">
+            <span style="color: #ff9800;">⏳ Pending</span>
+          </span>
+        </p>
+        <p style="margin-bottom: 4px;">
+          <strong>ZK Proof:</strong>
+          <span id="zk-status" style="margin-left: 4px;">
+            <span style="color: #ff9800;">⏳ Pending</span>
+          </span>
+        </p>
+        <p style="margin-bottom: 8px;">
+          <strong>Blockchain Passport:</strong>
+          <span id="blockchain-status" style="margin-left: 4px;">
+            <span style="color: #ff9800;">⏳ Pending</span>
+          </span>
+        </p>
+      </div>
+      <button id="export-proof-btn" style="margin-bottom: 4px; font-size: 12px; padding: 6px;">
+        💾 Export Proof
+      </button>
+      <button id="verify-proof-btn" style="font-size: 12px; padding: 6px;">
+        ✓ Verify Proof
+      </button>
+    </div>
+
     <script src="accessibility.js"></script>
+    <script src="zk_proof_verifier.js"></script>
+    <script src="quantum_bridge.js"></script>
+    <script src="blockchain_integration.ts"></script>
     <script src="popup.js"></script>
   </body>
 </html>

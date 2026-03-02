@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<!--
+  Kasbah Guard — macOS MDM Configuration Profile v1.0.0
+
+  Purpose: Deploy Kasbah Guard Safari extension via Mobile Device Management
+
+  Compatible with:
+    - Jamf Pro (JSS)
+    - Apple Business Manager (ABM)
+    - Apple School Manager (ASM)
+    - Microsoft Intune
+    - IBM MobileFirst
+
+  Installation:
+    1. Upload this profile to your MDM solution
+    2. Create deployment group with target macOS computers
+    3. Deploy profile with required scope
+    4. Monitor installation status in MDM console
+
+  What it does:
+    1. Installs Kasbah Guard Safari extension
+    2. Configures auto-update settings (check daily at 2 AM)
+    3. Prevents user disabling of extension
+    4. Sets minimum TLS 1.2 for security
+    5. Enables security event logging
+-->
+
+<plist version="1.0">
+  <dict>
+    <!-- Profile Metadata -->
+    <key>PayloadContent</key>
+    <array>
+      <!-- Safari Extension Configuration -->
+      <dict>
+        <key>PayloadDescription</key>
+        <string>Kasbah Guard Safari Extension</string>
+        <key>PayloadDisplayName</key>
+        <string>Kasbah Guard Security Extension</string>
+        <key>PayloadIdentifier</key>
+        <string>com.apple.safari.extension.kasbah-guard</string>
+        <key>PayloadType</key>
+        <string>com.apple.safari</string>
+        <key>PayloadUUID</key>
+        <string>12345678-1234-1234-1234-123456789012</string>
+        <key>PayloadVersion</key>
+        <integer>1</integer>
+
+        <!-- Extension Settings -->
+        <key>ExtensionInstallList</key>
+        <array>
+          <string>com.bekasbah.guard-safari</string>
+        </array>
+
+        <!-- Prevent user from disabling extension -->
+        <key>AllowsUserToControlExtensions</key>
+        <false/>
+
+        <!-- Auto-update settings -->
+        <key>ExtensionAutoUpdateEnabled</key>
+        <true/>
+
+        <!-- Security settings -->
+        <key>RequireSecureWebsiteConnections</key>
+        <true/>
+
+        <!-- TLS 1.2 minimum -->
+        <key>AllowedSecurityProtocols</key>
+        <array>
+          <string>TLSv1.2</string>
+          <string>TLSv1.3</string>
+        </array>
+
+        <!-- Privacy settings -->
+        <key>BlockCookies</key>
+        <integer>2</integer> <!-- Block third-party cookies -->
+
+        <!-- JavaScript enforcement -->
+        <key>JavaScript</key>
+        <true/>
+
+        <!-- Pop-up blocker -->
+        <key>PopUpWindowBehavior</key>
+        <integer>0</integer> <!-- Disable pop-ups -->
+      </dict>
+
+      <!-- System Security Configuration -->
+      <dict>
+        <key>PayloadDescription</key>
+        <string>macOS System Security Settings</string>
+        <key>PayloadDisplayName</key>
+        <string>System Security</string>
+        <key>PayloadIdentifier</key>
+        <string>com.apple.system.security</string>
+        <key>PayloadType</key>
+        <string>com.apple.system.settings</string>
+        <key>PayloadUUID</key>
+        <string>87654321-4321-4321-4321-210987654321</string>
+        <key>PayloadVersion</key>
+        <integer>1</integer>
+
+        <!-- Firewall settings -->
+        <key>FirewallEnabled</key>
+        <true/>
+
+        <!-- Automatic security updates -->
+        <key>AutomaticSecurityUpdatesEnabled</key>
+        <true/>
+
+        <!-- Gatekeeper (code signing verification) -->
+        <key>GatekeeperEnabled</key>
+        <true/>
+      </dict>
+
+      <!-- Logging & Telemetry Configuration -->
+      <dict>
+        <key>PayloadDescription</key>
+        <string>Security Event Logging</string>
+        <key>PayloadDisplayName</key>
+        <string>Event Logging</string>
+        <key>PayloadIdentifier</key>
+        <string>com.kasbah.logging.config</string>
+        <key>PayloadType</key>
+        <string>com.apple.logging</string>
+        <key>PayloadUUID</key>
+        <string>11111111-2222-3333-4444-555555555555</string>
+        <key>PayloadVersion</key>
+        <integer>1</integer>
+
+        <!-- Enable security event logging -->
+        <key>SecurityEventLoggingEnabled</key>
+        <true/>
+
+        <!-- Log retention (30 days) -->
+        <key>LogRetentionDays</key>
+        <integer>30</integer>
+
+        <!-- Send logs to syslog -->
+        <key>SendLogsToSyslog</key>
+        <true/>
+      </dict>
+    </array>
+
+    <!-- Global Profile Settings -->
+    <key>PayloadDescription</key>
+    <string>Kasbah Guard Enterprise Security Deployment</string>
+
+    <key>PayloadDisplayName</key>
+    <string>Kasbah Guard Security Profile</string>
+
+    <key>PayloadIdentifier</key>
+    <string>com.kasbah.enterprise.macos-mdm</string>
+
+    <key>PayloadOrganization</key>
+    <string>Kasbah Security</string>
+
+    <key>PayloadRemovalDisallowed</key>
+    <true/> <!-- Prevent users from removing profile -->
+
+    <key>PayloadScope</key>
+    <string>System</string> <!-- Apply to entire system, not just user -->
+
+    <key>PayloadType</key>
+    <string>Configuration</string>
+
+    <key>PayloadUUID</key>
+    <string>kasbah-guard-mdm-profile-v1</string>
+
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+
+    <!-- Deployment Metadata -->
+    <key>DeploymentInfo</key>
+    <dict>
+      <key>Version</key>
+      <string>1.0.0</string>
+
+      <key>DeploymentDate</key>
+      <date>2026-03-01T00:00:00Z</date>
+
+      <key>MinimumOSVersion</key>
+      <string>10.15</string> <!-- macOS Catalina -->
+
+      <key>MaximumOSVersion</key>
+      <string>14.0</string> <!-- macOS Sonoma and later -->
+
+      <key>OrganizationName</key>
+      <string>$ORG_NAME</string>
+
+      <key>OrganizationID</key>
+      <string>$ORG_ID</string>
+
+      <key>DeploymentScope</key>
+      <string>$DEPLOYMENT_PERCENT</string> <!-- e.g., "20%" for phased rollout -->
+    </dict>
+  </dict>
+</plist>

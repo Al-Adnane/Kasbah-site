@@ -1,0 +1,271 @@
+.adminDashboard {
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #f0f4f8 100%);
+  min-height: 100vh;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.headerContent h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subtitle {
+  margin: 0.5rem 0 0 0;
+  font-size: 1rem;
+  color: #666;
+}
+
+.refreshAllButton {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+
+.refreshAllButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.quickStatsSection,
+.deploymentSection,
+.threatFeedSection,
+.escalationsSection {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.threatFeedSection {
+  grid-column: 1 / -1;
+}
+
+.escalationsSection {
+  grid-column: 1 / -1;
+}
+
+.quickActions {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.quickActions h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.actionButtons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.actionButton {
+  padding: 1rem;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: #1a1a1a;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.actionButton:hover {
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  border-color: #9ca3af;
+  transform: translateY(-2px);
+}
+
+.escalationsBox {
+  padding: 2rem;
+}
+
+.escalationsBox .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.escalationsBox h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1a1a1a;
+}
+
+.viewAll {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.viewAll:hover {
+  color: #2563eb;
+}
+
+.loading {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  font-size: 1rem;
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: #999;
+  font-size: 1rem;
+  border: 1px dashed #e5e7eb;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+}
+
+.escalationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.escalationItem {
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+  transition: all 0.3s ease;
+}
+
+.escalationItem:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.escalationLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.priorityDot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.escalationInfo {
+  flex: 1;
+}
+
+.escalationTitle {
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.25rem;
+}
+
+.escalationMeta {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.escalationRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.assignedTo {
+  font-size: 0.875rem;
+  color: #666;
+  min-width: 150px;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .adminDashboard {
+    padding: 1rem;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .headerContent h1 {
+    font-size: 1.75rem;
+  }
+
+  .actionButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .escalationItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .escalationRight {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .assignedTo {
+    text-align: left;
+    width: 100%;
+  }
+}

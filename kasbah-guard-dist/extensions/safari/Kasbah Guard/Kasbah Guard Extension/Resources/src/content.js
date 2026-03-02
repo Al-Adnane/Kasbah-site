@@ -1167,7 +1167,10 @@
             });
             localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
           } catch(e) {}
-          if (onAllowCb) onAllowCb();
+          // CRITICAL FIX: Defer callback with setTimeout so it happens AFTER modal handler completes
+          setTimeout(function() {
+            if (onAllowCb) onAllowCb();
+          }, 0);
         },
         onBlock: function () {
           showToast("✓ Blocked. Your sensitive data stayed on your device.", true, verb);
@@ -1343,8 +1346,12 @@
             logs.push({ action: 'ALLOW_OVERRIDE', text: msg.slice(0, 100), time: new Date().toISOString() });
             localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
           } catch(e) {}
-          btn[FLAG_KEY] = true;
-          btn.click();
+          // CRITICAL FIX: Defer click with setTimeout so it happens AFTER event handler completes
+          // Otherwise preventDefault() from original event blocks the synthetic click
+          setTimeout(function() {
+            btn[FLAG_KEY] = true;
+            btn.click();
+          }, 0);
         },
         onBlock: function () {
           // Log to localStorage

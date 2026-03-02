@@ -4,7 +4,7 @@
     "description": "Le nom de l'extension"
   },
   "extensionDescription": {
-    "message": "Protection locale qui intercepte les prompts et actions sur les services IA pour empêcher les fuites de données et garder le contrôle.",
+    "message": "Protège vos mots de passe et secrets des outils d'IA comme ChatGPT, Gemini, Grok, Claude et autres. Ce qui est à vous reste à vous.",
     "description": "La description de l'extension affichée dans les stores et paramètres du navigateur"
   },
   "popupTitle": {

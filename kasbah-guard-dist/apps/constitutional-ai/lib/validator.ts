@@ -124,7 +124,7 @@ export class ConstitutionalAIValidator {
   }
 
   /**
-   * Calculate risk using heuristics
+   * Calculate risk using heuristics (enhanced with Frontier)
    */
   private async calculateHeuristicRisk(intent: string): Promise<number> {
     let risk = 0;
@@ -140,7 +140,48 @@ export class ConstitutionalAIValidator {
     const repetitionScore = this.calculateRepetition(intent);
     if (repetitionScore > 0.3) risk += 0.1;
 
+    // Frontier heuristics: detect AI-generated prompts (high abstraction, marker phrases)
+    const frontierRisk = this.frontierHeuristics(intent);
+    risk += frontierRisk;
+
     return Math.min(risk, 0.5); // Cap at 0.5 for heuristics alone
+  }
+
+  /**
+   * Frontier-based heuristics: detect AI-generated intents and marker phrases
+   * AI-generated prompts have characteristic patterns (high entropy, phrase markers)
+   * This helps identify sophisticated prompt injection attacks
+   */
+  private frontierHeuristics(intent: string): number {
+    if (intent.length < 50) return 0; // Too short to analyze
+
+    let risk = 0;
+
+    // AI generator marker phrases (suggests auto-generated/sophisticated attack)
+    const markerPatterns = {
+      gpt: [/\bas\s+(?:you|a)/i, /certainly\b/i, /please\s+note/i, /think\s+about\s+it/i],
+      claude: [/i\'d\s+be\s+happy/i, /fascinating\s+(?:question|topic)/i, /\bnuance\b/i, /context\s+is\s+key/i],
+      gemini: [/helpful\s+(?:information|response)/i, /dive\s+(?:into|deeper)/i, /comprehensive\s+(?:overview|guide)/i],
+      llama: [/provide\s+(?:a|an)\s+(?:answer|response)/i, /step\s+by\s+step/i, /following\s+(?:steps|points)/i],
+    };
+
+    let markerCount = 0;
+    for (const patterns of Object.values(markerPatterns)) {
+      for (const pattern of patterns) {
+        if (pattern.test(intent)) {
+          markerCount++;
+        }
+      }
+    }
+
+    // If multiple AI markers detected, raise risk (suggests sophisticated attack)
+    if (markerCount > 3) risk += 0.12;
+    else if (markerCount > 1) risk += 0.06;
+
+    // High entropy alone isn't suspicious, but combined with markers is
+    if (entropy > 5.4 && markerCount > 0) risk += 0.05;
+
+    return Math.min(risk, 0.25); // Cap frontier contribution at 0.25
   }
 
   /**

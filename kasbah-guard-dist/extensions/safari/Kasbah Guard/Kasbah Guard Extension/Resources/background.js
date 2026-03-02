@@ -92,8 +92,177 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
       chrome.action.setBadgeText({ text: '' });
     }, 3000);
   }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // TELEMETRY: Receive and send usage metrics for model improvement
+  // ───────────────────────────────────────────────────────────────────────────
+  if (msg.type === 'TELEMETRY') {
+    const telemetryData = msg.data;
+
+    // Send to API endpoint for aggregation and analysis
+    fetch('https://api.bekasbah.com/api/telemetry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(telemetryData)
+    }).catch(() => {
+      // Silent fail - network error shouldn't break extension
+    });
+
+    respond({ ok: true });
+    return true;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // PHASE A TASK 2: ZK PROOF WIRING (v1.0.0)
+  // ───────────────────────────────────────────────────────────────────────────
+  // Detection event with compliance proof generation
+  if (msg.type === 'DETECTION') {
+    const detection = msg.detection;
+
+    // Async: Generate compliance proof (quantum + ZK + blockchain placeholder)
+    (async () => {
+      try {
+        // Generate compliance proof (will call popup.js::generateComplianceProof)
+        const proof = await generateComplianceProofFromDetection(detection, sender);
+
+        if (proof) {
+          // Store in local history
+          chrome.storage.local.get('detectionHistory', (result) => {
+            const history = result.detectionHistory || [];
+            history.push({
+              ...proof,
+              url: sender.url,
+              tabId: sender.tab?.id,
+              frameId: sender.frameId
+            });
+
+            // Keep last 1000 detections
+            if (history.length > 1000) {
+              history.shift();
+            }
+
+            chrome.storage.local.set({ detectionHistory: history });
+            console.log('[background.js] ✅ Detection stored with proof:', proof.id);
+          });
+
+          // Send proof back to popup
+          try {
+            chrome.runtime.sendMessage({
+              type: 'PROOF_GENERATED',
+              proof: proof
+            }).catch(() => {}); // Tab may be closed, ignore
+          } catch (e) {
+            // Silent fail - popup may not be open
+          }
+        }
+      } catch (error) {
+        console.error('[background.js] Compliance proof generation failed:', error);
+        sendSentryError('proof_generation_failed', error.message, error.stack, {
+          detectionType: detection.decision
+        });
+      }
+    })();
+
+    respond({ ok: true });
+    return true; // Keep channel open for async response
+  }
+
   return true;
 });
+
+/**
+ * Generate compliance proof from detection (wrapper for popup.js logic)
+ * Called from background service worker
+ *
+ * @param {Object} detection - Detection result from content.js
+ * @param {Object} sender - Message sender info
+ * @returns {Promise<Object>} Compliance proof
+ */
+async function generateComplianceProofFromDetection(detection, sender) {
+  try {
+    // Validate detection object
+    if (!detection || !detection.decision) {
+      console.error('[background.js] Invalid detection object:', detection);
+      return null;
+    }
+
+    // Prepare detection data with content hash
+    const detectionData = {
+      ...detection,
+      content_hash: detection.content_hash || hashContent(detection.content || ''),
+      source: {
+        url: sender.url,
+        tabId: sender.tab?.id,
+        title: sender.tab?.title || 'Unknown'
+      }
+    };
+
+    // Generate proof structure
+    const proof = {
+      id: `proof-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now(),
+
+      // Layer 1: Quantum signature (if available from detector)
+      quantum: detection.quantumSignature || null,
+
+      // Layer 2: ZK proof stub (full generation in popup.js)
+      zk: {
+        proofId: `zk-${Date.now()}`,
+        status: 'pending',
+        verified: false
+      },
+
+      // Layer 3: Blockchain (to be filled in Task 3)
+      blockchain: null,
+
+      // Detection metadata
+      detection: {
+        verdict: detection.decision,
+        riskScore: detection.risk || 0,
+        contentHash: detectionData.content_hash,
+        platform: detection.platform || 'unknown',
+        reason: detection.reason || 'Detection flagged'
+      },
+
+      // Source information
+      source: detectionData.source,
+
+      // Compliance status
+      status: {
+        quantumSigned: detection.quantumSignature !== null && detection.quantumSignature !== undefined,
+        zkProofReady: false,
+        blockchainRegistered: false
+      }
+    };
+
+    // Store proof in chrome.storage.local
+    await new Promise((resolve) => {
+      chrome.storage.local.set({
+        [`proof-${proof.id}`]: proof
+      }, resolve);
+    });
+
+    console.log('[background.js] ✅ Compliance proof created:', proof.id);
+    return proof;
+
+  } catch (error) {
+    console.error('[background.js] Proof generation error:', error);
+    return null;
+  }
+}
+
+/**
+ * Simple hash helper for content (fallback)
+ * Matches detector.js::hybridHash for consistency
+ */
+function hashContent(text) {
+  // Simple XOR hash (matches detector.js for consistency)
+  let h = 5381;
+  for (let i = 0; i < (text || '').length; i++) {
+    h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(16);
+}
 
 // All 30+ supported AI platforms
 const AI_DOMAINS = [

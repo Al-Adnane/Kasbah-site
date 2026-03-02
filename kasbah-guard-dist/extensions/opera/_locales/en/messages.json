@@ -4,7 +4,7 @@
     "description": "The name of the extension"
   },
   "extensionDescription": {
-    "message": "Local-first guard that intercepts prompts and actions on AI chat services to prevent leaks and enforce user control.",
+    "message": "Protects your passwords and secrets from ChatGPT, Gemini, Grok, Claude, and other AI tools. What's yours stays yours.",
     "description": "The description of the extension shown in stores and browser settings"
   },
   "popupTitle": {

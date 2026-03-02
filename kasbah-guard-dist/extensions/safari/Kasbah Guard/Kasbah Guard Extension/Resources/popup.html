@@ -122,8 +122,41 @@
     <button class="btn btn-danger" id="reportFPBtn">Report FP</button>
   </div>
 
+  <!-- Admin Tools -->
+  <div style="padding:8px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-dark" id="redTeamBtn" style="flex:1;font-weight:700;font-size:11px">🔴 Audit</button>
+    <button class="btn btn-dark" id="receiptsBtn" style="flex:1;font-weight:700;font-size:11px">📋 Receipts</button>
+    <button class="btn btn-dark" id="siiBtn" style="flex:1;font-weight:700;font-size:11px">🛡️ Integrity</button>
+  </div>
+  <div style="padding:8px 18px;display:flex;gap:8px">
+    <button class="btn btn-dark" id="canaryBtn" style="flex:1;font-weight:700;font-size:11px">🚀 Canary</button>
+  </div>
+
+  <!-- Privacy & Telemetry Settings -->
+  <div style="padding:12px 18px;border-top:1px solid var(--border);font-size:11px">
+    <details style="cursor:pointer">
+      <summary style="font-weight:700;color:var(--red);margin-bottom:6px">📊 Privacy & Data</summary>
+      <div style="background:rgba(193,68,14,.06);border-left:3px solid var(--red);padding:8px;border-radius:4px;margin-top:6px;font-size:10px;color:var(--muted)">
+        <p style="margin:0 0 6px 0">Kasbah Guard collects anonymous usage metrics to verify the extension works and improve detection.</p>
+        <label style="display:flex;gap:6px;margin:4px 0;cursor:pointer;align-items:center">
+          <input type="checkbox" id="telemetryEnabled" checked style="cursor:pointer;accent-color:var(--red)">
+          <span>Share metrics (recommended)</span>
+        </label>
+        <label style="display:flex;gap:6px;margin:4px 0;cursor:pointer;align-items:center">
+          <input type="checkbox" id="errorTrackingEnabled" checked style="cursor:pointer;accent-color:var(--red)">
+          <span>Send error reports</span>
+        </label>
+        <label style="display:flex;gap:6px;margin:4px 0;cursor:pointer;align-items:center">
+          <input type="checkbox" id="fpReportingEnabled" checked style="cursor:pointer;accent-color:var(--red)">
+          <span>Report false positives</span>
+        </label>
+        <p style="margin:6px 0 0 0;color:#666">✅ We never collect secrets, URLs, or your identity</p>
+      </div>
+    </details>
+  </div>
+
   <div class="footer">
-    <a href="https://bekasbah.com" target="_blank">bekasbah.com</a> &middot; v2.0.0 &middot; <span id="engineTag" style="font-size:9px;color:var(--green);font-weight:700">TF-IDF ML</span>
+    <a href="https://bekasbah.com" target="_blank">bekasbah.com</a> &middot; v1.0.0 &middot; <span id="engineTag" style="font-size:9px;color:var(--green);font-weight:700">TF-IDF ML</span>
   </div>
 
   <!-- False Positive Report Modal -->
@@ -291,7 +324,7 @@
         body: JSON.stringify({
           pattern: pattern,
           context: context,
-          extensionVersion: '2.0.0',
+          extensionVersion: '1.0.0',
           browser: 'chrome',
           timestamp: new Date().toISOString()
         })
@@ -309,9 +342,140 @@
       });
     });
 
+    // Red Team Simulator
+    document.getElementById('redTeamBtn').addEventListener('click', function() {
+      const redTeamURL = chrome.runtime.getURL('redteam/index.html');
+      chrome.windows.create({
+        url: redTeamURL,
+        type: 'popup',
+        width: 1400,
+        height: 900,
+        left: 100,
+        top: 100
+      });
+    });
+
+    // Receipt Ledger
+    document.getElementById('receiptsBtn').addEventListener('click', function() {
+      const receiptsURL = chrome.runtime.getURL('popup/receipts-panel.html');
+      chrome.windows.create({
+        url: receiptsURL,
+        type: 'popup',
+        width: 1200,
+        height: 800,
+        left: 200,
+        top: 150
+      });
+    });
+
+    // System Integrity Index
+    document.getElementById('siiBtn').addEventListener('click', function() {
+      const siiURL = chrome.runtime.getURL('popup/sii-panel.html');
+      chrome.windows.create({
+        url: siiURL,
+        type: 'popup',
+        width: 900,
+        height: 800,
+        left: 300,
+        top: 200
+      });
+    });
+
+    // Canary Deployment
+    document.getElementById('canaryBtn').addEventListener('click', function() {
+      const canaryURL = chrome.runtime.getURL('popup/canary-panel.html');
+      chrome.windows.create({
+        url: canaryURL,
+        type: 'popup',
+        width: 1000,
+        height: 800,
+        left: 250,
+        top: 150
+      });
+    });
+
     updateUI();
     poll();
     setInterval(poll, 3000);
+
+    // Privacy & Telemetry Settings
+    function initPrivacyControls() {
+      chrome.storage.local.get(['telemetry_enabled','error_tracking_enabled','fp_reporting_enabled'], function(result) {
+        var prefs = {
+          telemetry_enabled: result.telemetry_enabled !== false,
+          error_tracking_enabled: result.error_tracking_enabled !== false,
+          fp_reporting_enabled: result.fp_reporting_enabled !== false
+        };
+
+        document.getElementById('telemetryEnabled').checked = prefs.telemetry_enabled;
+        document.getElementById('errorTrackingEnabled').checked = prefs.error_tracking_enabled;
+        document.getElementById('fpReportingEnabled').checked = prefs.fp_reporting_enabled;
+
+        document.getElementById('telemetryEnabled').addEventListener('change', function(e) {
+          chrome.storage.local.set({telemetry_enabled: e.target.checked});
+        });
+        document.getElementById('errorTrackingEnabled').addEventListener('change', function(e) {
+          chrome.storage.local.set({error_tracking_enabled: e.target.checked});
+        });
+        document.getElementById('fpReportingEnabled').addEventListener('change', function(e) {
+          chrome.storage.local.set({fp_reporting_enabled: e.target.checked});
+        });
+      });
+    }
+
+    // Daily Telemetry Aggregation
+    function sendDailyTelemetry() {
+      chrome.storage.local.get(['telemetry_enabled','last_telemetry_sent','daily_detections','daily_blocked','daily_allowed'], function(result) {
+        // Check if telemetry disabled
+        if (result.telemetry_enabled === false) return;
+
+        // Check if already sent today (24 hours)
+        var now = Date.now();
+        var lastSent = result.last_telemetry_sent || 0;
+        if (now - lastSent < 86400000) return; // 24 hours in ms
+
+        // Aggregate metrics
+        var manifest = chrome.runtime.getManifest();
+        var payload = {
+          detections_count: (result.daily_detections && Object.values(result.daily_detections).reduce((a,b) => a+b, 0)) || 0,
+          detections_by_pattern: result.daily_detections || {},
+          blocked_count: result.daily_blocked || 0,
+          allowed_count: result.daily_allowed || 0,
+          extension_version: manifest.version,
+          engine_version: '1.0.0',
+          browser: 'chrome',
+          os: navigator.platform.indexOf('Mac') > -1 ? 'macos' : (navigator.platform.indexOf('Win') > -1 ? 'windows' : 'linux'),
+          timestamp: new Date().toISOString(),
+          latency_ms: { p50: 0, p95: 0, p99: 0 },
+          enabled: true,
+          error_count: 0
+        };
+
+        // Send to API
+        fetch('https://api.bekasbah.com/api/telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(function(r) {
+          if (r.ok) {
+            chrome.storage.local.set({
+              last_telemetry_sent: now,
+              daily_detections: {},
+              daily_blocked: 0,
+              daily_allowed: 0
+            });
+            console.log('[Telemetry] Sent successfully');
+          }
+        }).catch(function(e) {
+          console.log('[Telemetry] Network error (silent fail):', e.message);
+        });
+      });
+    }
+
+    // Try to send telemetry on popup open
+    try { sendDailyTelemetry(); } catch(e) {}
+
+    initPrivacyControls();
   </script>
 </body>
 </html>

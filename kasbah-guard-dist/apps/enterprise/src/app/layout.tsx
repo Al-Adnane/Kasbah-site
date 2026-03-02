@@ -15,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <h1>🛡️ Kasbah Guard Enterprise v1.0.0</h1>
             <nav className="nav">
               <a href="/">Dashboard</a>
+              <a href="/admin">👨‍💼 Admin</a>
               <a href="/policies">Policies</a>
               <a href="/audit">Audit Logs</a>
               <a href="/team">Team</a>

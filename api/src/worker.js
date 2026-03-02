@@ -36,6 +36,12 @@ const {
   getMoatStats
 } = require('./moats/integration');
 
+// ── Frontier Engine (GenAI Detection) ──
+const {
+  frontierScore,
+  detectAI
+} = require('./frontier');
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -770,11 +776,18 @@ async function handleApiScan(request, env) {
   const score = scanRequestRisk(text);
   const decision = score >= 70 ? 'DENY' : score >= 40 ? 'WARN' : 'ALLOW';
 
+  // Frontier Engine: GenAI detection
+  const frontier = frontierScore(text);
+  const genaiRisk = Math.round(frontier.confidence * 100);
+
   return json({
     ok: true,
     risk: score,
     decision,
     reason: 'API risk scan',
+    genai_risk: genaiRisk,
+    genai_generator: frontier.generator,
+    genai_confidence: frontier.confidence,
   });
 }
 

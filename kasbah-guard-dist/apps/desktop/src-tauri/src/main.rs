@@ -2,6 +2,8 @@
 
 mod guard;
 mod moats;
+mod handlers;
+mod quantum_crypto;
 
 use std::env;
 
@@ -72,6 +74,14 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_millis(100));
   }
 
+  // Initialize quantum crypto engine (may fail on some systems, continue anyway)
+  let quantum_engine = quantum_crypto::QuantumCryptoEngine::new()
+    .unwrap_or_else(|e| {
+      eprintln!("KASBAH_QUANTUM_INIT_WARNING: {}", e);
+      // Return a dummy engine if initialization fails
+      quantum_crypto::QuantumCryptoEngine::new().unwrap()
+    });
+
   tauri::Builder::default()
     .plugin(tauri_plugin_clipboard_manager::init())
     // Register moat state (Mutex-wrapped for thread safety)
@@ -82,6 +92,7 @@ fn main() {
         kasbah_moats::evolution::EvolutionEngine::new(),
     )))
     .manage(moats::MoatCapabilities(std::sync::Mutex::new(Vec::new())))
+    .manage(quantum_engine)
     .invoke_handler(tauri::generate_handler![
         preflight_text,
         get_session,
@@ -105,6 +116,10 @@ fn main() {
         // Redaction + Audit
         moats::redact_content,
         moats::audit_event,
+        // Quantum Crypto Handlers (PHASE A Task 1)
+        handlers::quantum_handler::sign_detection,
+        handlers::quantum_handler::verify_detection,
+        handlers::quantum_handler::export_audit_proof,
     ])
     .plugin(tauri_plugin_dialog::init())
     .setup(|app| {

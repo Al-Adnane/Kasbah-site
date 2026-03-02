@@ -1,0 +1,704 @@
+.deploymentPage {
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #f0f4f8 100%);
+  min-height: 100vh;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.headerContent h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subtitle {
+  margin: 0.5rem 0 0 0;
+  font-size: 1rem;
+  color: #666;
+}
+
+.refreshButton {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+
+.refreshButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+}
+
+.mainContent {
+  background: white;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+/* Orchestrator Styles */
+
+.orchestrator {
+  width: 100%;
+}
+
+.orchestratorForm {
+  padding: 1rem 0;
+}
+
+.orchestratorForm h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.formSubtitle {
+  margin: 0 0 2rem 0;
+  font-size: 0.95rem;
+  color: #666;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 0.9rem;
+}
+
+.formGroup select,
+.formGroup input[type="text"] {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.formGroup select:focus,
+.formGroup input[type="text"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.formGroup select:disabled,
+.formGroup input[type="text"]:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.rolloutControl {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rolloutSlider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.rolloutSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.4);
+  transition: all 0.2s ease;
+}
+
+.rolloutSlider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.4);
+  transition: all 0.2s ease;
+}
+
+.rolloutSlider::-webkit-slider-thumb:hover {
+  background: #2563eb;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.6);
+}
+
+.rolloutValue {
+  min-width: 60px;
+  font-weight: 700;
+  color: #3b82f6;
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-weight: normal;
+  margin-top: 0.5rem;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.phaseRecommendation {
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.phaseRecommendation strong {
+  display: block;
+  margin-bottom: 1rem;
+  color: #0c63e4;
+}
+
+.phaseList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.phaseList > div {
+  padding: 0.75rem;
+  background: white;
+  border-left: 3px solid #d1d5db;
+  border-radius: 0.25rem;
+  color: #666;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.phaseList > div.phaseActive {
+  background: #dbeafe;
+  border-left-color: #3b82f6;
+  color: #0c63e4;
+  font-weight: 600;
+}
+
+.deployButton {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+}
+
+.deployButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
+}
+
+.deployButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Alerts */
+
+.errorAlert {
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.375rem;
+  color: #991b1b;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.successAlert {
+  padding: 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.375rem;
+  color: #166534;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+/* Progress View */
+
+.orchestratorProgress {
+  padding: 1rem 0;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.platformBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.platformIcon {
+  font-size: 2rem;
+}
+
+.platformName {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.statusBadge {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.progressMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.metricBox {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.metricLabel {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metricValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.progressBarContainer {
+  margin-bottom: 2rem;
+}
+
+.progressBar {
+  width: 100%;
+  height: 12px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progressFill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 6px;
+}
+
+.progressPercentage {
+  display: block;
+  text-align: right;
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.progressTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.timelineStep {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.timelineStepActive {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  color: #1a1a1a;
+  font-weight: 600;
+  background: #dbeafe;
+  border-radius: 0.375rem;
+}
+
+.timelineDot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.timelineStepActive .timelineDot {
+  background: #3b82f6;
+  color: white;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.pauseButton,
+.resumeButton,
+.rollbackButton {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.pauseButton {
+  color: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.pauseButton:hover {
+  background: #fffbeb;
+}
+
+.resumeButton {
+  color: #10b981;
+  border-color: #10b981;
+}
+
+.resumeButton:hover {
+  background: #f0fdf4;
+}
+
+.rollbackButton {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.rollbackButton:hover {
+  background: #fef2f2;
+}
+
+/* Deployment History */
+
+.deploymentHistory {
+  background: white;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.deploymentHistory h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.deploymentList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.deploymentCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.deploymentCard:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.deploymentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.platformInfo {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.platformIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.platformDetails h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1a1a1a;
+}
+
+.platformDetails p {
+  margin: 0.25rem 0 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.deploymentProgress {
+  margin-bottom: 1rem;
+}
+
+.progressText {
+  display: block;
+  text-align: right;
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.deploymentMeta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.metaItem .label {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.05em;
+}
+
+.metaItem .value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.deploymentActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.startButton {
+  padding: 0.5rem 1rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.startButton:hover {
+  background: #059669;
+}
+
+/* Guidelines */
+
+.guidelines {
+  background: white;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.guidelines h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.guidelineGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.guideline {
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.guideline:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+
+.guideline .icon {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.guideline h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #1a1a1a;
+}
+
+.guideline p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Mobile Responsive */
+
+@media (max-width: 768px) {
+  .deploymentPage {
+    padding: 1rem;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .headerContent h1 {
+    font-size: 1.75rem;
+  }
+
+  .mainContent {
+    padding: 1rem;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .progressMetrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .progressHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .deploymentHistory,
+  .guidelines {
+    padding: 1rem;
+  }
+
+  .guidelineGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .pauseButton,
+  .resumeButton,
+  .rollbackButton {
+    width: 100%;
+  }
+}
