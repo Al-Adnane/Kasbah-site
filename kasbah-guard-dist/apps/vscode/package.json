@@ -1,7 +1,7 @@
 {
   "name": "kasbah-guard",
   "displayName": "Kasbah Guard — Sensitive Data Detector",
-  "description": "Real-time sensitive data leak detection powered by Kasbah Detection Engine v3.5.2",
+  "description": "Real-time sensitive data leak detection powered by Kasbah Detection Engine v1.0.0",
   "version": "1.0.0",
   "publisher": "kasbah-guard",
   "license": "MIT",

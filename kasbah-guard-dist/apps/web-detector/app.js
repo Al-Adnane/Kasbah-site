@@ -22,7 +22,7 @@ async function loadEngine() {
     await mod.default(); // init() — loads kasbah_wasm_bg.wasm
     classify = mod.classify;
     redactText = mod.redact_text ?? ((t) => t);
-    setStatus('✅ Kasbah Detection Engine v3.5.2 ready · WASM mode', '#00D084');
+    setStatus('✅ Kasbah Detection Engine v1.0.0 ready · WASM mode', '#00D084');
   } catch (e) {
     // WASM unavailable — use lightweight JS fallback
     classify = jsFallbackClassify;
@@ -31,7 +31,7 @@ async function loadEngine() {
   }
 }
 
-// ─── JS Fallback (mirrors key patterns from detector.js v3.5.2) ────────────
+// ─── JS Fallback (mirrors key patterns from detector.js v1.0.0) ────────────
 
 const FALLBACK_PATTERNS = [
   { re: /\b\d{3}-\d{2}-\d{4}\b/, risk: 90, reason: 'SSN pattern' },
