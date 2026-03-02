@@ -2405,6 +2405,123 @@ async function handleThreatsConsensus(request, env) {
   }
 }
 
+// ── Admin: List all registered users (JSON) ──
+async function handleListAllUsers(request, env) {
+  try {
+    // Get all user keys from USERS KV namespace
+    const listResult = await env.USERS.list();
+    const users = [];
+
+    for (const key of listResult.keys) {
+      // Skip verification codes (verify:{email} keys)
+      if (key.name.startsWith('verify:')) continue;
+
+      try {
+        const userData = await env.USERS.get(key.name);
+        if (userData) {
+          const user = JSON.parse(userData);
+          users.push({
+            email: user.email,
+            name: user.name || 'N/A',
+            plan: user.plan || 'pioneer',
+            verified: user.verified || false,
+            createdAt: user.createdAt || 'N/A',
+            lastLogin: user.lastLogin || 'Never'
+          });
+        }
+      } catch (parseErr) {
+        console.error('Failed to parse user data for ' + key.name + ':', parseErr);
+      }
+    }
+
+    // Sort by creation date (newest first)
+    users.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        count: users.length,
+        users: users
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS
+        }
+      }
+    );
+  } catch (e) {
+    return err('Failed to list users: ' + e.message, 500);
+  }
+}
+
+// ── Admin: Export all users as CSV ──
+async function handleExportUsers(request, env) {
+  try {
+    // Get all user keys from USERS KV namespace
+    const listResult = await env.USERS.list();
+    const users = [];
+
+    for (const key of listResult.keys) {
+      // Skip verification codes
+      if (key.name.startsWith('verify:')) continue;
+
+      try {
+        const userData = await env.USERS.get(key.name);
+        if (userData) {
+          const user = JSON.parse(userData);
+          users.push({
+            email: user.email,
+            name: user.name || 'N/A',
+            plan: user.plan || 'pioneer',
+            verified: user.verified ? 'Yes' : 'No',
+            createdAt: user.createdAt || 'N/A',
+            lastLogin: user.lastLogin || 'Never'
+          });
+        }
+      } catch (parseErr) {
+        console.error('Failed to parse user data for ' + key.name + ':', parseErr);
+      }
+    }
+
+    // Sort by creation date (newest first)
+    users.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+
+    // Generate CSV
+    const csv = [
+      ['Email', 'Name', 'Plan', 'Verified', 'Created Date', 'Last Login'].join(','),
+      ...users.map(u => [
+        `"${u.email}"`,
+        `"${u.name}"`,
+        `"${u.plan}"`,
+        `"${u.verified}"`,
+        `"${u.createdAt}"`,
+        `"${u.lastLogin}"`
+      ].join(','))
+    ].join('\n');
+
+    return new Response(csv, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="kasbah-users-${new Date().toISOString().split('T')[0]}.csv"`,
+        ...CORS_HEADERS
+      }
+    });
+  } catch (e) {
+    return err('Failed to export users: ' + e.message, 500);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     // Handle CORS preflight
@@ -2619,6 +2736,12 @@ export default {
         const reportId = pathParts[0];
         const formatParam = new URL(request.url).searchParams.get('format') || 'json';
         response = await handleExportComplianceReport(request, env, reportId, formatParam);
+      } else if (method === 'GET' && path === '/api/admin/users') {
+        // Admin: List all registered users (JSON)
+        response = await handleListAllUsers(request, env);
+      } else if (method === 'GET' && path === '/api/admin/users/export') {
+        // Admin: Export all users as CSV
+        response = await handleExportUsers(request, env);
       } else {
         response = err('Not found', 404);
       }
