@@ -59,11 +59,14 @@ These files are finalized. Read them, reference them, but NEVER edit them:
 
 **These rules eliminate 9/18 friction events and prevent wasted sessions:**
 
-### 1. Autonomous Execution (NO asking for permission)
-- **NEVER** ask "Should I proceed?", "Do you want me to?", "Shall I?", or offer multiple options
-- **ALWAYS** execute the plan directly unless the action is genuinely ambiguous or destructive
-- **If blocked**: Flag the issue and propose a workaround — do NOT wait for user approval
-- **Result**: Saves ~3 hours/month on permission-checking cycles
+### 1. Plan → Approval → Execute (Show your work FIRST)
+- **ALWAYS provide a clear plan/approach BEFORE execution** — never surprise with changes
+- Present plan in 3-5 bullet points; wait for user approval to proceed
+- **OR** present 2-3 explicit options and let user choose (only when approach is ambiguous)
+- **Once approved**: Execute the full plan WITHOUT asking permission at each step
+- **If blocked during execution**: Flag issue and propose workaround — do NOT re-ask for approval
+- **NEVER**: Execute major changes without showing plan first, OR ask for approval at every sub-step
+- **Result**: Visibility + autonomy = faster execution with user confidence
 
 ### 2. Proactive Status Updates (NO waiting to be asked)
 - Provide brief progress updates every 3-5 minutes during long-running tasks (>5 min)
