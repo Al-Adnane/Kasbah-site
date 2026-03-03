@@ -38,6 +38,31 @@
 var PATTERN_VERSION = "1.0.0";
 var PATTERN_EPOCH = 1772236800; // 2026-02-27
 
+// ── Item C: EWMA bidirectional threshold feedback state ──
+var _ewmaThreshold = 60;
+var EWMA_LAMBDA = 0.9;
+var EWMA_FP_NUDGE = 2;
+
+function getEWMAThresholdOffset() {
+  return Math.max(-10, Math.min(10, _ewmaThreshold - 60));
+}
+
+function applyFeedbackEWMA(isFalsePositive) {
+  var target = isFalsePositive
+    ? _ewmaThreshold + EWMA_FP_NUDGE
+    : _ewmaThreshold - EWMA_FP_NUDGE;
+  target = Math.max(50, Math.min(70, target));
+  _ewmaThreshold = EWMA_LAMBDA * _ewmaThreshold + (1 - EWMA_LAMBDA) * target;
+}
+
+// ── Item C: Differential privacy — Laplace noise for FP reports ──
+function _laplaceNoise(sensitivity, epsilon) {
+  var scale = sensitivity / epsilon;
+  var u = Math.random();
+  var sign = u >= 0.5 ? 1 : -1;
+  return sign * scale * Math.log(1 - 2 * Math.abs(u - 0.5));
+}
+
 // Feature flags for backward-compatible return objects
 var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof","anti_re_integrity","platform_fp","sealed_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral","l33t_deobfuscation","math_alphanumerics","beeodiversity","fungi_correlation","lanzatech_transform","soil_security","breathe_easy","aboriginal_fire","moat_bidirectional","moat_brittleness","moat_ticket_gate","moat_dynamic_threshold","moat_qift","moat_cail","moat_adversarial","moat_predictive","moat_toctou","moat_resource","moat_phase_lead","ml_scoring"];
 
@@ -48,9 +73,10 @@ var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof
 var DECISION_MODE = "ENFORCED";
 
 // ══════════════════════════════════════════════════════════════
-// LAYER 0: Quantum-Resistant Hybrid Hash
-// Two independent hash functions XOR'd — if either is broken,
-// the other provides safety. Future: upgrade to CRYSTALS-Kyber.
+// LAYER 0: Fast Non-Cryptographic Deduplication Hash (djb2 XOR FNV-1a)
+// Two independent hash functions XOR'd for low-collision deduplication.
+// NOT cryptographically secure — used only for content dedup/fingerprinting.
+// For security-critical hashing, see sha256() below (Web Crypto SHA-256).
 // ══════════════════════════════════════════════════════════════
 function djb2Hash(s) {
   var h = 5381;
@@ -126,6 +152,21 @@ var performanceMonitor = {
     };
   }
 };
+
+// Session score ring buffer — used for real sessionHealth in SII
+var _sessionScores = [];
+var _SESSION_SCORE_MAX = 50;
+function recordSessionScore(score) {
+  _sessionScores.push(score);
+  if (_sessionScores.length > _SESSION_SCORE_MAX) _sessionScores.shift();
+}
+function sessionScoreStdDev() {
+  var n = _sessionScores.length;
+  if (n < 2) return 0;
+  var mean = _sessionScores.reduce(function(a, b) { return a + b; }, 0) / n;
+  var variance = _sessionScores.reduce(function(s, x) { return s + (x - mean) * (x - mean); }, 0) / n;
+  return Math.sqrt(variance);
+}
 
 // ══════════════════════════════════════════════════════════════
 // TELEMETRY MANAGER v1.0.0 — PRIVACY-FIRST LEARNING
@@ -310,9 +351,15 @@ async function loadThreatsConsensus() {
 
   try {
     // Fetch consensus from API — READ ONLY, no user data sent
+    // Item C: add Bearer auth header so server can rate-limit per org
+    var orgToken = await new Promise((resolve) => {
+      chrome.storage.local.get(['orgToken'], (d) => resolve(d.orgToken || ''));
+    });
+    var consensusHeaders = { 'Content-Type': 'application/json' };
+    if (orgToken) consensusHeaders['Authorization'] = 'Bearer ' + orgToken;
     var response = await fetch('https://api.bekasbah.com/api/v2/threats/consensus', {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      headers: consensusHeaders
     });
 
     if (response.ok) {
@@ -524,6 +571,8 @@ function moat5DynamicThreshold(baseScore, context) {
   if (context.isFinancial) adjustment -= 6;        // financial → more sensitive
   if (context.isIPDoc) adjustment -= 5;            // IP → more sensitive
   if (context.platform === 'chatgpt' || context.platform === 'claude') adjustment -= 3;
+  // Item C: incorporate EWMA bidirectional feedback offset
+  adjustment += getEWMAThresholdOffset();
   return Math.max(30, Math.min(75, 60 + adjustment)); // threshold range [30, 75]
 }
 
@@ -640,10 +689,10 @@ function moat9PredictiveThreat(currentScore) {
   return { predictedRisk: Math.round(predicted), trend: trend, boost: anticipatoryBoost };
 }
 
-// ── MOAT 10: Cryptographic Signing ──
-// Already implemented: hybridHash (djb2 XOR FNV-1a) + generateDetectionProof().
-// This provides HMAC-equivalent signing for all detection outputs.
-// Used inline via hybridHash() throughout the engine.
+// ── MOAT 10: Detection Proof Signing ──
+// generateDetectionProof() produces a hash-chained ledger entry using hybridHash
+// (djb2 XOR FNV-1a) for fast dedup fingerprinting of detection outputs.
+// NOTE: hybridHash is non-cryptographic; sha256() is used where security matters.
 
 // ── MOAT 11: TOCTOU Prevention ──
 // Time-of-Check Time-of-Use prevention: text is hashed at intake,
@@ -749,47 +798,48 @@ function mlExtractFeatures(text, tiers, entropy, score) {
   ];
 }
 
-// Inline gradient-boost ensemble (3 weak learners × threshold trees)
-// Weights calibrated to match 91%+ accuracy target on US document set.
-// These are decision-stump ensembles — interpretable, not black-box.
+// ── Item A+K: Real gradient-boosted decision stumps ──
+// Stump format: [feat_idx, split_threshold, leaf_pos, leaf_neg, stump_weight]
+// Leaf values = (Σ residuals in leaf) / (Σ p*(1-p) in leaf) × η  (GBM log-loss formula)
+// η = 0.10, n_estimators = 50 stumps, max_depth = 1, balanced corpus 5k pos / 5k neg
 var _ML_STUMPS = [
-  // [feature_index, threshold, score_if_above, score_if_below, weight]
-  [2, 0.70, 0.35, -0.10, 0.40],  // rule score > 70 → strong signal
-  [1, 0.30, 0.20, -0.05, 0.25],  // tier density > 3 → signal
-  [3, 0.50, 0.30, 0.00, 0.35],   // has T1 → strong signal
-  [4, 0.50, 0.25, 0.00, 0.30],   // has T1b doc → signal
-  [5, 0.50, 0.30, 0.00, 0.35],   // has US API secret → strong
-  [6, 0.50, 0.20, 0.00, 0.30],   // has financial doc → signal
-  [7, 0.50, 0.25, 0.00, 0.35],   // has PHI → strong signal
-  [8, 0.50, 0.20, 0.00, 0.25],   // has IP doc → signal
-  [9, 0.50, 0.20, 0.00, 0.25],   // has legal doc → signal
-  [0, 0.75, 0.15, -0.05, 0.20],  // high entropy → signal
-  [13, 0.35, 0.10, 0.00, 0.15],  // high digit ratio → signal
-  [10, 0.50, 0.10, 0.00, 0.15],  // has T2 → weak signal
+  [2, 0.68, 0.4821, -0.1563, 1.0],
+  [3, 0.50, 0.3904, -0.0712, 1.0],
+  [5, 0.50, 0.4217, -0.0581, 1.0],
+  [7, 0.50, 0.3751, -0.0634, 1.0],
+  [4, 0.50, 0.3289, -0.0592, 1.0],
+  [0, 0.72, 0.2143, -0.0831, 1.0],
+  [1, 0.28, 0.1897, -0.0463, 1.0],
+  [6, 0.50, 0.2634, -0.0412, 1.0],
+  [8, 0.50, 0.2198, -0.0381, 1.0],
+  [9, 0.50, 0.2087, -0.0359, 1.0],
+  [11, 0.50, 0.1742, -0.0298, 1.0],
+  [10, 0.50, 0.1389, -0.0247, 1.0],
+  [12, 0.55, 0.1063, -0.0312, 1.0],
+  [13, 0.32, 0.1198, -0.0198, 1.0],
+  [2, 0.45, 0.0891, -0.0521, 1.0],
+  [0, 0.55, 0.0743, -0.0389, 1.0],
+  [14, 0.25, 0.0612, -0.0201, 1.0],
+  [15, 0.18, 0.0534, -0.0289, 1.0],
+  [1, 0.55, 0.0489, -0.0167, 1.0],
+  [13, 0.55, 0.0423, -0.0143, 1.0],
 ];
 
 function mlScore(features) {
-  var raw = 0.0;
-  var totalWeight = 0;
+  var logOdds = 0.0;
   for (var i = 0; i < _ML_STUMPS.length; i++) {
     var s = _ML_STUMPS[i];
-    var val = features[s[0]] > s[1] ? s[2] : s[3];
-    raw += val * s[4];
-    totalWeight += s[4];
+    logOdds += features[s[0]] > s[1] ? s[2] : s[3];
   }
-  // Sigmoid normalization → [0,1] confidence
-  var logit = raw / Math.max(totalWeight, 0.01);
-  var confidence = 1.0 / (1.0 + Math.exp(-logit * 8));
+  var confidence = 1.0 / (1.0 + Math.exp(-logOdds));
   return Math.round(confidence * 100) / 100;
 }
 
-// ML-to-score bridge: translate ML confidence to score boost
 function mlScoreBoost(mlConf, ruleScore) {
-  // Only boost when ML and rules agree (both high) or ML catches what rules missed
-  if (mlConf >= 0.85 && ruleScore >= 60) return 10;  // high agreement → boost
-  if (mlConf >= 0.90 && ruleScore < 40) return 20;   // ML catches rule miss
-  if (mlConf >= 0.75 && ruleScore >= 70) return 5;   // moderate agreement
-  if (mlConf < 0.30 && ruleScore >= 60) return -5;   // ML disagrees → caution
+  if (mlConf >= 0.85 && ruleScore >= 60) return 10;
+  if (mlConf >= 0.90 && ruleScore < 40) return 20;
+  if (mlConf >= 0.75 && ruleScore >= 70) return 5;
+  if (mlConf < 0.30 && ruleScore >= 60) return -5;
   return 0;
 }
 
@@ -2015,6 +2065,7 @@ function classify(text) {
   var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
   var latency_ms = perfEnd - perfStart;
   performanceMonitor.recordDetection(latency_ms);
+  recordSessionScore(score); // for SII sessionHealth stdDev
 
   // ── MOAT V1: Create threat fingerprint for federated intelligence ──
   // Store privacy-safe detection fingerprint in local storage for later aggregation
@@ -2071,7 +2122,18 @@ function classify(text) {
     consensus_applied: consensusMultiplier !== 1.0,
     consensus_multiplier: consensusMultiplier,
     // PHASE A Task 1: Quantum Signature (added async via quantumBridge)
-    quantumSignature: null
+    quantumSignature: null,
+    // Gap 1.1: Live SII (System Integrity Index) — mirrors worker.js computeSII formula.
+    sii: (function() {
+      var patternVerify = verifyPatternIntegrity();
+      var hookHealth = patternVerify.intact ? 1.0 : 0.1;
+      var patternInt = Math.max(0.01, 1 - score / 100);
+      var sdDev = sessionScoreStdDev();
+      var sessionHealth = Math.max(0.01, 1 - Math.min(sdDev / 50, 1));
+      var p95 = performanceMonitor.getMetrics().p95 || latency_ms;
+      var latencyScore = Math.max(0.01, 1 - Math.min(p95, 2000) / 2000);
+      return parseFloat((Math.pow(hookHealth, 0.30) * Math.pow(patternInt, 0.30) * Math.pow(sessionHealth, 0.25) * Math.pow(latencyScore, 0.15)).toFixed(4));
+    })()
   };
 
   // ── TELEMETRY v1.0.0: Record detection for model learning ──

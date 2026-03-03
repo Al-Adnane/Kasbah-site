@@ -2,6 +2,34 @@
 // 100% BROWSER INDEPENDENT — NO Guard service, NO server calls
 let badgeFlashTimeout = null;
 
+// ── Local Audit Ledger (Gap 1.3) ───────────────────────────────────────────
+// Hash-chained decision log stored entirely in chrome.storage.local.
+// Each entry: { id, ts, event, data, prevHash, hash }
+// SHA-256(prevHash + id + ts + event + JSON(data)) — tamper-evident, offline.
+const _AUDIT_KEY = 'kasbah_audit_ledger';
+const _AUDIT_MAX = 2000;
+
+async function _sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function appendAuditEntry(event, data) {
+  // Fire-and-forget — never throws, never blocks the caller
+  chrome.storage.local.get([_AUDIT_KEY], async (stored) => {
+    try {
+      const ledger = stored[_AUDIT_KEY] || [];
+      const prevHash = ledger.length > 0 ? ledger[ledger.length - 1].hash : '0'.repeat(64);
+      const id = `aud-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const ts = new Date().toISOString();
+      const hash = await _sha256(prevHash + id + ts + event + JSON.stringify(data || {}));
+      ledger.push({ id, ts, event, data: data || {}, prevHash, hash });
+      if (ledger.length > _AUDIT_MAX) ledger.splice(0, ledger.length - _AUDIT_MAX);
+      chrome.storage.local.set({ [_AUDIT_KEY]: ledger });
+    } catch (_) { /* silent — ledger must never break the extension */ }
+  });
+}
+
 // ── Sentry Error Tracking (v2.0.0) ────────────────────────────────────────
 // Privacy-first error tracking: no URLs, no user data, no secrets
 const SENTRY_ENDPOINT = 'https://api.bekasbah.com/api/sentry';
@@ -91,6 +119,38 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
       badgeFlashTimeout = null;
       chrome.action.setBadgeText({ text: '' });
     }, 3000);
+    appendAuditEntry('BLOCK_EVENT', { url: sender.url, tabId: sender.tab?.id, decision: msg.decision, risk: msg.risk, reason: msg.reason });
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // SECRET EXFILTRATION BLOCKED: log and badge flash (from secret-guard.js)
+  // ───────────────────────────────────────────────────────────────────────────
+  if (msg.type === 'SECRET_EXFILTRATION_BLOCKED') {
+    if (badgeFlashTimeout) clearTimeout(badgeFlashTimeout);
+    chrome.action.setBadgeText({ text: '🔐' });
+    chrome.action.setBadgeBackgroundColor({ color: '#8B0000' });
+    badgeFlashTimeout = setTimeout(function() {
+      badgeFlashTimeout = null;
+      chrome.action.setBadgeText({ text: '' });
+    }, 5000);
+
+    // Store for popup display
+    chrome.storage.local.get(['secretBlockCount'], (data) => {
+      const count = (data.secretBlockCount || 0) + 1;
+      chrome.storage.local.set({
+        secretBlockCount: count,
+        lastSecretBlock: {
+          secretName: msg.secretName,
+          requestType: msg.requestType,
+          url: msg.url,
+          timestamp: msg.timestamp,
+        },
+      });
+    });
+    appendAuditEntry('SECRET_EXFILTRATION_BLOCKED', { secretName: msg.secretName, requestType: msg.requestType, url: msg.url });
+
+    respond({ ok: true });
+    return true;
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -98,10 +158,22 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
   // ───────────────────────────────────────────────────────────────────────────
   if (msg.action === 'reportFalsePositive') {
     chrome.storage.local.get(['guardEnabled', 'lastDetection'], (data) => {
+      const detection = data.lastDetection || null;
+
+      // Item C: differential privacy — add Laplace noise (ε=1.0, Δ=1) to risk score
+      // before transmission so individual detections cannot be fingerprinted.
+      let noisyRisk = null;
+      if (detection && typeof detection.risk === 'number') {
+        const u = Math.random();
+        const sign = u >= 0.5 ? 1 : -1;
+        const laplace = sign * 1.0 * Math.log(1 - 2 * Math.abs(u - 0.5)); // scale = Δ/ε = 1
+        noisyRisk = Math.max(0, Math.min(100, Math.round(detection.risk + laplace)));
+      }
+
       const report = {
         context: msg.context || '',
         timestamp: msg.timestamp || new Date().toISOString(),
-        detection: data.lastDetection || null,
+        detection: detection ? { ...detection, risk: noisyRisk } : null,
         extensionVersion: '2.0.0',
         browser: 'chrome',
       };
@@ -111,6 +183,20 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(report),
       }).catch(() => {}); // Silent fail — don't break extension on network error
+    });
+
+    // Item C: EWMA bidirectional feedback — nudge threshold toward permissive
+    // Inject into active content-script contexts via scripting API
+    chrome.tabs.query({ active: true }, (tabs) => {
+      tabs.forEach((tab) => {
+        if (!tab.id) return;
+        try {
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => { if (typeof applyFeedbackEWMA === 'function') applyFeedbackEWMA(true); }
+          });
+        } catch (_) {}
+      });
     });
 
     respond({ ok: true });
@@ -150,6 +236,7 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
         const proof = await generateComplianceProofFromDetection(detection, sender);
 
         if (proof) {
+          appendAuditEntry('DETECTION', { verdict: detection.decision, risk: detection.risk, platform: detection.platform, proofId: proof.id, url: sender.url });
           // Store in local history
           chrome.storage.local.get('detectionHistory', (result) => {
             const history = result.detectionHistory || [];
