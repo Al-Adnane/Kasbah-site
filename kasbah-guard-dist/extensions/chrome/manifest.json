@@ -24,6 +24,7 @@
         "src/kasbah-frontier-image.js",
         "src/kasbah-analysis/kasbah-integration-bridge.js",
         "src/kasbah-analysis/kasbah-detector-hook.js",
+        "src/secret-guard.js",
         "src/content.js"
       ],
       "css": [

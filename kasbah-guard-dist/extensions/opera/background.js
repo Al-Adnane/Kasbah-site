@@ -1,5 +1,6 @@
 // Kasbah Guard - Background Service Worker v2.0.0
 // 100% BROWSER INDEPENDENT — NO Guard service, NO server calls
+try { importScripts('src/zk_proof_verifier.js'); } catch (e) { console.warn('[background] zk_proof_verifier not loaded:', e); }
 let badgeFlashTimeout = null;
 
 // ── Local Audit Ledger (Gap 1.3) ───────────────────────────────────────────
@@ -307,12 +308,8 @@ async function generateComplianceProofFromDetection(detection, sender) {
       // Layer 1: Quantum signature (if available from detector)
       quantum: detection.quantumSignature || null,
 
-      // Layer 2: ZK proof stub (full generation in popup.js)
-      zk: {
-        proofId: `zk-${Date.now()}`,
-        status: 'pending',
-        verified: false
-      },
+      // Layer 2: ZK proof — Schnorr sigma protocol via SubtleCrypto ECDSA-P256
+      zk: null,
 
       // Layer 3: Blockchain (to be filled in Task 3)
       blockchain: null,
@@ -336,6 +333,27 @@ async function generateComplianceProofFromDetection(detection, sender) {
         blockchainRegistered: false
       }
     };
+
+    if (typeof ZKProof !== 'undefined') {
+      try {
+        const zkProof = new ZKProof(
+          `zk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          detectionData.content_hash,
+          detection.decision,
+          detection.risk || 0
+        );
+        await zkProof.generateProof();
+        const verified = await zkProof.verify();
+        proof.zk = zkProof.exportProof();
+        proof.status.zkProofReady = verified;
+        console.log('[background.js] ✅ ZK proof generated, verified:', verified);
+      } catch (zkErr) {
+        console.warn('[background.js] ZK proof generation failed:', zkErr);
+        proof.zk = { proofId: `zk-${Date.now()}`, status: 'error', verified: false };
+      }
+    } else {
+      proof.zk = { proofId: `zk-${Date.now()}`, status: 'pending', verified: false };
+    }
 
     // Store proof in chrome.storage.local
     await new Promise((resolve) => {

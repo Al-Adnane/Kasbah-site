@@ -56,6 +56,109 @@ pub fn policy_preflight(text: &str) -> (u16, String, String) {
     let has_slack_token = lower.contains("xoxb-") || lower.contains("xoxa-")
         || lower.contains("xoxe-") || lower.contains("xoxp-");
 
+    // Slack incoming webhook URL
+    let has_slack_webhook = lower.contains("hooks.slack.com/services/");
+
+    // AWS secret access key assignment (env-style)
+    let has_aws_secret_assign = (lower.contains("aws_secret_access_key=")
+        || lower.contains("aws_secret_access_key =")
+        || lower.contains("aws_secret_access_key:"))
+        && t.len() > 40;
+
+    // GCP service account JSON
+    let has_gcp_service_acct = t.contains("\"type\"") && t.contains("\"service_account\"");
+
+    // Azure Storage connection string
+    let has_azure_storage = lower.contains("defaultendpointsprotocol=https")
+        && lower.contains("accountname=") && lower.contains("accountkey=");
+
+    // Discord bot token: [MN][A-Za-z0-9_-]{23-25}.[A-Za-z0-9_-]{6-7}.[A-Za-z0-9_-]{27-38}
+    let has_discord_token = {
+        let mut found = false;
+        if blen >= 59 {
+            for i in 0..=blen.saturating_sub(59) {
+                if matches!(bytes[i], b'M' | b'N') {
+                    let seg1 = bytes[i+1..].iter()
+                        .take_while(|b| b.is_ascii_alphanumeric() || **b == b'_' || **b == b'-')
+                        .count();
+                    if (23..=25).contains(&seg1) {
+                        let dot1 = i + 1 + seg1;
+                        if dot1 < blen && bytes[dot1] == b'.' {
+                            let seg2 = bytes[dot1+1..].iter()
+                                .take_while(|b| b.is_ascii_alphanumeric() || **b == b'_' || **b == b'-')
+                                .count();
+                            if (6..=7).contains(&seg2) {
+                                let dot2 = dot1 + 1 + seg2;
+                                if dot2 < blen && bytes[dot2] == b'.' {
+                                    let seg3 = bytes[dot2+1..].iter()
+                                        .take_while(|b| b.is_ascii_alphanumeric() || **b == b'_' || **b == b'-')
+                                        .count();
+                                    if (27..=38).contains(&seg3) { found = true; break; }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        found
+    };
+
+    // Shopify API key: shppa_, shpss_, shpat_ + 32+ alphanumeric
+    let has_shopify_key = {
+        let mut found = false;
+        for prefix in &[b"shppa_".as_ref(), b"shpss_".as_ref(), b"shpat_".as_ref()] {
+            if let Some(pos) = (0..blen.saturating_sub(prefix.len())).find(|&i| &bytes[i..i+prefix.len()] == *prefix) {
+                let run = bytes[pos+prefix.len()..].iter()
+                    .take_while(|b| b.is_ascii_alphanumeric()).count();
+                if run >= 32 { found = true; break; }
+            }
+        }
+        found
+    };
+
+    // PyPI upload token: pypi- + 50+ alphanumeric/-/_
+    let has_pypi_token = lower.find("pypi-").map_or(false, |pos| {
+        let run = bytes[pos+5..].iter()
+            .take_while(|b| b.is_ascii_alphanumeric() || **b == b'-' || **b == b'_').count();
+        run >= 50
+    });
+
+    // DigitalOcean personal access token: dop_v1_ + 64+ alphanumeric
+    let has_do_token = lower.find("dop_v1_").map_or(false, |pos| {
+        let run = bytes[pos+7..].iter()
+            .take_while(|b| b.is_ascii_alphanumeric()).count();
+        run >= 64
+    });
+
+    // Linear API key: lin_ + 40+ alphanumeric
+    let has_linear_key = lower.find("lin_").map_or(false, |pos| {
+        let run = bytes[pos+4..].iter()
+            .take_while(|b| b.is_ascii_alphanumeric()).count();
+        run >= 40
+    });
+
+    // Mapbox access token: pk. + 60+ alphanumeric/_/-
+    let has_mapbox_token = t.find("pk.").map_or(false, |pos| {
+        let run = bytes[pos+3..].iter()
+            .take_while(|b| b.is_ascii_alphanumeric() || **b == b'_' || **b == b'-').count();
+        run >= 60
+    });
+
+    // Pulumi access token: pul- + 60+ alphanumeric
+    let has_pulumi_token = lower.find("pul-").map_or(false, |pos| {
+        let run = bytes[pos+4..].iter()
+            .take_while(|b| b.is_ascii_alphanumeric()).count();
+        run >= 60
+    });
+
+    // Supabase JWT / service key: eyJ + 100+ base64url chars
+    let has_supabase_key = t.find("eyJ").map_or(false, |pos| {
+        let run = bytes[pos+3..].iter()
+            .take_while(|b| b.is_ascii_alphanumeric() || **b == b'_' || **b == b'-').count();
+        run >= 100
+    });
+
     // API key assignment patterns
     let has_api_key_word = lower.contains("api-key") || lower.contains("apikey")
         || lower.contains("api_key");
@@ -236,6 +339,12 @@ pub fn policy_preflight(text: &str) -> (u16, String, String) {
         "developer mode", "developer message", "disable safety", "disable all safety",
         "jailbreak", "you are now dan", "do anything now", "override instructions",
         "override previous", "reveal your system",
+        // Token-boundary injection markers
+        "<|im_start|>", "<|im_end|>", "<|system|>", "<|user|>", "<|assistant|>",
+        "[inst]", "[/inst]", "<<sys>>", "<</sys>>",
+        // Goal hijacking / indirect injection
+        "ignore the above", "disregard the above", "new task:", "your new goal",
+        "forget your previous", "act as if", "pretend you are",
     ];
     let injection_hits = injection_patterns.iter().filter(|p| lower.contains(*p)).count() as u32;
 
@@ -245,6 +354,77 @@ pub fn policy_preflight(text: &str) -> (u16, String, String) {
         "; --", "union select", "exec(",
     ];
     let shell_hits = shell_patterns.iter().filter(|p| lower.contains(*p)).count() as u32;
+
+    // ── AI Vibe-Code Safety Patterns ─────────────────────────────────
+    // Patterns common in AI-generated code that introduce security vulnerabilities
+
+    // Unsafe eval / exec / code injection
+    let has_eval_exec = t.contains("eval(") || t.contains("eval (")
+        || lower.contains("new function(") || lower.contains("settimeout(\"")
+        || lower.contains("setinterval(\"");
+
+    // Python-specific dangerous patterns
+    let has_py_exec = t.contains("exec(") || t.contains("os.system(")
+        || t.contains("subprocess.call(") || t.contains("subprocess.run(")
+        || t.contains("os.popen(") || t.contains("__import__(");
+
+    // SQL injection via f-string / string concat (AI vibe-code antipattern)
+    let has_sql_injection_pattern = (t.contains("f\"SELECT") || t.contains("f'SELECT")
+        || t.contains("f\"INSERT") || t.contains("f\"UPDATE") || t.contains("f\"DELETE")
+        || (lower.contains("select") && lower.contains("where") && t.contains("%s"))
+        || (lower.contains("execute(") && t.contains("+")))
+        && !t.contains("parameterized") && !t.contains("prepared");
+
+    // Hardcoded credentials in code (AI vibe-code hallucination pattern)
+    let has_hardcoded_creds = (lower.contains("password = \"") || lower.contains("password = '")
+        || lower.contains("passwd = \"") || lower.contains("passwd = '")
+        || lower.contains("api_key = \"") || lower.contains("api_key = '")
+        || lower.contains("secret = \"") || lower.contains("secret = '")
+        || lower.contains("token = \"") || lower.contains("token = '"))
+        && !lower.contains("os.environ") && !lower.contains("process.env")
+        && !lower.contains("getenv") && !lower.contains("config[");
+
+    // Insecure deserialization
+    let has_insecure_deser = t.contains("pickle.loads(") || t.contains("pickle.load(")
+        || t.contains("yaml.load(") && !t.contains("Loader=")
+        || t.contains("marshal.loads(") || t.contains("unserialize(");
+
+    // Path traversal patterns
+    let has_path_traversal = t.contains("../") && (lower.contains("open(") || lower.contains("readfile")
+        || lower.contains("include(") || lower.contains("require("))
+        || t.contains("..\\");
+
+    // Insecure random (AI vibe-code often uses Math.random for tokens/passwords)
+    let has_insecure_random = (t.contains("Math.random()") || t.contains("math.random()"))
+        && (lower.contains("token") || lower.contains("password") || lower.contains("secret")
+            || lower.contains("key") || lower.contains("nonce") || lower.contains("salt"));
+
+    // Disabled TLS/cert verification (AI vibe-code antipattern)
+    let has_disabled_tls = lower.contains("verify=false") || lower.contains("verify = false")
+        || lower.contains("ssl_verify = false") || lower.contains("rejectunauthorized: false")
+        || lower.contains("checkhostname = false") || lower.contains("verifypeer => false")
+        || t.contains("InsecureRequestWarning") || lower.contains("no_verify");
+
+    // Command injection via template literals / string formatting
+    let has_cmd_injection = (t.contains("child_process") || t.contains("spawn(") || t.contains("shell=True"))
+        && (t.contains("req.") || t.contains("params.") || t.contains("args.") || t.contains("input("));
+
+    // Prototype pollution (JS vibe-code)
+    let has_proto_pollution = t.contains("__proto__") || t.contains("constructor.prototype")
+        || (t.contains("merge(") && t.contains("__proto__"))
+        || lower.contains("object.assign") && lower.contains("userinput");
+
+    // SSRF-prone patterns (AI often generates direct user-URL fetch)
+    let has_ssrf_pattern = (t.contains("fetch(req.") || t.contains("fetch(params.")
+        || t.contains("fetch(body.") || t.contains("fetch(url)")
+        || lower.contains("requests.get(url)") || lower.contains("requests.post(url)"))
+        && !lower.contains("allowlist") && !lower.contains("whitelist") && !lower.contains("validate_url");
+
+    // XSS via innerHTML / document.write
+    let has_xss_pattern = (t.contains("innerHTML") || t.contains("document.write(")
+        || t.contains("outerHTML") || t.contains("insertAdjacentHTML"))
+        && (t.contains("req.") || t.contains("params.") || t.contains("query.")
+            || lower.contains("userinput") || lower.contains("user_input"));
 
     // Generic suspicious keyword density
     let suspicious_words: &[&str] = &[
@@ -263,18 +443,30 @@ pub fn policy_preflight(text: &str) -> (u16, String, String) {
     let mut reasons: Vec<&'static str> = Vec::new();
 
     // Critical (score 80-90)
-    if has_private_key   { score += 90; reasons.push("private key"); }
-    if has_ssn           { score += 80; reasons.push("SSN"); }
-    if has_aws_key       { score += 80; reasons.push("AWS access key"); }
-    if has_gh_pat        { score += 80; reasons.push("GitHub PAT"); }
-    if has_credit_card   { score += 80; reasons.push("credit card (Luhn valid)"); }
-    if has_ethereum      { score += 80; reasons.push("Ethereum key/address"); }
-    if has_conn_creds    { score += 90; reasons.push("DB connection with credentials"); }
-    else if has_conn     { score += 45; reasons.push("database connection string"); }
+    if has_private_key        { score += 90; reasons.push("private key"); }
+    if has_ssn                { score += 80; reasons.push("SSN"); }
+    if has_aws_key            { score += 80; reasons.push("AWS access key"); }
+    if has_aws_secret_assign  { score += 85; reasons.push("AWS secret key assignment"); }
+    if has_gh_pat             { score += 80; reasons.push("GitHub PAT"); }
+    if has_credit_card        { score += 80; reasons.push("credit card (Luhn valid)"); }
+    if has_ethereum           { score += 80; reasons.push("Ethereum key/address"); }
+    if has_conn_creds         { score += 90; reasons.push("DB connection with credentials"); }
+    else if has_conn          { score += 45; reasons.push("database connection string"); }
+    if has_slack_webhook      { score += 85; reasons.push("Slack incoming webhook"); }
+    if has_gcp_service_acct   { score += 85; reasons.push("GCP service account JSON"); }
+    if has_azure_storage      { score += 85; reasons.push("Azure Storage connection string"); }
+    if has_discord_token      { score += 80; reasons.push("Discord bot token"); }
+    if has_shopify_key        { score += 80; reasons.push("Shopify API key"); }
+    if has_pypi_token         { score += 80; reasons.push("PyPI upload token"); }
 
     // High (score 50-80)
     if has_stripe_key    { score += 70; reasons.push("Stripe API key"); }
     if has_slack_token   { score += 70; reasons.push("Slack token"); }
+    if has_do_token      { score += 70; reasons.push("DigitalOcean access token"); }
+    if has_linear_key    { score += 65; reasons.push("Linear API key"); }
+    if has_mapbox_token  { score += 65; reasons.push("Mapbox access token"); }
+    if has_pulumi_token  { score += 70; reasons.push("Pulumi access token"); }
+    if has_supabase_key  { score += 65; reasons.push("Supabase JWT/service key"); }
     if has_jwt           { score += 60; reasons.push("JWT token"); }
     if (has_openai_key || has_api_key_word) && entropy > 3.5 {
                            score += 55; reasons.push("high-entropy API key"); }
@@ -292,6 +484,20 @@ pub fn policy_preflight(text: &str) -> (u16, String, String) {
     if shell_hits >= 1     { score += 45; reasons.push("dangerous shell/SQL"); }
     if has_bulk_email      { score += 45; reasons.push("bulk email list"); }
     if has_insurance       { score += 50; reasons.push("insurance policy"); }
+
+    // AI Vibe-Code Safety (score 40-80)
+    if has_eval_exec           { score += 60; reasons.push("unsafe eval/exec"); }
+    if has_py_exec             { score += 55; reasons.push("dangerous Python exec/os.system"); }
+    if has_sql_injection_pattern { score += 70; reasons.push("SQL injection via string concat"); }
+    if has_hardcoded_creds     { score += 65; reasons.push("hardcoded credentials"); }
+    if has_insecure_deser      { score += 75; reasons.push("insecure deserialization"); }
+    if has_path_traversal      { score += 60; reasons.push("path traversal"); }
+    if has_insecure_random     { score += 55; reasons.push("Math.random for security token"); }
+    if has_disabled_tls        { score += 70; reasons.push("TLS verification disabled"); }
+    if has_cmd_injection       { score += 75; reasons.push("command injection via user input"); }
+    if has_proto_pollution     { score += 65; reasons.push("prototype pollution"); }
+    if has_ssrf_pattern        { score += 60; reasons.push("SSRF-prone fetch pattern"); }
+    if has_xss_pattern         { score += 65; reasons.push("XSS via innerHTML/user input"); }
 
     // Encoded / entropy
     if has_base64 && entropy > 4.5 { score += 30; reasons.push("encoded high-entropy data"); }

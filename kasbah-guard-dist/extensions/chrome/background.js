@@ -1,5 +1,7 @@
 // Kasbah Guard - Background Service Worker v2.0.0
 // 100% BROWSER INDEPENDENT — NO Guard service, NO server calls
+try { importScripts('src/zk_proof_verifier.js'); } catch (e) { console.warn('[background] zk_proof_verifier not loaded:', e); }
+try { importScripts('src/zk_proof_controller.js'); } catch (e) { console.warn('[background] zk_proof_controller not loaded:', e); }
 let badgeFlashTimeout = null;
 
 // ── Local Audit Ledger (Gap 1.3) ───────────────────────────────────────────
@@ -282,12 +284,12 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
 });
 
 /**
- * Generate compliance proof from detection (wrapper for popup.js logic)
- * Called from background service worker
+ * Generate compliance proof from detection using ZK proof controller
+ * Called from background service worker during detection event
  *
  * @param {Object} detection - Detection result from content.js
- * @param {Object} sender - Message sender info
- * @returns {Promise<Object>} Compliance proof
+ * @param {Object} sender - Message sender info (tab, url, frameId)
+ * @returns {Promise<Object>} Compliance proof with ZK verification
  */
 async function generateComplianceProofFromDetection(detection, sender) {
   try {
@@ -297,67 +299,35 @@ async function generateComplianceProofFromDetection(detection, sender) {
       return null;
     }
 
-    // Prepare detection data with content hash
-    const detectionData = {
-      ...detection,
-      content_hash: detection.content_hash || hashContent(detection.content || ''),
-      source: {
-        url: sender.url,
-        tabId: sender.tab?.id,
-        title: sender.tab?.title || 'Unknown'
-      }
-    };
+    // Use ZK proof controller to generate complete proof
+    if (typeof ZKProofController === 'undefined') {
+      console.error('[background.js] ZKProofController not available');
+      return null;
+    }
 
-    // Generate proof structure
-    const proof = {
-      id: `proof-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
+    // Generate complete ZK proof (Schnorr sigma protocol via ECDSA-P256)
+    const proof = await ZKProofController.generateProof(detection, sender);
 
-      // Layer 1: Quantum signature (if available from detector)
-      quantum: detection.quantumSignature || null,
+    // Store proof in chrome.storage.local (with audit trail)
+    const stored = await ZKProofController.storeProof(proof);
 
-      // Layer 2: ZK proof stub (full generation in popup.js)
-      zk: {
-        proofId: `zk-${Date.now()}`,
-        status: 'pending',
-        verified: false
-      },
+    if (!stored) {
+      console.warn('[background.js] Failed to store proof:', proof.id);
+      return null;
+    }
 
-      // Layer 3: Blockchain (to be filled in Task 3)
-      blockchain: null,
+    console.log('[background.js] ✅ Compliance proof generated & stored:', proof.id);
+    console.log('[background.js]    ZK verified:', proof.schnorr.verified);
+    console.log('[background.js]    Risk score:', proof.detection.risk_score);
+    console.log('[background.js]    Decision:', proof.detection.decision);
 
-      // Detection metadata
-      detection: {
-        verdict: detection.decision,
-        riskScore: detection.risk || 0,
-        contentHash: detectionData.content_hash,
-        platform: detection.platform || 'unknown',
-        reason: detection.reason || 'Detection flagged'
-      },
-
-      // Source information
-      source: detectionData.source,
-
-      // Compliance status
-      status: {
-        quantumSigned: detection.quantumSignature !== null && detection.quantumSignature !== undefined,
-        zkProofReady: false,
-        blockchainRegistered: false
-      }
-    };
-
-    // Store proof in chrome.storage.local
-    await new Promise((resolve) => {
-      chrome.storage.local.set({
-        [`proof-${proof.id}`]: proof
-      }, resolve);
-    });
-
-    console.log('[background.js] ✅ Compliance proof created:', proof.id);
     return proof;
 
   } catch (error) {
     console.error('[background.js] Proof generation error:', error);
+    sendSentryError('zk_proof_generation_failed', error.message, error.stack, {
+      detectionType: detection?.decision || 'unknown'
+    });
     return null;
   }
 }

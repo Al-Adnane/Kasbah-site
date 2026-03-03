@@ -53,6 +53,20 @@ const {
   detectObfuscation
 } = require('./moats/obfuscation-decoder');
 
+// ── Multi-Model AI Router (Anthropic, OpenAI, Gemini, Mistral, Groq, GLM-5) ──
+const {
+  routeIntentToMultiModel
+} = require('./multi-model-router');
+
+// ── Compliance Mapper (6 frameworks: SOC2, HIPAA, GDPR, PCI-DSS, CCPA, FERPA) ──
+const ComplianceMapper = require('./compliance-mapper');
+
+// ── Policy Engine (Org policy evaluation) ──
+const PolicyEngine = require('./policy-engine');
+
+// ── LLM Supply Chain Auditor (Model provenance tracking) ──
+const LLMSupplyChainAuditor = require('./llm_supply_chain_auditor');
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -1128,11 +1142,53 @@ async function handleValidateIntent(request, env) {
   let body;
   try { body = await request.json(); } catch { return err('Invalid JSON'); }
 
-  const { intent, policy_id = 'default', user_id, context } = body;
+  const { intent, policy_id = 'default', user_id, context, use_multimodel = false } = body;
   if (!intent || typeof intent !== 'string') return err('intent must be a non-empty string');
   if (intent.length > 32768) return err('intent exceeds maximum length of 32768 characters');
 
-  const result = _caiValidateIntentLocal(intent, policy_id);
+  // ── Phase 1: Local deterministic check ──
+  const localResult = _caiValidateIntentLocal(intent, policy_id);
+
+  // ── Phase 2: Ambiguity escalation (0.3–0.7) ──
+  // Route to multi-model consensus if:
+  // 1. Explicitly requested with use_multimodel=true, OR
+  // 2. Local result is ambiguous (risk_score 0.3–0.7)
+  let result = localResult;
+  const isAmbiguous = localResult.risk_score >= 0.3 && localResult.risk_score <= 0.7;
+  const shouldEscalate = use_multimodel || (isAmbiguous && (
+    env.ANTHROPIC_API_KEY || env.OPENAI_API_KEY || env.GEMINI_API_KEY ||
+    env.MISTRAL_API_KEY || env.GROQ_API_KEY || env.GLM5_API_KEY
+  ));
+
+  if (shouldEscalate) {
+    try {
+      const multiModelResult = await routeIntentToMultiModel(intent, env, {
+        timeout: 5000,
+        minConsensus: 2,
+        returnAll: false,
+      });
+
+      if (multiModelResult.ok && multiModelResult.consensus_count > 0) {
+        // Merge multi-model consensus with local result
+        result = {
+          ...localResult,
+          risk_score: multiModelResult.risk_score,
+          valid: multiModelResult.valid,
+          reasoning: multiModelResult.reasoning,
+          requires_approval: multiModelResult.requires_approval,
+          escalated_to_multimodel: true,
+          consensus_count: multiModelResult.consensus_count,
+          models_called: multiModelResult.models_called,
+          models_successful: multiModelResult.models_successful,
+          agreement_ratio: multiModelResult.agreement_ratio,
+          has_strong_consensus: multiModelResult.has_strong_consensus,
+        };
+      }
+    } catch (err) {
+      // Graceful degradation: use local result if multi-model fails
+      console.error('[validateIntent] Multi-model routing failed:', err.message);
+    }
+  }
 
   // AuthZ pipeline check (gated by AUTHZ_ENABLED)
   const authzResult = await authzCheck(payload.userId, 'validate-intent', 'intent', intent, request, env);
@@ -2540,35 +2596,33 @@ async function handleApplyPolicies(request, env) {
     return err('Invalid JSON');
   }
 
-  // Mock policy evaluation - in production, use PolicyEngine class
+  // Use PolicyEngine for policy evaluation
   const detection = body.detection;
   const org_id = body.org_id;
+  const orgPolicies = body.policies || {};
 
-  // Simulate policy application logic
-  let verdict = 'ALLOW';
-  const actions = [];
+  try {
+    const engine = new PolicyEngine();
+    engine.loadOrgPolicies(orgPolicies);
+    const decision = engine.applyPolicies(detection);
 
-  if (detection.risk_score >= 90) {
-    verdict = 'DENY';
-    actions.push('block_transmission');
-  } else if (detection.risk_score >= 70) {
-    verdict = 'BLOCK';
-    actions.push('flag_for_review');
-  } else if (detection.risk_score >= 40) {
-    verdict = 'WARN';
-    actions.push('notify_user');
+    return json({
+      ok: true,
+      decision: {
+        verdict: decision.verdict,
+        risk_score: decision.risk_score,
+        actions: decision.actions,
+        reason: decision.reason,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    return json({
+      ok: false,
+      error: 'Policy evaluation failed',
+      details: err.message,
+    }, 500);
   }
-
-  return json({
-    ok: true,
-    decision: {
-      verdict: verdict,
-      risk_score: detection.risk_score,
-      actions: actions,
-      reason: `Applied org policy thresholds for ${org_id}`,
-      timestamp: new Date().toISOString(),
-    },
-  });
 }
 
 async function handleComplianceMapping(request, env) {
@@ -2587,35 +2641,22 @@ async function handleComplianceMapping(request, env) {
 
   const detection = body.detection;
 
-  // Mock compliance mapping
-  const mapping = {
-    detection_id: detection.id,
-    timestamp: new Date().toISOString(),
-    risk_score: detection.risk_score,
-    compliance_frameworks: {
-      soc2: {
-        applicable_controls: detection.risk_score > 70 ? ['CC6.1', 'CC6.2'] : [],
-        audit_readiness: detection.risk_score > 70 ? 'requires_attention' : 'compliant',
-      },
-      hipaa: {
-        applicable_controls: detection.risk_score > 80 ? ['S_45_CFR_164_308_a_4'] : [],
-        requires_reporting: detection.risk_score > 80,
-      },
-      gdpr: {
-        applicable_articles: detection.risk_score > 80 ? ['article_32', 'article_33'] : [],
-        data_breach_notification_required: detection.risk_score > 85,
-      },
-      pci_dss: {
-        applicable_requirements: detection.pattern.includes('credit_card') ? ['3.2', '6.5.10'] : [],
-        assessment_impact: detection.pattern.includes('credit_card') ? 'failed' : 'passed',
-      },
-    },
-  };
+  try {
+    // Use ComplianceMapper for compliance mapping
+    const mapper = new ComplianceMapper();
+    const mapping = mapper.mapDetectionToCompliance(detection);
 
-  return json({
-    ok: true,
-    compliance_mapping: mapping,
-  });
+    return json({
+      ok: true,
+      compliance_mapping: mapping,
+    });
+  } catch (err) {
+    return json({
+      ok: false,
+      error: 'Compliance mapping failed',
+      details: err.message,
+    }, 500);
+  }
 }
 
 // ── Policy KV helpers ──

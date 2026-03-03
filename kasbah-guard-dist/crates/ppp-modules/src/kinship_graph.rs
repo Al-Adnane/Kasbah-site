@@ -1,4 +1,4 @@
-//! Module 3: Kinship Graph
+//! Module 3: Kinship Graph — EigenTrust Global Trust Computation
 //!
 //! Nature metaphor: Wolf packs, ant colonies, and primate troops all rely on
 //! kinship networks — trust is earned through shared experience, not just
@@ -9,6 +9,15 @@
 //! anomaly attestation, and federated access decisions. When a user's
 //! credentials are compromised, their kinship network can vouch for identity
 //! recovery. High-risk actions require trust-path confirmation.
+//!
+//! EigenTrust algorithm (Kamvar et al., 2003):
+//!   t_i = (1-α) × Σ_j [c_ji × t_j]  +  α × p_i
+//!
+//!   where c_ji = s_ji / Σ_k s_jk  (row-normalised trust)
+//!         α    = 0.15              (damping — weight given to pre-trusted set)
+//!         p_i  = 1/|pre-trusted|  if i is pre-trusted, else 0
+//!
+//! Converges via power iteration (||t^(k+1) - t^(k)||₁ < tol or max_iter).
 
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
@@ -259,6 +268,116 @@ impl KinshipGraph {
         self.adjacency.len()
     }
 
+    // ------------------------------------------------------------------
+    // EigenTrust — global trust scores via power iteration
+    // ------------------------------------------------------------------
+
+    /// Compute EigenTrust global trust scores for all users.
+    ///
+    /// Parameters:
+    ///   `pre_trusted` — set of user IDs with prior trust (p_i = 1/|pre_trusted|)
+    ///   `alpha`       — damping weight for pre-trusted set (0.0–1.0, default 0.15)
+    ///   `max_iter`    — maximum power iterations (default 100)
+    ///   `tol`         — convergence tolerance (default 1e-6)
+    ///
+    /// Returns a HashMap<user_id, trust_score> where scores sum to 1.0.
+    pub fn eigentrust(
+        &self,
+        pre_trusted: &[&str],
+        alpha: f32,
+        max_iter: usize,
+        tol: f32,
+    ) -> HashMap<String, f32> {
+        // Collect all user IDs in a stable order
+        let mut users: Vec<String> = self.adjacency.iter().map(|e| e.key().clone()).collect();
+        users.sort();
+        let n = users.len();
+        if n == 0 {
+            return HashMap::new();
+        }
+
+        // Index map for O(1) lookup
+        let idx: HashMap<String, usize> = users.iter().enumerate().map(|(i, u)| (u.clone(), i)).collect();
+
+        // Build row-normalised trust matrix C where C[j][i] = c_ji
+        // c_ji = s_ji / Σ_k s_jk  (how much j trusts i, normalised by j's total trust given)
+        let mut c_matrix: Vec<Vec<f32>> = vec![vec![0.0; n]; n];
+        for (j, user_j) in users.iter().enumerate() {
+            if let Some(edges) = self.adjacency.get(user_j) {
+                let positive_edges: Vec<&KinshipEdge> = edges.iter()
+                    .filter(|e| e.trust_score > 0.0)
+                    .collect();
+                let total: f32 = positive_edges.iter().map(|e| e.trust_score).sum();
+                if total > 0.0 {
+                    for edge in positive_edges {
+                        if let Some(&i) = idx.get(&edge.target_user_id) {
+                            c_matrix[j][i] = edge.trust_score / total;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Prior trust vector p: uniform over pre-trusted set
+        let pre_trusted_set: HashSet<&str> = pre_trusted.iter().copied().collect();
+        let pre_trusted_in_graph: Vec<usize> = users.iter().enumerate()
+            .filter(|(_, u)| pre_trusted_set.contains(u.as_str()))
+            .map(|(i, _)| i)
+            .collect();
+
+        let p_val = if pre_trusted_in_graph.is_empty() {
+            // No pre-trusted users → uniform prior
+            1.0 / n as f32
+        } else {
+            1.0 / pre_trusted_in_graph.len() as f32
+        };
+
+        let mut p: Vec<f32> = vec![0.0; n];
+        if pre_trusted_in_graph.is_empty() {
+            for pi in p.iter_mut() { *pi = 1.0 / n as f32; }
+        } else {
+            for &i in &pre_trusted_in_graph {
+                p[i] = p_val;
+            }
+        }
+
+        // Initialise trust vector t = p
+        let mut t: Vec<f32> = p.clone();
+
+        let alpha = alpha.clamp(0.0, 1.0);
+
+        // Power iteration: t^(k+1) = (1-α) × C^T × t^(k)  +  α × p
+        for _ in 0..max_iter.max(1) {
+            // Compute C^T × t: for each i, sum over j of c_matrix[j][i] * t[j]
+            let mut t_new: Vec<f32> = vec![0.0; n];
+            for j in 0..n {
+                for i in 0..n {
+                    t_new[i] += c_matrix[j][i] * t[j];
+                }
+            }
+
+            // t_new = (1-α) × t_new + α × p
+            for i in 0..n {
+                t_new[i] = (1.0 - alpha) * t_new[i] + alpha * p[i];
+            }
+
+            // Normalise so scores sum to 1
+            let sum: f32 = t_new.iter().sum();
+            if sum > 0.0 {
+                for ti in t_new.iter_mut() { *ti /= sum; }
+            }
+
+            // Check convergence: L1 norm of difference
+            let delta: f32 = t.iter().zip(t_new.iter()).map(|(a, b)| (a - b).abs()).sum();
+            t = t_new;
+            if delta < tol {
+                break;
+            }
+        }
+
+        users.into_iter().zip(t.into_iter()).collect()
+    }
+
     /// Serialize the entire graph to a JSON adjacency list for inspection.
     pub fn export_graph(&self) -> serde_json::Value {
         let adj: HashMap<String, Vec<serde_json::Value>> = self
@@ -382,5 +501,51 @@ mod tests {
         let pt = g.propagate_trust("alice");
         // Mutual upgrade may change type but not score; average = (0.8+0.4)/2 = 0.6
         assert!((pt - 0.6).abs() < 0.01, "expected ~0.6, got {}", pt);
+    }
+
+    // ── EigenTrust tests ──────────────────────────────────────────────────────
+
+    #[test]
+    fn test_eigentrust_scores_sum_to_one() {
+        let g = KinshipGraph::new();
+        g.add_edge("alice", "bob", 0.9, KinshipType::Vouched);
+        g.add_edge("bob", "carol", 0.8, KinshipType::Collaborated);
+        g.add_edge("carol", "alice", 0.7, KinshipType::Vouched);
+        let scores = g.eigentrust(&["alice"], 0.15, 100, 1e-6);
+        let sum: f32 = scores.values().sum();
+        assert!((sum - 1.0).abs() < 0.01, "EigenTrust scores must sum to 1, got {}", sum);
+    }
+
+    #[test]
+    fn test_eigentrust_pre_trusted_gets_higher_score() {
+        let g = KinshipGraph::new();
+        // alice → bob → carol chain; alice is pre-trusted
+        g.add_edge("alice", "bob", 0.9, KinshipType::Vouched);
+        g.add_edge("bob", "carol", 0.5, KinshipType::Collaborated);
+        let scores = g.eigentrust(&["alice"], 0.15, 100, 1e-6);
+        // alice is pre-trusted so she should have higher score than carol
+        let alice_score = scores.get("alice").copied().unwrap_or(0.0);
+        let carol_score = scores.get("carol").copied().unwrap_or(0.0);
+        assert!(alice_score >= carol_score,
+            "pre-trusted alice ({}) should score >= carol ({})", alice_score, carol_score);
+    }
+
+    #[test]
+    fn test_eigentrust_empty_graph() {
+        let g = KinshipGraph::new();
+        let scores = g.eigentrust(&[], 0.15, 100, 1e-6);
+        assert!(scores.is_empty());
+    }
+
+    #[test]
+    fn test_eigentrust_all_scores_non_negative() {
+        let g = KinshipGraph::new();
+        g.add_edge("a", "b", 0.8, KinshipType::Vouched);
+        g.add_edge("b", "c", 0.6, KinshipType::Collaborated);
+        g.add_edge("a", "c", 0.0, KinshipType::Reported);
+        let scores = g.eigentrust(&["a"], 0.15, 100, 1e-6);
+        for (user, score) in &scores {
+            assert!(*score >= 0.0, "score for {} must be non-negative: {}", user, score);
+        }
     }
 }

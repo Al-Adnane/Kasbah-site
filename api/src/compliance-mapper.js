@@ -494,4 +494,4 @@ class ComplianceMapper {
   }
 }
 
-module.exports = { ComplianceMapper };
+module.exports = ComplianceMapper;

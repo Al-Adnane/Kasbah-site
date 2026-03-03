@@ -1,14 +1,18 @@
-//! Module 7: Adaptive Immune Response
+//! Module 7: Adaptive Immune Response — CLONALG (Clonal Selection Algorithm)
 //!
 //! Nature metaphor: The vertebrate immune system has two layers — innate
 //! (immediate, non-specific) and adaptive (learned, antigen-specific). On first
 //! exposure to a pathogen the adaptive response is slow. On re-exposure, memory
 //! B-cells recognise the antigen instantly and mount a rapid, amplified defence.
 //!
-//! Security application: Pattern-based threat memory. The system starts naive
-//! (no knowledge). As attack patterns are exposed, it builds "immunological
-//! memory". Re-exposure triggers instant recognition with amplified blocking
-//! strength proportional to severity and exposure count.
+//! Security application: Pattern-based threat memory using CLONALG.
+//! The system starts naive (no knowledge). As attack patterns are exposed, it
+//! builds "immunological memory" via clonal selection + affinity maturation.
+//!
+//! CLONALG steps:
+//!   1. Clone generation  — N clones proportional to affinity (response_strength)
+//!   2. Hypermutation     — mutate clones with rate ∝ 1/affinity (low fitness → more mutation)
+//!   3. Affinity maturation — keep the clone with the highest post-mutation affinity
 
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
@@ -188,6 +192,140 @@ impl Default for ImmuneResponse {
 }
 
 // ---------------------------------------------------------------------------
+// CLONALG — Clonal Selection Algorithm
+// ---------------------------------------------------------------------------
+
+/// A single candidate antibody in the clonal population.
+/// Represented as a severity bias used to specialise pattern recognition.
+#[derive(Debug, Clone)]
+pub struct Antibody {
+    /// Severity bias in [0.0, 1.0] — the antibody's "shape" in solution space.
+    pub severity_bias: f32,
+    /// Affinity of this antibody against the current antigen.
+    pub affinity: f32,
+}
+
+impl Antibody {
+    fn new(severity_bias: f32, affinity: f32) -> Self {
+        Self { severity_bias, affinity }
+    }
+}
+
+/// Result of one CLONALG iteration.
+#[derive(Debug)]
+pub struct ClonalSelectionResult {
+    /// The matured antibody (best clone after hypermutation).
+    pub best_antibody: Antibody,
+    /// Number of clones generated in this round.
+    pub clone_count: usize,
+    /// Hypermutation rate applied (lower = high-affinity antibody, barely mutated).
+    pub mutation_rate: f32,
+}
+
+impl ImmuneResponse {
+    // ------------------------------------------------------------------
+    // CLONALG operations
+    // ------------------------------------------------------------------
+
+    /// Run one round of clonal selection for `pattern` with initial `severity`.
+    ///
+    /// Algorithm:
+    ///   1. Compute current affinity from memory (or 0 if naive).
+    ///   2. Clone count N = round(beta * pop_size) where beta = 1 / (1 + affinity).
+    ///      Higher affinity → fewer but more targeted clones.
+    ///   3. Hypermutate each clone: mutation rate ρ = exp(-affinity).
+    ///      High affinity → small perturbation (exploit). Low affinity → large jump (explore).
+    ///   4. Evaluate affinity of all clones; select the best.
+    ///   5. Build memory with the best clone's severity_bias.
+    ///
+    /// Returns the matured antibody and stats.
+    pub fn clonal_select(
+        &self,
+        pattern: &str,
+        severity: f32,
+        pop_size: usize,
+        beta: f32,
+    ) -> ClonalSelectionResult {
+        let severity = severity.clamp(0.0, 1.0);
+        let pop_size = pop_size.max(1);
+        let beta = beta.clamp(0.1, 5.0);
+
+        // Step 1: current affinity
+        let current_affinity = self.response_strength(pattern);
+
+        // Step 2: clone count — inversely proportional to affinity
+        // High affinity → fewer clones (already well-recognised)
+        // Low affinity  → many clones (explore the space)
+        let n_clones = ((beta * pop_size as f32) / (1.0 + current_affinity))
+            .round()
+            .clamp(1.0, pop_size as f32) as usize;
+
+        // Step 3: hypermutation rate — ρ = exp(-affinity)
+        // High affinity → ρ → 0 (exploit: barely mutate the good antibody)
+        // Low affinity  → ρ → 1 (explore: large perturbation)
+        let mutation_rate = (-current_affinity).exp().clamp(0.01, 1.0);
+
+        // Generate clones as severity_bias variants around `severity`
+        let mut clones: Vec<Antibody> = (0..n_clones)
+            .map(|i| {
+                // Deterministic perturbation based on clone index and mutation_rate
+                // Using linear spacing so no external RNG dependency is needed
+                let delta = mutation_rate * (i as f32 / n_clones.max(1) as f32 - 0.5) * 2.0;
+                let candidate_bias = (severity + delta).clamp(0.0, 1.0);
+                // Affinity = tanh(exposure * candidate_bias) — same formula as response_strength
+                let key = hash_pattern(pattern);
+                let exposure = self.antigens.get(&key)
+                    .map(|r| r.exposure_count as f32)
+                    .unwrap_or(0.0);
+                let affinity = ((exposure + 1.0) * candidate_bias).tanh().clamp(0.0, 1.0);
+                Antibody::new(candidate_bias, affinity)
+            })
+            .collect();
+
+        // Step 4: affinity maturation — select best clone
+        clones.sort_by(|a, b| b.affinity.partial_cmp(&a.affinity).unwrap_or(std::cmp::Ordering::Equal));
+        let best = clones.into_iter().next().unwrap_or_else(|| Antibody::new(severity, 0.0));
+
+        // Step 5: reinforce memory with matured severity_bias
+        self.build_memory(pattern, best.severity_bias);
+
+        ClonalSelectionResult {
+            best_antibody: best,
+            clone_count: n_clones,
+            mutation_rate,
+        }
+    }
+
+    /// Run multiple CLONALG rounds until affinity converges (delta < tol) or max_iter reached.
+    ///
+    /// Returns the final best antibody after convergence.
+    pub fn clonal_select_until_convergence(
+        &self,
+        pattern: &str,
+        severity: f32,
+        pop_size: usize,
+        beta: f32,
+        max_iter: usize,
+        tol: f32,
+    ) -> Antibody {
+        let mut prev_affinity = self.response_strength(pattern);
+        let mut best = Antibody::new(severity, prev_affinity);
+
+        for _ in 0..max_iter.max(1) {
+            let result = self.clonal_select(pattern, severity, pop_size, beta);
+            let new_affinity = result.best_antibody.affinity;
+            if (new_affinity - prev_affinity).abs() < tol {
+                return result.best_antibody;
+            }
+            best = result.best_antibody;
+            prev_affinity = new_affinity;
+        }
+
+        best
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -260,5 +398,45 @@ mod tests {
     fn test_response_strength_zero_for_unknown() {
         let ir = ImmuneResponse::new();
         assert_eq!(ir.response_strength("never-seen"), 0.0);
+    }
+
+    // ── CLONALG tests ──────────────────────────────────────────────────────
+
+    #[test]
+    fn test_clonal_select_increases_affinity() {
+        let ir = ImmuneResponse::new();
+        let r1 = ir.clonal_select("sql-injection", 0.8, 10, 1.5);
+        let r2 = ir.clonal_select("sql-injection", 0.8, 10, 1.5);
+        // Each round reinforces memory; second affinity should be >= first
+        assert!(r2.best_antibody.affinity >= r1.best_antibody.affinity);
+    }
+
+    #[test]
+    fn test_clonal_select_clone_count_decreases_with_affinity() {
+        let ir = ImmuneResponse::new();
+        // Build strong memory first
+        for _ in 0..20 {
+            ir.build_memory("known-attack", 0.9);
+        }
+        // Clone count should be lower for high-affinity pattern
+        let high_affinity_result = ir.clonal_select("known-attack", 0.9, 20, 1.5);
+        let low_affinity_result = ir.clonal_select("new-attack-xyz", 0.9, 20, 1.5);
+        assert!(high_affinity_result.clone_count <= low_affinity_result.clone_count);
+    }
+
+    #[test]
+    fn test_clonal_select_until_convergence() {
+        let ir = ImmuneResponse::new();
+        let best = ir.clonal_select_until_convergence("converge-test", 0.7, 10, 1.5, 50, 0.001);
+        assert!(best.affinity > 0.0);
+        assert!(best.severity_bias >= 0.0 && best.severity_bias <= 1.0);
+    }
+
+    #[test]
+    fn test_mutation_rate_high_for_naive_pattern() {
+        let ir = ImmuneResponse::new();
+        let result = ir.clonal_select("never-seen-pattern", 0.5, 10, 1.5);
+        // Naive pattern → low affinity → mutation_rate ≈ exp(0) = 1.0
+        assert!(result.mutation_rate > 0.5, "naive pattern should have high mutation rate");
     }
 }

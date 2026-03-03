@@ -403,4 +403,4 @@ class PolicyEngine {
   }
 }
 
-module.exports = { PolicyEngine };
+module.exports = PolicyEngine;

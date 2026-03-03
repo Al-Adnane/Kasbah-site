@@ -1,78 +1,270 @@
 /**
- * Kasbah Guard: Zero-Knowledge Proof Verifier v1.0.0
+ * Kasbah Guard: Schnorr Sigma Protocol ZK Proof — SubtleCrypto ECDSA-P256
  *
- * Implements zk-SNARK verification for non-repudiation:
- * - Prover: "I detected deepfake without revealing content"
- * - Verifier: "I can verify this detection is valid"
+ * Implements a Schnorr-style sigma protocol (proof of knowledge of signing key)
+ * using the browser's native SubtleCrypto API (ECDSA P-256).
  *
- * Circuit: Detect(content) -> commit(hash) -> proof
- * Verification: verify(proof, public_hash) -> True/False
+ * Protocol (3-move):
+ *   1. Prover generates ephemeral keypair (r, R=r·G), sends commitment R
+ *   2. Verifier issues challenge c = SHA-256(R || message)
+ *   3. Prover responds with signature s = ECDSA_sign(privateKey, c)
+ *   4. Verifier checks: ECDSA_verify(publicKey, c, s) — validates knowledge of key
+ *
+ * Properties:
+ *   - Completeness: honest prover always passes verification
+ *   - Soundness: forging a valid (R, c, s) without the private key is infeasible
+ *   - Zero-knowledge: verifier learns nothing about privateKey from (R, c, s)
+ *
+ * NOTE: SubtleCrypto is async — all proof operations return Promises.
  */
 
-const crypto = require('crypto');
+// ─────────────────────────────────────────────────────────────────────────────
+// Utilities
+// ─────────────────────────────────────────────────────────────────────────────
+
+function _bufToHex(buf) {
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function _hexToBuf(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return bytes.buffer;
+}
+
+function _strToBuf(str) {
+  return new TextEncoder().encode(str).buffer;
+}
+
+async function _sha256Hex(data) {
+  const buf = await crypto.subtle.digest('SHA-256', typeof data === 'string' ? _strToBuf(data) : data);
+  return _bufToHex(buf);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Schnorr Sigma Protocol via SubtleCrypto ECDSA-P256
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * ZK Proof structure
- * Represents a zero-knowledge proof of deepfake detection
+ * Generate an ECDSA P-256 keypair for use as the prover's identity key.
+ *
+ * @returns {Promise<{publicKeyHex: string, privateKey: CryptoKey}>}
  */
+async function generateProverKey() {
+  const keyPair = await crypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    true,   // extractable — needed to export public key bytes
+    ['sign', 'verify']
+  );
+
+  // Export public key as SPKI → hex for transport/storage
+  const pubBuf = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+  return {
+    publicKeyHex: _bufToHex(pubBuf),
+    privateKey: keyPair.privateKey,
+    publicKey: keyPair.publicKey,
+  };
+}
+
+/**
+ * Prover step: create a Schnorr commitment.
+ *
+ * Generates an ephemeral keypair (r, R=r·G).
+ * Returns commitment R as hex (the ephemeral public key bytes).
+ *
+ * @returns {Promise<{commitmentHex: string, ephemeralPrivateKey: CryptoKey}>}
+ */
+async function proverCommit() {
+  const ephemeral = await crypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,  // non-extractable private key — never leaves the key object
+    ['sign']
+  );
+
+  // Export the ephemeral *public* key as raw bytes (commitment R)
+  const rawPub = await crypto.subtle.exportKey('spki', ephemeral.publicKey);
+  return {
+    commitmentHex: _bufToHex(rawPub),
+    ephemeralPrivateKey: ephemeral.privateKey,
+  };
+}
+
+/**
+ * Verifier step: compute challenge c = SHA-256(commitment || message).
+ *
+ * @param {string} commitmentHex  Prover's commitment R (hex)
+ * @param {string} message        The message being proven (e.g., detection hash)
+ * @returns {Promise<string>}     Challenge hex string
+ */
+async function verifierChallenge(commitmentHex, message) {
+  const combined = commitmentHex + ':' + message;
+  return _sha256Hex(_strToBuf(combined));
+}
+
+/**
+ * Prover step: respond to challenge.
+ *
+ * Signs the challenge with the IDENTITY private key to prove knowledge.
+ * (The ephemeral key binds R to this specific protocol run; identity key proves who.)
+ *
+ * @param {CryptoKey}  identityPrivateKey  The prover's long-term identity key
+ * @param {string}     challengeHex        The verifier's challenge
+ * @returns {Promise<string>}              Response (signature) as hex
+ */
+async function proverRespond(identityPrivateKey, challengeHex) {
+  const sig = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: { name: 'SHA-256' } },
+    identityPrivateKey,
+    _hexToBuf(challengeHex)
+  );
+  return _bufToHex(sig);
+}
+
+/**
+ * Verifier step: verify the proof.
+ *
+ * Checks that the response (signature) was produced by the identity key
+ * whose public key was previously registered, against the challenge.
+ *
+ * @param {string} publicKeyHex   The prover's identity public key (SPKI hex)
+ * @param {string} challengeHex  The challenge
+ * @param {string} responseHex   The prover's response (signature)
+ * @returns {Promise<boolean>}    True if the proof is valid
+ */
+async function verifierVerify(publicKeyHex, challengeHex, responseHex) {
+  try {
+    const publicKey = await crypto.subtle.importKey(
+      'spki',
+      _hexToBuf(publicKeyHex),
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      false,
+      ['verify']
+    );
+
+    return crypto.subtle.verify(
+      { name: 'ECDSA', hash: { name: 'SHA-256' } },
+      publicKey,
+      _hexToBuf(responseHex),
+      _hexToBuf(challengeHex)
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// High-level API: create and verify a compliance proof
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Create a Schnorr ZK compliance proof for a detection result.
+ *
+ * The proof asserts: "I hold the private key corresponding to publicKeyHex
+ * and I sign a commitment to this detection hash" — without revealing the key.
+ *
+ * @param {Object} detection   Detection result {decision, risk, content_hash, platform}
+ * @param {Object} proverKey   From generateProverKey() — {publicKeyHex, privateKey}
+ * @returns {Promise<Object>}  Proof object safe to store/transmit
+ */
+async function createComplianceProof(detection, proverKey) {
+  const message = JSON.stringify({
+    decision: detection.decision || detection.verdict,
+    risk: detection.risk || detection.riskScore || 0,
+    content_hash: detection.content_hash || detection.contentHash || '',
+    platform: detection.platform || 'unknown',
+  });
+
+  // Step 1: Prover commits
+  const { commitmentHex, ephemeralPrivateKey } = await proverCommit();
+
+  // Step 2: Challenge (computed locally — non-interactive via Fiat-Shamir heuristic)
+  const challengeHex = await verifierChallenge(commitmentHex, message);
+
+  // Step 3: Prover responds with identity key
+  const responseHex = await proverRespond(proverKey.privateKey, challengeHex);
+
+  return {
+    proofId: `zk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: Date.now(),
+    protocol: 'schnorr-sigma-ecdsa-p256',
+    message,
+    commitment: commitmentHex,
+    challenge: challengeHex,
+    response: responseHex,
+    publicKey: proverKey.publicKeyHex,
+    verified: false, // will be set to true after verify() call
+  };
+}
+
+/**
+ * Verify a compliance proof.
+ *
+ * @param {Object} proof   Proof object from createComplianceProof()
+ * @returns {Promise<boolean>}
+ */
+async function verifyComplianceProof(proof) {
+  if (!proof || !proof.publicKey || !proof.challenge || !proof.response) {
+    return false;
+  }
+
+  // Re-derive the challenge from commitment + message to guard against tampering
+  const expectedChallenge = await verifierChallenge(proof.commitment, proof.message);
+  if (expectedChallenge !== proof.challenge) {
+    return false; // commitment or message was tampered
+  }
+
+  return verifierVerify(proof.publicKey, proof.challenge, proof.response);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ZKProof compatibility wrapper (maintains interface for background.js callers)
+// ─────────────────────────────────────────────────────────────────────────────
+
 class ZKProof {
   constructor(proofId, contentHash, verdict, riskScore) {
     this.proofId = proofId;
-    this.contentHash = contentHash; // SHA-256 hash of content
-    this.verdict = verdict; // 'DEEPFAKE' or 'AUTHENTIC'
-    this.riskScore = riskScore; // 0-100
+    this.contentHash = contentHash;
+    this.verdict = verdict;
+    this.riskScore = riskScore;
     this.timestamp = Date.now();
-
-    // ZK proof components (simplified)
-    this.commitment = null; // Pedersen commitment
-    this.challenge = null; // Random challenge from verifier
-    this.response = null; // Prover's response
+    this.commitment = null;
+    this.challenge = null;
+    this.response = null;
+    this.publicKey = null;
     this.verified = false;
+    this._protocol = 'schnorr-sigma-ecdsa-p256';
   }
 
   /**
-   * Generate ZK proof without revealing content
-   * Circuit: DetectionCircuit
+   * Generate proof asynchronously using Schnorr sigma protocol.
+   * @returns {Promise<Object>} Proof components
    */
-  generateProof(secretKey) {
-    // Step 1: Commit to content hash (Pedersen commitment)
-    this.commitment = this.pedersenCommit(this.contentHash, secretKey);
-
-    // Step 2: Verifier issues random challenge
-    this.challenge = this.generateChallenge();
-
-    // Step 3: Prover responds (without revealing content)
-    this.response = this.computeResponse(secretKey, this.challenge);
-
-    return {
-      proofId: this.proofId,
-      commitment: this.commitment,
-      challenge: this.challenge,
-      response: this.response,
-      verdict: this.verdict,
-      timestamp: this.timestamp,
-    };
+  async generateProof() {
+    const proverKey = await generateProverKey();
+    const detection = { decision: this.verdict, risk: this.riskScore, content_hash: this.contentHash, platform: 'extension' };
+    const proof = await createComplianceProof(detection, proverKey);
+    this.commitment = proof.commitment;
+    this.challenge = proof.challenge;
+    this.response = proof.response;
+    this.publicKey = proof.publicKey;
+    return { proofId: this.proofId, commitment: this.commitment, challenge: this.challenge, response: this.response, verdict: this.verdict, timestamp: this.timestamp };
   }
 
   /**
-   * Verify ZK proof (verifier-side)
-   * No content needed, only commitment + proof
+   * Verify this proof using Schnorr verification.
+   * @returns {Promise<boolean>}
    */
-  verify() {
-    if (!this.commitment || !this.challenge || !this.response) {
+  async verify() {
+    if (!this.commitment || !this.challenge || !this.response || !this.publicKey) {
       return false;
     }
-
-    // Verify proof equation: response = hash(commitment + challenge + secret)
-    const expectedResponse = this.verifyProofEquation();
-    this.verified = this.response === expectedResponse;
-
-    return this.verified;
+    const result = await verifierVerify(this.publicKey, this.challenge, this.response);
+    this.verified = result;
+    return result;
   }
 
-  /**
-   * Export proof for blockchain/audit trail
-   */
   exportProof() {
     return {
       proofId: this.proofId,
@@ -83,246 +275,25 @@ class ZKProof {
       commitment: this.commitment,
       challenge: this.challenge,
       response: this.response,
+      publicKey: this.publicKey,
       verified: this.verified,
-      signature: this.createProofSignature(),
-    };
-  }
-
-  // ─────────────────────────────────────────────────────
-  // Internal ZK Circuit Implementation
-  // ─────────────────────────────────────────────────────
-
-  /**
-   * Pedersen Commitment
-   * Commit to hash without revealing it
-   * commit = g^hash + h^randomness
-   */
-  pedersenCommit(hash, randomness) {
-    // Simplified: hash-based commitment
-    const hashBuffer = Buffer.from(hash, 'hex');
-    const randomBuffer = Buffer.from(randomness, 'hex');
-
-    // Combine with constants (g, h in group)
-    const combined = Buffer.concat([
-      Buffer.from('PEDERSEN_G'),
-      hashBuffer,
-      Buffer.from('PEDERSEN_H'),
-      randomBuffer,
-    ]);
-
-    const commitment = crypto
-      .createHash('sha256')
-      .update(combined)
-      .digest('hex');
-
-    return commitment;
-  }
-
-  /**
-   * Verifier issues random challenge
-   */
-  generateChallenge() {
-    return crypto.randomBytes(32).toString('hex');
-  }
-
-  /**
-   * Prover computes response
-   * response = hash(commitment || challenge || secret)
-   */
-  computeResponse(secret, challenge) {
-    const combined = Buffer.concat([
-      Buffer.from(this.commitment, 'hex'),
-      Buffer.from(challenge, 'hex'),
-      Buffer.from(secret, 'hex'),
-    ]);
-
-    return crypto
-      .createHash('sha256')
-      .update(combined)
-      .digest('hex');
-  }
-
-  /**
-   * Verify proof equation on verifier side
-   * (No secret knowledge required)
-   */
-  verifyProofEquation() {
-    // In actual zk-SNARK, this would verify pairing
-    // Here: simplified verification of commitment
-    const combined = Buffer.concat([
-      Buffer.from(this.commitment, 'hex'),
-      Buffer.from(this.challenge, 'hex'),
-      // Note: we DON'T have secret on verifier side
-      // This is why it's zero-knowledge
-    ]);
-
-    // Verify that response is consistent with commitment + challenge
-    const verifyHash = crypto
-      .createHash('sha256')
-      .update(combined)
-      .digest('hex');
-
-    // In practice, the verifier checks pairing equations
-    // For this demo, we accept if commitment was properly formed
-    return this.computeResponse(crypto.randomBytes(32).toString('hex'), this.challenge);
-  }
-
-  /**
-   * Create digital signature of proof (for audit trail)
-   */
-  createProofSignature() {
-    const proofData = JSON.stringify({
-      proofId: this.proofId,
-      commitment: this.commitment,
-      challenge: this.challenge,
-      response: this.response,
-      verdict: this.verdict,
-      timestamp: this.timestamp,
-    });
-
-    // Sign with HMAC (would be RSA in production)
-    const signature = crypto
-      .createHmac('sha256', 'kasbah-zk-key')
-      .update(proofData)
-      .digest('hex');
-
-    return signature;
-  }
-}
-
-/**
- * Batch ZK Proof Verifier
- * Verifies multiple proofs efficiently
- */
-class ZKProofBatchVerifier {
-  constructor() {
-    this.proofs = new Map(); // Map<proofId, ZKProof>
-    this.verificationResults = new Map();
-  }
-
-  /**
-   * Add proof to batch
-   */
-  addProof(zkProof) {
-    this.proofs.set(zkProof.proofId, zkProof);
-  }
-
-  /**
-   * Verify all proofs in batch
-   */
-  verifyBatch() {
-    const results = {
-      totalProofs: this.proofs.size,
-      verifiedProofs: 0,
-      failedProofs: 0,
-      verifications: [],
-    };
-
-    for (const [proofId, proof] of this.proofs) {
-      const verified = proof.verify();
-      results.verifications.push({
-        proofId,
-        verdict: proof.verdict,
-        verified,
-        timestamp: proof.timestamp,
-      });
-
-      if (verified) {
-        results.verifiedProofs++;
-      } else {
-        results.failedProofs++;
-      }
-
-      this.verificationResults.set(proofId, verified);
-    }
-
-    return results;
-  }
-
-  /**
-   * Generate batch proof certificate
-   * (for compliance/audit)
-   */
-  generateBatchCertificate() {
-    const certHash = crypto
-      .createHash('sha256')
-      .update(
-        JSON.stringify(
-          Array.from(this.verificationResults.entries()).sort()
-        )
-      )
-      .digest('hex');
-
-    return {
-      batchCertificate: certHash,
-      proofCount: this.proofs.size,
-      verifiedCount: Array.from(this.verificationResults.values()).filter(
-        (v) => v
-      ).length,
-      timestamp: Date.now(),
-      signature: crypto
-        .createHmac('sha256', 'kasbah-batch-cert-key')
-        .update(certHash)
-        .digest('hex'),
+      protocol: this._protocol,
     };
   }
 }
 
-/**
- * ZK Proof for Audit Compliance
- * Proves detection happened without revealing content
- */
-function createComplianceProof(detection) {
-  const contentHash = crypto
-    .createHash('sha256')
-    .update(JSON.stringify(detection))
-    .digest('hex');
-
-  const proof = new ZKProof(
-    `proof-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    contentHash,
-    detection.verdict,
-    detection.riskScore
-  );
-
-  const secretKey = crypto.randomBytes(32).toString('hex');
-  proof.generateProof(secretKey);
-  proof.verify();
-
-  return proof.exportProof();
-}
-
-/**
- * Verify compliance proof (for auditors)
- */
-function verifyComplianceProof(proofData) {
-  const proof = new ZKProof(
-    proofData.proofId,
-    proofData.contentHash,
-    proofData.verdict,
-    proofData.riskScore
-  );
-
-  proof.commitment = proofData.commitment;
-  proof.challenge = proofData.challenge;
-  proof.response = proofData.response;
-
-  return {
-    proofId: proofData.proofId,
-    verified: proof.verify(),
-    verdict: proofData.verdict,
-    timestamp: proofData.timestamp,
-  };
-}
-
-// ─────────────────────────────────────────────────────
-// Export for use in extension
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Export
+// ─────────────────────────────────────────────────────────────────────────────
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     ZKProof,
-    ZKProofBatchVerifier,
+    generateProverKey,
+    proverCommit,
+    verifierChallenge,
+    proverRespond,
+    verifierVerify,
     createComplianceProof,
     verifyComplianceProof,
   };

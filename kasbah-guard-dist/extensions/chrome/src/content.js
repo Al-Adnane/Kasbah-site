@@ -458,13 +458,23 @@
     _lock(BroadcastChannel.prototype, "postMessage", _hBCPost);
   }
 
-  // 14b: SharedWorker — intercept constructor to log, message events scanned
+  // 14b: SharedWorker — intercept constructor URL + port.postMessage data
   if (typeof SharedWorker !== "undefined") {
     const _origSW = SharedWorker;
     const _hSW = function(url, opts) {
       const s = _s(url);
       if (scanUrl(s)) { block("SharedWorker:url"); return new _origSW("about:blank"); }
-      return new _origSW(url, opts);
+      const worker = new _origSW(url, opts);
+      // Also intercept messages sent through the MessagePort
+      if (worker.port && worker.port.postMessage) {
+        const _origPortPM = worker.port.postMessage.bind(worker.port);
+        worker.port.postMessage = function(msg, transfer) {
+          const ms = typeof msg === "string" ? msg : (msg ? JSON.stringify(msg) : "");
+          if (ms.length > 0 && _isDeny(ms)) { block("SharedWorker:port.postMessage"); return; }
+          return _origPortPM(msg, transfer);
+        };
+      }
+      return worker;
     };
     _hSW.prototype = _origSW.prototype;
     try { _lock(window, "SharedWorker", _hSW); } catch(e) {}
@@ -474,7 +484,15 @@
   if (typeof RTCPeerConnection !== "undefined" && typeof RTCDataChannel !== "undefined") {
     const _origRTCSend = RTCDataChannel.prototype.send;
     const _hRTCSend = function(data) {
-      const s = typeof data === "string" ? data : "";
+      let s = "";
+      if (typeof data === "string") {
+        s = data;
+      } else if (data instanceof ArrayBuffer) {
+        // Convert binary to hex string for pattern scanning
+        s = Array.from(new Uint8Array(data)).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
+      } else if (ArrayBuffer.isView(data)) {
+        s = Array.from(new Uint8Array(data.buffer, data.byteOffset, data.byteLength)).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
+      }
       if (s.length > 0 && _isDeny(s)) { block("RTCDataChannel"); return; }
       return _origRTCSend.call(this, data);
     };
@@ -487,7 +505,7 @@
     get: function() { return _origName; },
     set: function(v) {
       const s = _s(v);
-      if (s.length > 200 && _isDeny(s)) { block("window.name"); return; }
+      if (s.length > 20 && _isDeny(s)) { block("window.name"); return; }
       _origName = v;
     },
     configurable: false,
@@ -516,7 +534,24 @@
     try { _lock(URL, "createObjectURL", _hCreateURL); } catch(e) {}
   }
 
-  console.log("[Kasbah Guard] 18-moat egress gate active ✓ (fetch · XHR · beacon · WS · form · ws:url · window.open · src-MO · b64 · fallback · frozen · self-heal · local · BroadcastChannel · SharedWorker · RTCDataChannel · window.name · BlobURL)");
+  // 14f: Blob constructor — intercept data at creation time (before URL wrapping)
+  if (typeof Blob !== "undefined") {
+    const _origBlob = Blob;
+    const _hBlob = function(parts, opts) {
+      if (Array.isArray(parts)) {
+        for (let i = 0; i < parts.length; i++) {
+          const p = parts[i];
+          const s = typeof p === "string" ? p : (p instanceof ArrayBuffer ? Array.from(new Uint8Array(p)).map(function(b){return b.toString(16).padStart(2,"0");}).join("") : "");
+          if (s.length > 20 && _isDeny(s)) { block("Blob:constructor"); return new _origBlob([""], opts); }
+        }
+      }
+      return new _origBlob(parts, opts);
+    };
+    _hBlob.prototype = _origBlob.prototype;
+    try { _lock(window, "Blob", _hBlob); } catch(e) {}
+  }
+
+  console.log("[Kasbah Guard] 19-moat egress gate active ✓ (fetch · XHR · beacon · WS · form · ws:url · window.open · src-MO · b64 · fallback · frozen · self-heal · local · BroadcastChannel · SharedWorker · RTCDataChannel · window.name · BlobURL · BlobConstructor)");
 })();
 
 /**
@@ -1282,7 +1317,7 @@
             localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
           } catch(e) {}
           if (onBlockCb) onBlockCb();
-          try { chrome.runtime.sendMessage({ type: 'BLOCK_EVENT', verb: verb }); } catch(e) {}
+          try { chrome.runtime.sendMessage({ type: 'BLOCK_EVENT', verb: verb, decision: res.decision, risk: res.risk, reason: res.reason, proof: res.proof || null }); } catch(e) {}
         },
       });
       return;
@@ -1784,13 +1819,27 @@
   );
 
   // ═══════════════════════════════════════════════════
-  // VERB 4: BROWSE — Detect URLs in composer before send
-  // (Integrated into SEND flow above via extractUrls)
-  // Also detect when user types/pastes URLs into the input
+  // VERB 4: BROWSE — history.pushState / replaceState interception
+  // Detects SPA navigation to suspicious URLs (data: / blob: / exfil patterns)
   // ═══════════════════════════════════════════════════
-  // Browse detection is integrated into the SEND and PASTE flows above.
-  // URLs are extracted and included in the /decide payload as meta.urls.
-  // The guard service logs these as verb:"send" with URL metadata.
+  (function() {
+    var _patchHistoryMethod = function(method) {
+      var _orig = history[method];
+      if (typeof _orig !== "function") return;
+      history[method] = function(state, title, url) {
+        if (url) {
+          var u = String(url);
+          // Flag navigations to data: or blob: URLs, or suspiciously long URLs
+          if (u.indexOf("data:") === 0 || u.indexOf("blob:") === 0) {
+            try { chrome.runtime.sendMessage({ type: 'BLOCK_EVENT', verb: 'BROWSE', decision: 'DENY', risk: 80, reason: 'SPA navigation to data/blob URL blocked', proof: null }); } catch(e) {}
+          }
+        }
+        return _orig.apply(this, arguments);
+      };
+    };
+    try { _patchHistoryMethod("pushState"); } catch(e) {}
+    try { _patchHistoryMethod("replaceState"); } catch(e) {}
+  })();
 
   // ═══════════════════════════════════════════════════
   // VERB 5: DOWNLOAD — Intercept download links in AI responses

@@ -1,8 +1,12 @@
 /**
  * Constitutional AI Intent Validator
  *
- * Validates user intents against constitutional principles
- * using LLM-based reasoning + policy constraints
+ * Validates user intents against constitutional principles using:
+ *   1. Pattern-based policy matching (synchronous, zero-latency)
+ *   2. Heuristic risk scoring (entropy, repetition, frontier markers)
+ *   3. Anthropic Constitutional AI critique-and-revise loop (when API key present)
+ *      — calls claude-haiku-3-5 only in the ambiguous zone (risk 0.3–0.7)
+ *      — one critique round + one revision round, returns refined risk assessment
  */
 
 import { logger } from './logger';
@@ -33,13 +37,19 @@ const DEFAULT_POLICIES: PolicyConstraint[] = [
     rule_id: 'injection_attack',
     description: 'Prompt injection attempt detected',
     severity: 'critical',
-    pattern: /ignore.*previous|forget|new instructions|role.*switch/i,
+    pattern: /ignore.*previous|forget|new instructions|role.*switch|ignore the above|disregard the above|new task:|your new goal|act as if|pretend you are/i,
+  },
+  {
+    rule_id: 'token_boundary_injection',
+    description: 'Token-boundary / special-token injection attempt',
+    severity: 'critical',
+    pattern: /<\|im_start\|>|<\|im_end\|>|<\|system\|>|<\|user\|>|<\|assistant\|>|\[INST\]|\[\/INST\]|<<SYS>>|<<\/SYS>>/i,
   },
   {
     rule_id: 'jailbreak_attempt',
     description: 'Jailbreak attempt detected',
     severity: 'critical',
-    pattern: /jailbreak|bypass|circumvent|disable.*safety/i,
+    pattern: /jailbreak|bypass|circumvent|disable.*safety|developer mode|you are now dan|do anything now/i,
   },
   {
     rule_id: 'data_exfiltration',
@@ -58,6 +68,55 @@ const DEFAULT_POLICIES: PolicyConstraint[] = [
     description: 'Privacy violation intent',
     severity: 'high',
     pattern: /spy|dox|doxx|stalking|harass|blackmail/i,
+  },
+  // AI Vibe-Code safety policies
+  {
+    rule_id: 'insecure_codegen',
+    description: 'AI-generated code contains unsafe eval/exec/os.system pattern',
+    severity: 'high',
+    pattern: /\beval\s*\(|(?:^|\n)\s*exec\s*\(|os\.system\s*\(|os\.popen\s*\(|subprocess\.call\s*\(|new\s+Function\s*\(/im,
+  },
+  {
+    rule_id: 'hardcoded_secrets',
+    description: 'Hardcoded credentials or API keys in AI-generated code',
+    severity: 'critical',
+    pattern: /(?:password|passwd|api_key|secret|token)\s*=\s*['"][^'"]{4,}/i,
+  },
+  {
+    rule_id: 'disabled_tls',
+    description: 'TLS/certificate verification disabled in AI-generated code',
+    severity: 'high',
+    pattern: /verify\s*=\s*[Ff]alse|rejectUnauthorized\s*:\s*false|ssl_verify\s*=\s*[Ff]alse|checkHostname\s*=\s*[Ff]alse|no_verify/i,
+  },
+  {
+    rule_id: 'sql_injection_codegen',
+    description: 'SQL query built via string concatenation or f-string (injection risk)',
+    severity: 'high',
+    pattern: /f["'](?:SELECT|INSERT|UPDATE|DELETE)|["']SELECT\s.*?\+\s*|execute\s*\(\s*["'].*?\+/i,
+  },
+  {
+    rule_id: 'insecure_deserialization',
+    description: 'Unsafe deserialization (pickle.load, yaml.load without Loader, unserialize)',
+    severity: 'critical',
+    pattern: /pickle\.loads?\s*\(|yaml\.load\s*\([^)]*(?!\bLoader\b)|marshal\.loads\s*\(|unserialize\s*\(/i,
+  },
+  {
+    rule_id: 'path_traversal',
+    description: 'Path traversal pattern in file operation',
+    severity: 'high',
+    pattern: /\.\.\//,
+  },
+  {
+    rule_id: 'insecure_random',
+    description: 'Math.random() used for security-sensitive value (token/password/secret)',
+    severity: 'high',
+    pattern: /Math\.random\s*\(\s*\).*(?:token|password|secret|key|nonce|salt)|(?:token|password|secret|key|nonce|salt).*Math\.random\s*\(\s*\)/is,
+  },
+  {
+    rule_id: 'xss_codegen',
+    description: 'XSS risk: innerHTML/document.write with user-controlled input',
+    severity: 'high',
+    pattern: /innerHTML\s*=.*(?:req\.|params\.|query\.|userInput|user_input)|document\.write\s*\(/i,
   },
 ];
 
@@ -101,12 +160,25 @@ export class ConstitutionalAIValidator {
 
     // Additional heuristic checks
     const heuristicRisk = await this.calculateHeuristicRisk(intent);
-    const riskScore = Math.max(maxSeverityScore, heuristicRisk);
+    let riskScore = Math.max(maxSeverityScore, heuristicRisk);
+    let reasoning = this.generateReasoning(blockedRules, riskScore, context);
+
+    // Constitutional AI critique-and-revise loop (ambiguous zone only: 0.3–0.7)
+    // Only runs if ANTHROPIC_API_KEY is set — gracefully skipped otherwise
+    if (riskScore >= 0.3 && riskScore <= 0.7 && blockedRules.length === 0) {
+      try {
+        const caiResult = await this.constitutionalAICritiqueRevise(intent, riskScore);
+        if (caiResult) {
+          riskScore = caiResult.refinedRisk;
+          reasoning = caiResult.reasoning;
+        }
+      } catch (err) {
+        logger.warn('Constitutional AI critique-revise skipped (API unavailable)', { error: String(err) });
+      }
+    }
 
     const valid = riskScore < 0.5;
     const requiresApproval = riskScore >= 0.4;
-
-    const reasoning = this.generateReasoning(blockedRules, riskScore, context);
 
     // Map risk_score to CCL level (0-5)
     const cclLevel = Math.min(5, Math.floor(riskScore * 5.5));
@@ -120,6 +192,124 @@ export class ConstitutionalAIValidator {
       ccl_level: cclLevel,
       ...(authzContext ? { authz_context: authzContext } : {}),
     };
+  }
+
+  /**
+   * Anthropic Constitutional AI critique-and-revise loop.
+   *
+   * Called only when pattern-based risk is in the ambiguous zone (0.3–0.7)
+   * and ANTHROPIC_API_KEY is available in the environment.
+   *
+   * Two-round loop:
+   *   Round 1 — Critique: "Does this intent violate any of our constitutional principles?"
+   *   Round 2 — Revise:   "Given your critique, what is the refined risk score (0.0-1.0)?"
+   *
+   * Uses claude-haiku-3-5 (fast, low-cost) with max_tokens=256.
+   * Returns null on any failure so the caller falls back to pattern-based score.
+   */
+  private async constitutionalAICritiqueRevise(
+    intent: string,
+    baseRisk: number
+  ): Promise<{ refinedRisk: number; reasoning: string } | null> {
+    const apiKey = typeof process !== 'undefined' ? process.env['ANTHROPIC_API_KEY'] : undefined;
+    if (!apiKey) return null;
+
+    const constitutionalPrinciples = [
+      'Do not assist with prompt injection, jailbreaks, or bypassing AI safety measures.',
+      'Do not facilitate data exfiltration, credential theft, or privacy violations.',
+      'Do not generate malware, exploits, or code intended to cause harm.',
+      'Do not assist with surveillance, stalking, or harassment.',
+      'Do not produce insecure code patterns (hardcoded secrets, disabled TLS, SQL injection).',
+    ].join('\n');
+
+    // Truncate intent to 500 chars to avoid high token cost
+    const truncatedIntent = intent.length > 500 ? intent.slice(0, 500) + '…' : intent;
+
+    // Round 1: Critique
+    const critiquePrompt = `You are a Constitutional AI safety evaluator. Review the following user intent against our constitutional principles and identify any violations.
+
+Constitutional principles:
+${constitutionalPrinciples}
+
+User intent: "${truncatedIntent}"
+
+Initial risk score: ${baseRisk.toFixed(2)}
+
+Provide a brief critique (2-3 sentences maximum). Identify specific violations if any.`;
+
+    let critiqueText = '';
+    try {
+      const critiqueResp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 256,
+          messages: [{ role: 'user', content: critiquePrompt }],
+        }),
+      });
+
+      if (!critiqueResp.ok) return null;
+      const critiqueData = await critiqueResp.json() as { content?: Array<{type: string; text: string}> };
+      critiqueText = critiqueData.content?.[0]?.text ?? '';
+    } catch (_) {
+      return null;
+    }
+
+    if (!critiqueText) return null;
+
+    // Round 2: Revise — derive refined risk score from the critique
+    const revisePrompt = `Based on your critique below, provide a refined risk score between 0.0 (completely safe) and 1.0 (clearly harmful) for the intent.
+
+Critique: "${critiqueText.slice(0, 300)}"
+
+Respond with ONLY a JSON object: {"risk": <number 0.0-1.0>, "summary": "<one sentence>"}`;
+
+    try {
+      const reviseResp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 128,
+          messages: [{ role: 'user', content: revisePrompt }],
+        }),
+      });
+
+      if (!reviseResp.ok) return null;
+      const reviseData = await reviseResp.json() as { content?: Array<{type: string; text: string}> };
+      const reviseText = reviseData.content?.[0]?.text ?? '';
+
+      // Parse JSON from model response
+      const jsonMatch = reviseText.match(/\{[^}]+\}/);
+      if (!jsonMatch) return null;
+
+      const parsed = JSON.parse(jsonMatch[0]) as { risk?: number; summary?: string };
+      const refinedRisk = typeof parsed.risk === 'number'
+        ? Math.min(1.0, Math.max(0.0, parsed.risk))
+        : baseRisk;
+      const summary = typeof parsed.summary === 'string' ? parsed.summary : '';
+
+      logger.info('Constitutional AI critique-revise complete', {
+        base_risk: baseRisk.toFixed(2),
+        refined_risk: refinedRisk.toFixed(2),
+      });
+
+      return {
+        refinedRisk,
+        reasoning: `[CAI] ${critiqueText.slice(0, 200)}. Refined assessment: ${summary} (risk: ${(refinedRisk * 100).toFixed(1)}%)`,
+      };
+    } catch (_) {
+      return null;
+    }
   }
 
   /**
@@ -160,9 +350,8 @@ export class ConstitutionalAIValidator {
   }
 
   /**
-   * Frontier-based heuristics: detect AI-generated intents and marker phrases
-   * AI-generated prompts have characteristic patterns (high entropy, phrase markers)
-   * This helps identify sophisticated prompt injection attacks
+   * Frontier-based heuristics: detect AI-generated intents, marker phrases,
+   * and AI vibe-code antipatterns (insecure codegen signals).
    */
   private frontierHeuristics(intent: string): number {
     if (intent.length < 50) return 0; // Too short to analyze
@@ -192,6 +381,39 @@ export class ConstitutionalAIValidator {
 
     // High entropy alone isn't suspicious, but combined with markers is
     if (this.calculateEntropy(intent) > 5.4 && markerCount > 0) risk += 0.05;
+
+    // ── AI Vibe-Code Heuristics ───────────────────────────────────────
+    // Detect patterns typical in insecure AI-generated code submissions
+
+    // Multiple security antipatterns in same intent → compounding risk
+    const vibeCodeSignals = [
+      /\beval\s*\(/i,                        // eval
+      /os\.system\s*\(/i,                    // shell execution
+      /pickle\.loads?\s*\(/i,               // insecure deser
+      /yaml\.load\s*\(/i,                   // insecure YAML
+      /verify\s*=\s*False/i,               // disabled TLS
+      /rejectUnauthorized\s*:\s*false/i,   // disabled TLS (JS)
+      /Math\.random\s*\(\s*\)/i,           // insecure random
+      /innerHTML\s*=/i,                     // potential XSS
+      /\.\.\//,                             // path traversal
+      /password\s*=\s*["'][^"']{4,}/i,     // hardcoded password
+    ];
+
+    const vibeHits = vibeCodeSignals.filter(p => p.test(intent)).length;
+    if (vibeHits >= 3) risk += 0.20;
+    else if (vibeHits === 2) risk += 0.12;
+    else if (vibeHits === 1) risk += 0.06;
+
+    // Intent explicitly asks AI to generate insecure code
+    const insecureRequestPatterns = [
+      /(?:write|generate|create|make)\s+(?:me\s+)?(?:a\s+)?(?:python|js|javascript|code).{0,50}(?:without|no)\s+(?:auth|authentication|ssl|tls|validation)/i,
+      /skip\s+(?:the\s+)?(?:auth|ssl|tls|validation|sanitiz)/i,
+      /don'?t\s+(?:bother\s+with\s+)?(?:auth|ssl|tls|validat|sanitiz)/i,
+      /(?:disable|turn\s+off)\s+(?:ssl|tls|cert|authentication|security)/i,
+    ];
+
+    const insecureRequestHits = insecureRequestPatterns.filter(p => p.test(intent)).length;
+    if (insecureRequestHits >= 1) risk += 0.20;
 
     return Math.min(risk, 0.25); // Cap frontier contribution at 0.25
   }

@@ -7,11 +7,28 @@ use walkdir::WalkDir;
 use colored::*;
 
 const TEXT_EXTENSIONS: &[&str] = &[
-    "ts", "tsx", "js", "jsx", "mjs", "cjs",
-    "py", "rb", "go", "rs", "java", "cpp", "c", "h",
-    "json", "yaml", "yml", "toml", "env", "ini", "cfg",
-    "md", "txt", "log", "sql", "sh", "bash", "zsh",
-    "html", "css", "xml", "csv",
+    // JavaScript / TypeScript ecosystem
+    "ts", "tsx", "js", "jsx", "mjs", "cjs", "cts", "mts",
+    // Python
+    "py", "pyw", "pyi",
+    // Other languages
+    "rb", "go", "rs", "java", "cpp", "c", "h", "cs", "swift", "kt", "scala",
+    "php", "lua", "r", "m", "ex", "exs", "hs", "clj",
+    // Config / secrets (AI vibe-code often leaks into these)
+    "json", "jsonc", "yaml", "yml", "toml", "env", "ini", "cfg", "conf",
+    "properties", "secrets", "key", "pem", "pub",
+    // Docs / data
+    "md", "mdx", "txt", "log", "sql", "csv", "tsv",
+    // Shell
+    "sh", "bash", "zsh", "fish", "ps1", "psm1", "psd1",
+    // Web
+    "html", "htm", "css", "scss", "sass", "less", "xml", "svg",
+    // Notebooks (plaintext representation)
+    "ipynb",
+    // Terraform / IaC (common AI vibe-code source)
+    "tf", "tfvars", "hcl",
+    // Docker / CI
+    "dockerfile",
 ];
 
 const CHUNK_SIZE: usize = 4096;
@@ -91,7 +108,22 @@ fn is_text_file(path: &str) -> bool {
 }
 
 fn is_ignored(name: &str) -> bool {
-    matches!(name, "node_modules" | "target" | ".git" | "dist" | "build" | ".next")
+    matches!(name,
+        // Package managers
+        "node_modules" | ".pnp" | ".yarn" | "__pycache__" | ".venv" | "venv" | "env" | ".env",
+        // Build outputs
+        "target" | "dist" | "build" | "out" | ".output" | "_build" | "pkg" | "bin" | "obj",
+        // Framework caches
+        ".next" | ".nuxt" | ".svelte-kit" | ".expo" | ".remix",
+        // VCS / IDE
+        ".git" | ".hg" | ".svn" | ".idea" | ".vscode",
+        // Lock files dir
+        ".cargo" | ".gradle",
+        // Terraform state (may contain secrets but is binary)
+        ".terraform",
+        // Coverage / test artifacts
+        "coverage" | ".nyc_output" | "htmlcov" | ".pytest_cache" | ".mypy_cache"
+    )
 }
 
 /// Run a scan on a path (file, directory, or "-" for stdin). Returns exit code.
@@ -289,6 +321,32 @@ const LOCAL_POLICIES: &[LocalPolicy] = &[
         description: "Privacy violation intent",
         severity_score: 0.75,
     },
+    // AI Vibe-Code safety policies
+    LocalPolicy {
+        rule_id: "insecure_codegen",
+        description: "AI-generated insecure code pattern (eval/exec/os.system without sanitization)",
+        severity_score: 0.85,
+    },
+    LocalPolicy {
+        rule_id: "hardcoded_secrets",
+        description: "Hardcoded credentials or API keys in AI-generated code",
+        severity_score: 0.9,
+    },
+    LocalPolicy {
+        rule_id: "disabled_security",
+        description: "Disabled TLS verification or security controls in AI-generated code",
+        severity_score: 0.9,
+    },
+    LocalPolicy {
+        rule_id: "sql_injection_codegen",
+        description: "SQL query built via string concatenation or f-string (AI vibe-code antipattern)",
+        severity_score: 0.85,
+    },
+    LocalPolicy {
+        rule_id: "insecure_deserialization",
+        description: "Unsafe pickle/yaml.load/unserialize without validation",
+        severity_score: 0.9,
+    },
 ];
 
 /// Check a single rule against intent text using regex-equivalent patterns
@@ -329,6 +387,47 @@ fn check_rule(rule_id: &str, text: &str) -> bool {
             || lower.contains("stalking")
             || lower.contains("harass")
             || lower.contains("blackmail")
+        }
+        // AI Vibe-Code safety rules
+        "insecure_codegen" => {
+            lower.contains("eval(")
+            || lower.contains("exec(")
+            || lower.contains("os.system(")
+            || lower.contains("os.popen(")
+            || lower.contains("subprocess.call(")
+            || lower.contains("new function(")
+            || lower.contains("settimeout(\"")
+            || lower.contains("setinterval(\"")
+        }
+        "hardcoded_secrets" => {
+            (lower.contains("password = \"") || lower.contains("password = '")
+            || lower.contains("api_key = \"") || lower.contains("api_key = '")
+            || lower.contains("secret = \"") || lower.contains("secret = '")
+            || lower.contains("token = \"") || lower.contains("token = '"))
+            && !lower.contains("os.environ") && !lower.contains("process.env")
+            && !lower.contains("getenv")
+        }
+        "disabled_security" => {
+            lower.contains("verify=false")
+            || lower.contains("verify = false")
+            || lower.contains("rejectunauthorized: false")
+            || lower.contains("ssl_verify = false")
+            || lower.contains("checkhostname = false")
+            || lower.contains("no_verify")
+        }
+        "sql_injection_codegen" => {
+            (lower.contains("f\"select") || lower.contains("f'select")
+            || lower.contains("f\"insert") || lower.contains("f\"update")
+            || lower.contains("f\"delete") || lower.contains("\"select \" +")
+            || lower.contains("'select ' +"))
+            && !lower.contains("parameterized") && !lower.contains("prepared")
+        }
+        "insecure_deserialization" => {
+            lower.contains("pickle.loads(")
+            || lower.contains("pickle.load(")
+            || (lower.contains("yaml.load(") && !lower.contains("loader="))
+            || lower.contains("marshal.loads(")
+            || lower.contains("unserialize(")
         }
         _ => false,
     }
