@@ -94,6 +94,30 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
+  // FALSE POSITIVE REPORTING: Forward report to API endpoint
+  // ───────────────────────────────────────────────────────────────────────────
+  if (msg.action === 'reportFalsePositive') {
+    chrome.storage.local.get(['guardEnabled', 'lastDetection'], (data) => {
+      const report = {
+        context: msg.context || '',
+        timestamp: msg.timestamp || new Date().toISOString(),
+        detection: data.lastDetection || null,
+        extensionVersion: '2.0.0',
+        browser: 'chrome',
+      };
+
+      fetch('https://api.bekasbah.com/api/false-positives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(report),
+      }).catch(() => {}); // Silent fail — don't break extension on network error
+    });
+
+    respond({ ok: true });
+    return true;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
   // TELEMETRY: Receive and send usage metrics for model improvement
   // ───────────────────────────────────────────────────────────────────────────
   if (msg.type === 'TELEMETRY') {

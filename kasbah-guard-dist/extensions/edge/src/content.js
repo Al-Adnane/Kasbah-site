@@ -10,7 +10,7 @@
 // MOAT 6  — WebSocket constructor URL scan: blocks new WebSocket("wss://evil?k=")
 // MOAT 7  — window.open URL scan: blocks navigation-based exfil
 // MOAT 8  — MutationObserver src-hook: blocks <img>/<script> pixel exfil
-// MOAT 9  — Base64 decode in scanStr: catches encoded payloads
+// MOAT 9  — Multi-layer obfuscation decoder: Base64+hex+URL+homoglyphs, 3 layers deep
 // MOAT 10 — Shannon entropy + 22-pattern detection engine  (detector.js)
 // MOAT 11 — Unicode normalization + zero-width char stripping (detector.js)
 // MOAT 12 — <all_urls> omnipresent coverage                 (manifest)
@@ -75,30 +75,125 @@
     return _FALLBACK.some(p => p.test(c));
   }
 
-  // ── MOAT 9: Base64 decode in scan ───────────────────────────────────────
-  // Catches: {"data":"c2stcHJvai0xMjM...", "encoding":"base64"}
-  function _scanBase64(str) {
-    const segs = str.match(/[A-Za-z0-9+/]{20,}={0,2}/g);
-    if (!segs) return false;
-    for (const seg of segs) {
+  // ── MOAT 9: Multi-layer obfuscation decoder ─────────────────────────────
+  // Catches secrets hidden behind Base64, hex, URL-encoding, homoglyphs,
+  // and zero-width chars — applied up to 3 layers deep.
+  //
+  // NOTE: Uses only browser-native APIs (atob, decodeURIComponent, String).
+  //       No Node.js Buffer — this runs inside MV3 content scripts.
+
+  // Strip zero-width / invisible chars then check fallback+detector
+  function _checkDecoded(dec) {
+    if (!dec || dec.length < 6) return false;
+    const clean = dec.replace(/[\u200b-\u200d\u200e\u200f\ufeff\u00ad\u2060]/g, "");
+    if (_fallbackDeny(clean)) return true;
+    try { if (typeof getDecision === "function" && getDecision(clean) === DENY) return true; } catch {}
+    return false;
+  }
+
+  // Normalize homoglyphs (Cyrillic lookalikes → Latin) + zero-width removal
+  function _normalizeStr(str) {
+    const MAP = {
+      '\u0410':'A','\u0412':'B','\u0415':'E','\u041D':'H','\u041A':'K',
+      '\u041C':'M','\u041E':'O','\u0420':'P','\u0421':'C','\u0422':'T',
+      '\u0423':'Y','\u0425':'X','\u0430':'a','\u043E':'o','\u0435':'e',
+      '\u0440':'p','\u0441':'c','\u0445':'x',
+      '\u2013':'-','\u2014':'-','\u2018':"'",'\u2019':"'",
+    };
+    let r = str.replace(/[\u200b-\u200d\u200e\u200f\ufeff\u00ad\u2060]/g, "");
+    for (const [k, v] of Object.entries(MAP)) r = r.split(k).join(v);
+    return r;
+  }
+
+  // Decode hex string (browser-native, no Buffer)
+  function _decodeHex(str) {
+    try {
+      if (str.length < 16 || str.length % 2 !== 0) return null;
+      if (!/^[0-9A-Fa-f]+$/.test(str)) return null;
+      let out = "";
+      for (let i = 0; i < str.length; i += 2) {
+        out += String.fromCharCode(parseInt(str.slice(i, i + 2), 16));
+      }
+      return out.length > 0 ? out : null;
+    } catch { return null; }
+  }
+
+  // Try one round of decode on a candidate segment; return decoded string or null
+  function _tryDecode(seg) {
+    // Base64
+    try {
+      if (/^[A-Za-z0-9+/]{20,}={0,2}$/.test(seg)) {
+        const d = atob(seg);
+        if (d && d.length > 5) return d;
+      }
+    } catch {}
+    // Hex
+    const hexDec = _decodeHex(seg);
+    if (hexDec) return hexDec;
+    // URL-encoding
+    if (/%[0-9A-Fa-f]{2}/.test(seg)) {
       try {
-        const dec = atob(seg);
-        if (_fallbackDeny(dec)) return true;
-        try { if (typeof getDecision === "function" && getDecision(dec) === DENY) return true; } catch {}
+        const d = decodeURIComponent(seg);
+        if (d !== seg && d.length > 5) return d;
       } catch {}
     }
+    return null;
+  }
+
+  // Main obfuscation scan: extract candidates, decode up to 3 layers, check each
+  function _scanObfuscated(str) {
+    if (!str || str.length < 8) return false;
+
+    // 1. Homoglyph normalization — check normalized version directly
+    const norm = _normalizeStr(str);
+    if (norm !== str && _checkDecoded(norm)) return true;
+
+    // 2. Extract potential encoded segments and decode up to 3 layers
+    const candidates = str.match(/[A-Za-z0-9+/%]{12,}={0,2}/g) || [];
+    // Also try the whole string
+    if (str.length <= 2000) candidates.unshift(str);
+
+    for (const seg of candidates.slice(0, 20)) { // cap at 20 segments for perf
+      let current = seg;
+      for (let depth = 0; depth < 3; depth++) {
+        const decoded = _tryDecode(current);
+        if (!decoded) break;
+        if (_checkDecoded(decoded)) return true;
+        // Strip homoglyphs/zero-width from decoded, then check again
+        const normDec = _normalizeStr(decoded);
+        if (normDec !== decoded && _checkDecoded(normDec)) return true;
+        current = decoded; // next layer
+      }
+    }
+
+    // 3. URL-decode the whole string (catches query-param encoded payloads)
+    if (str.includes('%') && /%[0-9A-Fa-f]{2}/.test(str)) {
+      try {
+        const urlDec = decodeURIComponent(str);
+        if (urlDec !== str && _checkDecoded(urlDec)) return true;
+      } catch {}
+    }
+
     return false;
   }
 
   // ── Core detection: MOAT 10+11 via getDecision, MOAT 5 as fallback ──────
+  // If classifyWithKasbah() is available (bridge + hook loaded), fire async
+  // enrichment in parallel — result populates zchat1 on window for popup.
+  // Synchronous gate decision still comes from getDecision() so no latency
+  // is added to the block path.
   function _isDeny(str) {
     if (!str || str.length < 8) return false;
+    // Async enrichment via frontier + zchat1 pipeline (non-blocking)
+    if (typeof window.classifyWithKasbah === "function") {
+      try { window.classifyWithKasbah(str).catch(() => {}); } catch {}
+    }
     // Primary: full detector engine (entropy + 22 patterns + normalization)
     try { if (typeof getDecision === "function" && getDecision(str) === DENY) return true; } catch {}
     // Fallback: inline critical patterns (never fails open)
     if (_fallbackDeny(str)) return true;
-    // MOAT 9: base64 segments
-    if (_scanBase64(str)) return true;
+    // MOAT 9: multi-layer obfuscation (Base64 + hex + URL + homoglyphs, 3 layers deep)
+    if (_scanObfuscated(str)) return true;
     return false;
   }
 

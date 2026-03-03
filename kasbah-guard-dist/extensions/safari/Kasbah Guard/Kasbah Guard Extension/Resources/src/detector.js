@@ -83,15 +83,19 @@ function generateDetectionId() {
 }
 
 /**
- * SHA-256 hash (browser-native crypto API)
- * Returns promise that resolves to hex string
+ * SHA-256 hash (browser-native Web Crypto API, async)
+ * Falls back to hybridHash if SubtleCrypto unavailable (MV2 / non-secure context)
  */
-function sha256(text) {
-  // For now, return hybridHash as fallback
-  // In production, use Web Crypto API:
-  // const msgBuffer = new TextEncoder().encode(text);
-  // const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  return hybridHash(text || "");
+async function sha256(text) {
+  try {
+    var msgBuffer = new TextEncoder().encode(text || '');
+    var hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    var hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+  } catch (_) {
+    // SubtleCrypto not available (non-secure context or older browser)
+    return hybridHash(text || '');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -277,13 +281,26 @@ function getAnonymizedDeviceId() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// MOAT V1 Phase 2: Consensus Scoring
-// Load and apply network threat consensus to adjust risk scores
+// MOAT V1 Phase 2: Consensus Scoring (opt-in, disabled by default)
+//
+// When enabled (threatIntelligence: true in storage), downloads
+// aggregate threat pattern multipliers from the Kasbah network.
+// This is a one-way READ — no user content, no identifiers, no
+// paste data is ever sent. Only risk multipliers are received.
+//
+// Disabled by default to honour "100% local" default behaviour.
+// Users can enable via Settings → "Network threat intelligence".
 // ══════════════════════════════════════════════════════════════
 var threatConsensusCache = null;
 var consensusCacheExpiry = 0;
 
 async function loadThreatsConsensus() {
+  // Gate: only fetch if user has explicitly opted in
+  var enabled = await new Promise((resolve) => {
+    chrome.storage.local.get(['threatIntelligence'], (d) => resolve(d.threatIntelligence === true));
+  });
+  if (!enabled) return null;
+
   var now = Date.now();
 
   // Return cached consensus if still valid (5-minute TTL)
@@ -292,11 +309,10 @@ async function loadThreatsConsensus() {
   }
 
   try {
-    // Fetch consensus from API
+    // Fetch consensus from API — READ ONLY, no user data sent
     var response = await fetch('https://api.bekasbah.com/api/v2/threats/consensus', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
-      // Note: In popup.js context, bearer token passed via background.js relay
     });
 
     if (response.ok) {
@@ -1053,6 +1069,14 @@ var NPM_TOKEN_RE = /\bnpm_[A-Za-z0-9]{36}\b/;
 var DOCKER_TOKEN_RE = /\bdckr_pat_[A-Za-z0-9_\-]{64,}\b/;
 var HEROKU_KEY_RE = /\bHRKU-[A-Fa-f0-9\-]{36}\b/;
 var CLOUDFLARE_TOKEN_RE = /\b[A-Za-z0-9_\-]{37}(?:[A-Za-z0-9_\-]{3,})?\b(?=.*cloudflare)/i;
+// ── TIER 1c+: Additional API Secrets (from test3 secret-patterns library) ──
+var OPENAI_SVCACCT_RE = /\bsk-svcacct-[A-Za-z0-9_\-]{32,}\b/;           // OpenAI service account key
+var FIREBASE_KEY_RE = /\bAIzaSy[A-Za-z0-9_\-]{33}\b/;                    // Firebase-specific Google API key
+var MAILCHIMP_KEY_RE = /\b[a-f0-9]{32}-us[0-9]{1,2}\b/;                  // Mailchimp API key
+var NPM_REGISTRY_TOKEN_RE = /\/\/registry\.npmjs\.org\/:_authToken=([a-f0-9\-]{36})/; // NPM registry auth token
+var SLACK_APP_TOKEN_RE = /\bxoxa-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{24}\b/;       // Slack app-level token
+var PGP_KEY_RE = /-----BEGIN PGP PRIVATE KEY BLOCK-----[\s\S]{0,100}/;   // PGP private key block
+var JWT_SECRET_CTX_RE = /\bjwt[_\-]?(?:secret|key|token)\s*[:=]\s*['"]?([A-Za-z0-9_\-\.]{20,})['"]?/i; // JWT secret in context
 
 // ── TIER 1d: US Medical/Financial Identifiers ──
 var NPI_RE = /(?:npi|national\s*provider)\s*(?:number|no|#|:)?\s*\b[12][0-9]{9}\b/i;
@@ -1110,6 +1134,9 @@ var _ALL_PATTERNS = [PASSPORT_RE, VISA_RE, NATIONAL_ID_RE, DRIVERS_LICENSE_RE,
   // US API Secrets
   STRIPE_KEY_RE, TWILIO_SID_RE, TWILIO_TOKEN_RE, SENDGRID_KEY_RE, ANTHROPIC_KEY_RE,
   AZURE_CONNSTR_RE, NPM_TOKEN_RE, DOCKER_TOKEN_RE, HEROKU_KEY_RE,
+  // Additional API Secrets
+  OPENAI_SVCACCT_RE, FIREBASE_KEY_RE, MAILCHIMP_KEY_RE, NPM_REGISTRY_TOKEN_RE,
+  SLACK_APP_TOKEN_RE, PGP_KEY_RE, JWT_SECRET_CTX_RE,
   // US Medical/Financial Identifiers
   NPI_RE, DEA_RE, MEDICARE_BEN_RE, ABA_ROUTING_RE,
   // US Financial Documents
@@ -1535,6 +1562,14 @@ function classify(text) {
   var has_npm_token = NPM_TOKEN_RE.test(tn);
   var has_docker_token = DOCKER_TOKEN_RE.test(tn);
   var has_heroku_key = HEROKU_KEY_RE.test(tn);
+  // Additional API secrets
+  var has_openai_svcacct = OPENAI_SVCACCT_RE.test(tn);
+  var has_firebase_key = FIREBASE_KEY_RE.test(tn);
+  var has_mailchimp_key = MAILCHIMP_KEY_RE.test(tn);
+  var has_npm_registry_token = NPM_REGISTRY_TOKEN_RE.test(tn);
+  var has_slack_app_token = SLACK_APP_TOKEN_RE.test(tn);
+  var has_pgp_key = PGP_KEY_RE.test(t);
+  var has_jwt_secret_ctx = JWT_SECRET_CTX_RE.test(tn);
 
   if (has_stripe) tiers_triggered.push("T1c:stripe_key");
   if (has_twilio_sid) tiers_triggered.push("T1c:twilio_sid");
@@ -1546,6 +1581,13 @@ function classify(text) {
   if (has_npm_token) tiers_triggered.push("T1c:npm_token");
   if (has_docker_token) tiers_triggered.push("T1c:docker_token");
   if (has_heroku_key) tiers_triggered.push("T1c:heroku_key");
+  if (has_openai_svcacct) tiers_triggered.push("T1c:openai_svcacct");
+  if (has_firebase_key) tiers_triggered.push("T1c:firebase_key");
+  if (has_mailchimp_key) tiers_triggered.push("T1c:mailchimp_key");
+  if (has_npm_registry_token) tiers_triggered.push("T1c:npm_registry_token");
+  if (has_slack_app_token) tiers_triggered.push("T1c:slack_app_token");
+  if (has_pgp_key) tiers_triggered.push("T1c:pgp_private_key");
+  if (has_jwt_secret_ctx) tiers_triggered.push("T1c:jwt_secret_ctx");
 
   // ── TIER 1d: US Medical/Financial Identifiers ──
   // SSN: upgrade to full checksum validation
@@ -1710,8 +1752,15 @@ function classify(text) {
   if (has_azure_connstr)  { score += 85; reasons.push("Azure storage connection string"); }
   if (has_gcp_sa_key)     { score += 90; reasons.push("GCP service account key"); }
   if (has_npm_token)      { score += 75; reasons.push("npm access token"); }
-  if (has_docker_token)   { score += 75; reasons.push("Docker Hub token"); }
-  if (has_heroku_key)     { score += 75; reasons.push("Heroku API key"); }
+  if (has_docker_token)       { score += 75; reasons.push("Docker Hub token"); }
+  if (has_heroku_key)         { score += 75; reasons.push("Heroku API key"); }
+  if (has_openai_svcacct)     { score += 85; reasons.push("OpenAI service account key"); }
+  if (has_firebase_key)       { score += 80; reasons.push("Firebase API key"); }
+  if (has_mailchimp_key)      { score += 75; reasons.push("Mailchimp API key"); }
+  if (has_npm_registry_token) { score += 75; reasons.push("npm registry auth token"); }
+  if (has_slack_app_token)    { score += 80; reasons.push("Slack app-level token"); }
+  if (has_pgp_key)            { score += 90; reasons.push("PGP private key block"); }
+  if (has_jwt_secret_ctx)     { score += 75; reasons.push("JWT secret in context"); }
 
   // Tier 1d: US Medical/Financial Identifiers
   if (has_itin)           { score += 80; reasons.push("ITIN (tax ID)"); }

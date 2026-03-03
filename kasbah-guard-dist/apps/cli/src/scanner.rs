@@ -17,7 +17,7 @@ const TEXT_EXTENSIONS: &[&str] = &[
 const CHUNK_SIZE: usize = 4096;
 
 /// Constitutional AI service URL
-const CONSTITUTIONAL_AI_URL: &str = "http://localhost:3000/api/validate-intent";
+const CONSTITUTIONAL_AI_URL: &str = "https://api.bekasbah.com/api/validate-intent";
 
 #[derive(serde::Serialize)]
 pub struct ScanResult {

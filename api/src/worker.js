@@ -16,9 +16,14 @@
  *   GET  /api/team          — Team members list (auth required)
  *   POST /api/scan                     — Scan text for sensitive data (auth required)
  *   POST /api/validate-intent           — Constitutional AI intent validation (auth required)
- *   GET  /api/proofs                    — List ZK proofs (auth required)
- *   POST /api/proofs/generate           — Generate ZK proof for detection result (auth required)
- *   GET  /api/proofs/verify/:proof_id   — Verify a ZK proof (auth required)
+ *   GET  /api/proofs                    — List cryptographic commitment proofs (auth required)
+ *   POST /api/proofs/generate           — Generate Merkle-SHA256 commitment proof for detection result (auth required)
+ *   GET  /api/proofs/verify/:proof_id   — Verify a commitment proof (auth required)
+ *   GET  /api/cache/stats               — HyperCache LRU stats (auth required)
+ *
+ *   POST /api/honeypot/deploy           — Deploy honeypot canary (requires HONEYPOT_ENABLED=true)
+ *   POST /api/honeypot/check            — Check text for honeypot marker matches
+ *   GET  /api/honeypot/triggers         — List honeypot trigger events
  *
  * Storage: Cloudflare KV
  *   USERS    — key: email, value: { id, email, name, passwordHash, salt, plan, verified, createdAt, lastLogin }
@@ -41,6 +46,12 @@ const {
   frontierScore,
   detectAI
 } = require('./frontier');
+
+// ── Obfuscation Decoder (Moat 6) ──
+const {
+  analyzeObfuscation,
+  detectObfuscation
+} = require('./moats/obfuscation-decoder');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -186,7 +197,7 @@ async function sendVerificationEmail(env, email, name, code) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Kasbah <noreply@bekasbah.com>',
+        from: 'Kasbah <yo@bekasbah.com>',
         to: [email],
         subject: 'Verify your Kasbah account',
         html: html,
@@ -753,6 +764,180 @@ async function handleApiTeam(request, env) {
   });
 }
 
+// ── AuthZ Pipeline (7-stage, pure-JS, gated by env.AUTHZ_ENABLED) ────────────
+
+async function authzCheck(userId, action, resource, text, request, env) {
+  // Gate: skip entirely if AUTHZ_ENABLED !== 'true'
+  if (env.AUTHZ_ENABLED !== 'true') return { allowed: true, skipped: true };
+
+  const principal = userId;
+  const now = Date.now();
+  const encoder = new TextEncoder();
+
+  // Stage 1 — Identity: already verified by verifyToken() before this call
+  // (token is valid; userId/principal is set)
+
+  // Stage 2 — Delegation: check x-acting-as header against DELEGATIONS KV
+  const actingAs = request.headers.get('x-acting-as');
+  if (actingAs) {
+    try {
+      const delegationRaw = env.DELEGATIONS ? await env.DELEGATIONS.get(`${principal}:${actingAs}`) : null;
+      if (!delegationRaw) {
+        return { allowed: false, stage: 'delegation', reason: 'No valid delegation token found' };
+      }
+      const delegation = JSON.parse(delegationRaw);
+      if (delegation.expiresAt && delegation.expiresAt < now) {
+        return { allowed: false, stage: 'delegation', reason: 'Delegation token expired' };
+      }
+    } catch (_) {
+      return { allowed: false, stage: 'delegation', reason: 'Delegation verification failed' };
+    }
+  }
+
+  // Stage 3 — CCL: map scan risk score to CCL level 0-5
+  let cclLevel = 0;
+  if (text) {
+    const riskScore = scanRequestRisk(text) / 100;
+    cclLevel = Math.min(5, Math.floor(riskScore * 5.5));
+    if (cclLevel >= 5) {
+      return { allowed: false, stage: 'ccl', reason: `CCL-${cclLevel}: content risk too high`, ccl_level: cclLevel };
+    }
+  }
+
+  // Stage 4 — Budget: check BUDGETS KV for daily token/cost limits
+  if (env.BUDGETS) {
+    try {
+      const budgetRaw = await env.BUDGETS.get(principal);
+      if (budgetRaw) {
+        const budget = JSON.parse(budgetRaw);
+        const today = new Date().toISOString().slice(0, 10);
+        const used = budget.daily_usage?.[today] || 0;
+        if (budget.daily_limit && used >= budget.daily_limit) {
+          return { allowed: false, stage: 'budget', reason: 'Daily budget exceeded', budget_remaining: 0 };
+        }
+      }
+    } catch (_) { /* fail-open if KV error */ }
+  }
+
+  // Stage 5 — Rules: check AUTHZ_RULES KV for principal/action/resource match
+  if (env.AUTHZ_RULES) {
+    try {
+      const ruleRaw = await env.AUTHZ_RULES.get(`${principal}:${action}:${resource}`);
+      if (ruleRaw) {
+        const rule = JSON.parse(ruleRaw);
+        if (rule.effect === 'DENY') {
+          return { allowed: false, stage: 'rules', reason: `Rule denied: ${rule.reason || rule.rule_id}` };
+        }
+      }
+    } catch (_) { /* fail-open if KV error */ }
+  }
+
+  // Stage 6 — Ticket: generate HMAC-SHA256 ticket
+  // AUTHZ_TICKET_SECRET must be set in Cloudflare Worker secrets (wrangler secret put AUTHZ_TICKET_SECRET)
+  // If not set, ticket generation is skipped entirely — no insecure fallback.
+  let ticketId = null;
+  if (env.AUTHZ_TICKET_SECRET) {
+    try {
+      const ticketSecret = env.AUTHZ_TICKET_SECRET;
+      const nonce = crypto.getRandomValues(new Uint8Array(8));
+      const nonceHex = [...nonce].map(b => b.toString(16).padStart(2, '0')).join('');
+      const ticketPayload = `${principal}:${action}:${resource}:${now}:${nonceHex}`;
+      const key = await crypto.subtle.importKey(
+        'raw', encoder.encode(ticketSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+      );
+      const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(ticketPayload));
+      const sigHex = bufToHex(sig);
+      ticketId = `tkt-${nonceHex}-${sigHex.slice(0, 16)}`;
+    } catch (_) { /* ticket generation is best-effort */ }
+  }
+
+  // Stage 7 — Audit: append to AUDIT_LOG KV with hash chain
+  let auditEntryId = null;
+  if (env.AUDIT_LOG) {
+    try {
+      const auditEntry = { principal, action, resource, result: 'ALLOW', cclLevel, ticketId, ts: now };
+      const entryStr = JSON.stringify(auditEntry);
+      const hashBuf = await crypto.subtle.digest('SHA-256', encoder.encode(entryStr));
+      auditEntryId = bufToHex(hashBuf).slice(0, 32);
+      await env.AUDIT_LOG.put(`authz:${auditEntryId}`, entryStr, { expirationTtl: 86400 * 90 });
+    } catch (_) { /* audit is best-effort */ }
+  }
+
+  return {
+    allowed: true,
+    ticket_id: ticketId,
+    audit_entry_id: auditEntryId,
+    ccl_level: cclLevel,
+  };
+}
+
+// ── AuthZ management endpoints ────────────────────────────────────────────────
+
+async function handleAuthZDelegate(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const { delegate_to, expires_in_seconds = 3600, reason } = body;
+  if (!delegate_to || typeof delegate_to !== 'string') return err('delegate_to must be a non-empty string');
+  if (!env.DELEGATIONS) return err('Delegation store not configured', 503);
+
+  const expiresAt = Date.now() + (expires_in_seconds * 1000);
+  const delegation = { principal: payload.userId, delegate_to, expiresAt, reason: reason || '', createdAt: Date.now() };
+  await env.DELEGATIONS.put(`${payload.userId}:${delegate_to}`, JSON.stringify(delegation), { expirationTtl: expires_in_seconds });
+
+  return json({ ok: true, delegation_key: `${payload.userId}:${delegate_to}`, expires_at: new Date(expiresAt).toISOString() });
+}
+
+async function handleAuthZBudget(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  if (!env.BUDGETS) return json({ ok: true, budget: null, message: 'Budget tracking not configured' });
+
+  try {
+    const budgetRaw = await env.BUDGETS.get(payload.userId);
+    if (!budgetRaw) return json({ ok: true, budget: { unlimited: true } });
+
+    const budget = JSON.parse(budgetRaw);
+    const today = new Date().toISOString().slice(0, 10);
+    const used = budget.daily_usage?.[today] || 0;
+    const remaining = budget.daily_limit ? Math.max(0, budget.daily_limit - used) : null;
+
+    return json({ ok: true, budget: { daily_limit: budget.daily_limit, used_today: used, remaining, date: today } });
+  } catch (e) {
+    return err('Failed to read budget', 500);
+  }
+}
+
+async function handleAuthZRules(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  // Admin key required for rule management
+  const adminKey = request.headers.get('x-admin-key');
+  if (!env.ADMIN_KEY || adminKey !== env.ADMIN_KEY) return err('Forbidden: admin key required', 403);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const { principal, action, resource, effect = 'DENY', reason, rule_id } = body;
+  if (!principal || !action || !resource) return err('principal, action, resource are required');
+  if (!env.AUTHZ_RULES) return err('Rules store not configured', 503);
+
+  const ruleKey = `${principal}:${action}:${resource}`;
+  const ruleId = rule_id || `rule-${Date.now()}`;
+  const rule = { rule_id: ruleId, principal, action, resource, effect, reason: reason || '', createdAt: Date.now(), createdBy: payload.userId };
+
+  await env.AUTHZ_RULES.put(ruleKey, JSON.stringify(rule));
+  return json({ ok: true, rule_id: ruleId, key: ruleKey });
+}
+
 async function handleApiScan(request, env) {
   const token = extractBearer(request);
   const payload = await verifyToken(env, token);
@@ -773,6 +958,13 @@ async function handleApiScan(request, env) {
     return err('text exceeds maximum length of 32768 characters');
   }
 
+  // HyperCache: return cached result for identical text (60s TTL, skip for risky content)
+  const _cacheKey = _hyperCacheKey(text);
+  const _cached = _hyperCacheGet(_cacheKey);
+  if (_cached) {
+    return json({ ..._cached, cache_hit: true });
+  }
+
   const score = scanRequestRisk(text);
   const decision = score >= 70 ? 'DENY' : score >= 40 ? 'WARN' : 'ALLOW';
 
@@ -780,15 +972,62 @@ async function handleApiScan(request, env) {
   const frontier = frontierScore(text);
   const genaiRisk = Math.round(frontier.confidence * 100);
 
-  return json({
+  // Moat 6: Obfuscation analysis
+  let obfuscationFindings = [];
+  let obfuscationRisk = 0;
+  try {
+    obfuscationFindings = analyzeObfuscation(text);
+    obfuscationRisk = detectObfuscation(text);
+  } catch (_) { /* best-effort */ }
+
+  // Dynamic Threshold: record evasion if obfuscation or high risk; adjust threshold
+  if (obfuscationRisk > 0) _dynRecordThreat('evasion_attempt');
+  if (score >= 70) _dynRecordThreat('suspicious_pattern');
+  const dynConfig = _dynGetConfig();
+
+  // Boost risk score if obfuscation detected; apply dynamic threshold to decision boundary
+  const finalScore = Math.min(100, score + obfuscationRisk);
+  const effectiveThreshold = Math.round(dynConfig.baseConfidenceThreshold * 100); // e.g. 65 at medium
+  const finalDecision = finalScore >= 70 ? 'DENY' : finalScore >= effectiveThreshold ? 'WARN' : 'ALLOW';
+
+  // AuthZ pipeline check (gated by AUTHZ_ENABLED)
+  const authzResult = await authzCheck(payload.userId, 'scan', 'text', text, request, env);
+  if (!authzResult.allowed) {
+    return err(`AuthZ denied (${authzResult.stage}): ${authzResult.reason}`, 403);
+  }
+
+  // Privacy-First: detect GPC/DNT signals and apply data minimization
+  const privacySignals = _privacyDetectSignals(request);
+
+  let responsePayload = {
     ok: true,
-    risk: score,
-    decision,
+    risk: finalScore,
+    decision: finalDecision,
     reason: 'API risk scan',
     genai_risk: genaiRisk,
     genai_generator: frontier.generator,
     genai_confidence: frontier.confidence,
-  });
+    obfuscation: {
+      detected: obfuscationFindings.length > 0,
+      risk: obfuscationRisk,
+      techniques: obfuscationFindings.map(f => f.technique),
+    },
+    ...(authzResult.skipped ? {} : { authz: { ticket_id: authzResult.ticket_id, audit_entry_id: authzResult.audit_entry_id, ccl_level: authzResult.ccl_level } }),
+    dynamic_threshold: { level: dynConfig.level, score: Math.round(_dynThreatScore), effective_warn_threshold: effectiveThreshold },
+  };
+
+  // Apply data minimization when GPC or DNT is signalled
+  if (privacySignals.restricted) {
+    responsePayload = _privacyMinimize(responsePayload, 'deepfake_detection');
+    responsePayload.privacy = { gpc: privacySignals.gpc, dnt: privacySignals.dnt, minimized: true };
+  }
+
+  // HyperCache: store result for ALLOW/WARN decisions (do not cache DENY)
+  if (finalDecision !== 'DENY') {
+    _hyperCacheSet(_cacheKey, responsePayload);
+  }
+
+  return json(responsePayload);
 }
 
 // ── Constitutional AI Intent Validator (built-in) ────────────────────────────
@@ -895,13 +1134,843 @@ async function handleValidateIntent(request, env) {
 
   const result = _caiValidateIntentLocal(intent, policy_id);
 
+  // AuthZ pipeline check (gated by AUTHZ_ENABLED)
+  const authzResult = await authzCheck(payload.userId, 'validate-intent', 'intent', intent, request, env);
+  if (!authzResult.allowed) {
+    return err(`AuthZ denied (${authzResult.stage}): ${authzResult.reason}`, 403);
+  }
+
   return json({
     ok: true,
     ...result,
+    ...(authzResult.skipped ? {} : { authz: { ticket_id: authzResult.ticket_id, audit_entry_id: authzResult.audit_entry_id, ccl_level: authzResult.ccl_level } }),
   });
 }
 
-// ── ZK-Proof stubs (Merkle-SHA256) ──────────────────────────────────────────
+// ── Moat Analytics Endpoints ─────────────────────────────────────────────────
+
+// In-memory brittleness and forecast state (resets per Worker cold start)
+// In production, persist to KV for cross-request accumulation
+const _brittlenessState = { indicators: {}, totalUsage: 0 };
+const _threatHistory = [];
+
+// ── HyperCache: LRU cache with TTL (from test3 instant-response-engine.ts) ──
+// Provides sub-millisecond repeated-request deduplication for /api/scan.
+// Resets on Worker cold start; max 512 entries, 60-second default TTL.
+const _HYPERCACHE_MAX = 512;
+const _HYPERCACHE_DEFAULT_TTL_MS = 60_000;
+const _hyperCache = new Map(); // key → { value, expiresAt, hits }
+const _hyperCacheOrder = []; // LRU order (front = oldest)
+
+function _hyperCacheKey(text) {
+  // Fast 32-bit FNV-1a over first 256 chars (deterministic, no async needed)
+  let h = 2166136261;
+  const s = text.slice(0, 256);
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 16777619) >>> 0;
+  }
+  return h.toString(16) + ':' + text.length;
+}
+
+function _hyperCacheGet(key) {
+  const entry = _hyperCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { _hyperCache.delete(key); return null; }
+  // Move to end (most-recently-used)
+  const idx = _hyperCacheOrder.indexOf(key);
+  if (idx !== -1) { _hyperCacheOrder.splice(idx, 1); _hyperCacheOrder.push(key); }
+  entry.hits++;
+  return entry.value;
+}
+
+function _hyperCacheSet(key, value, ttlMs = _HYPERCACHE_DEFAULT_TTL_MS) {
+  if (_hyperCache.has(key)) {
+    const idx = _hyperCacheOrder.indexOf(key);
+    if (idx !== -1) _hyperCacheOrder.splice(idx, 1);
+  } else if (_hyperCache.size >= _HYPERCACHE_MAX) {
+    // Evict LRU entry
+    const lruKey = _hyperCacheOrder.shift();
+    if (lruKey) _hyperCache.delete(lruKey);
+  }
+  _hyperCache.set(key, { value, expiresAt: Date.now() + ttlMs, hits: 0 });
+  _hyperCacheOrder.push(key);
+}
+
+function _hyperCacheStats() {
+  let totalHits = 0, expired = 0;
+  const now = Date.now();
+  for (const [k, e] of _hyperCache) {
+    totalHits += e.hits;
+    if (now > e.expiresAt) expired++;
+  }
+  return { size: _hyperCache.size, max: _HYPERCACHE_MAX, total_hits: totalHits, expired_entries: expired };
+}
+
+// ── Honeypot Network (from test3 honeypot-network.ts) ──
+// Synthetic canary content with invisible markers; triggers record adversary access.
+// Gated by env.HONEYPOT_ENABLED === 'true'.
+const _honeypotTriggers = []; // { id, honeypot_id, timestamp, source_ip, user_agent, accessed_marker }
+const _honeypotCanaries = new Map(); // id → { id, content, markers, created_at, access_count }
+
+function _honeypotGenerateMarker(honeypotId, markerType, secret) {
+  // Deterministic marker derived from honeypot ID + type + a secret
+  // Uses FNV-1a (sync, no WebCrypto needed for marker generation)
+  let h = 2166136261;
+  const s = `${honeypotId}:${markerType}:${secret || 'kasbah-honeypot'}`;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
+  return h.toString(16).padStart(8, '0');
+}
+
+function _honeypotCreateCanary(config, secret) {
+  const id = `hp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const markers = {
+    watermark:    _honeypotGenerateMarker(id, 'watermark', secret),
+    steganography:_honeypotGenerateMarker(id, 'steg', secret),
+    metadata:     _honeypotGenerateMarker(id, 'meta', secret),
+    spectral:     _honeypotGenerateMarker(id, 'spec', secret),
+    behavioral:   _honeypotGenerateMarker(id, 'behav', secret),
+  };
+  const canary = {
+    id,
+    content: config.content || `Synthetic canary content [${id}]`,
+    content_type: config.content_type || 'text',
+    markers,
+    trap_phrase: config.trap_phrase || null,
+    metadata: { creator: 'kasbah-honeypot', purpose: 'adversary-detection', id },
+    created_at: Date.now(),
+    access_count: 0,
+  };
+  _honeypotCanaries.set(id, canary);
+  return canary;
+}
+
+function _honeypotCheck(text, sourceIp, userAgent) {
+  // Check if any active honeypot marker appears in submitted text
+  const triggered = [];
+  for (const [id, canary] of _honeypotCanaries) {
+    for (const [markerType, markerValue] of Object.entries(canary.markers)) {
+      if (text.includes(markerValue)) {
+        canary.access_count++;
+        const trigger = {
+          id: `trig_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          honeypot_id: id,
+          timestamp: Date.now(),
+          source_ip: sourceIp || 'unknown',
+          user_agent: userAgent || 'unknown',
+          accessed_marker: markerType,
+          marker_value: markerValue,
+        };
+        _honeypotTriggers.push(trigger);
+        triggered.push(trigger);
+      }
+    }
+    // Check trap phrase
+    if (canary.trap_phrase && text.toLowerCase().includes(canary.trap_phrase.toLowerCase())) {
+      canary.access_count++;
+      const trigger = {
+        id: `trig_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        honeypot_id: id,
+        timestamp: Date.now(),
+        source_ip: sourceIp || 'unknown',
+        user_agent: userAgent || 'unknown',
+        accessed_marker: 'trap_phrase',
+        marker_value: canary.trap_phrase,
+      };
+      _honeypotTriggers.push(trigger);
+      triggered.push(trigger);
+    }
+  }
+  return triggered;
+}
+
+async function handleHoneypotDeploy(request, env) {
+  if (env.HONEYPOT_ENABLED !== 'true') return err('Honeypot network not enabled', 403);
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const config = {
+    content: body.content || null,
+    content_type: body.content_type || 'text',
+    trap_phrase: body.trap_phrase || null,
+  };
+  const secret = env.HONEYPOT_SECRET || env.JWT_SECRET || 'kasbah-honeypot-secret';
+  const canary = _honeypotCreateCanary(config, secret);
+
+  return json({
+    ok: true,
+    honeypot_id: canary.id,
+    markers: canary.markers,
+    content: canary.content,
+    content_type: canary.content_type,
+    trap_phrase: canary.trap_phrase,
+    created_at: canary.created_at,
+    message: 'Honeypot deployed. Embed markers in content to detect adversary access.',
+  });
+}
+
+async function handleHoneypotCheck(request, env) {
+  if (env.HONEYPOT_ENABLED !== 'true') return err('Honeypot network not enabled', 403);
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const text = body.text || '';
+  if (typeof text !== 'string') return err('text must be a string');
+
+  const sourceIp = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'unknown';
+  const userAgent = request.headers.get('User-Agent') || 'unknown';
+  const triggered = _honeypotCheck(text, sourceIp, userAgent);
+
+  return json({
+    ok: true,
+    triggered: triggered.length > 0,
+    trigger_count: triggered.length,
+    triggers: triggered.map(t => ({
+      honeypot_id: t.honeypot_id,
+      accessed_marker: t.accessed_marker,
+      timestamp: t.timestamp,
+      source_ip: t.source_ip,
+    })),
+    active_honeypots: _honeypotCanaries.size,
+  });
+}
+
+async function handleHoneypotTriggers(request, env) {
+  if (env.HONEYPOT_ENABLED !== 'true') return err('Honeypot network not enabled', 403);
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  const url = new URL(request.url);
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200);
+  const recent = _honeypotTriggers.slice(-limit).reverse();
+
+  return json({
+    ok: true,
+    total_triggers: _honeypotTriggers.length,
+    active_honeypots: _honeypotCanaries.size,
+    canaries: [..._honeypotCanaries.values()].map(c => ({
+      id: c.id, content_type: c.content_type, access_count: c.access_count, created_at: c.created_at,
+    })),
+    triggers: recent,
+  });
+}
+
+// ── Dynamic Threshold Modulation (from test3 src/lib/moats/dynamic-thresholds.ts) ──
+// Adaptive security: threat score decays over time; higher score = tighter thresholds.
+const _THREAT_WEIGHTS = { file_upload: 5, api_abuse: 10, rate_limit_breach: 15, evasion_attempt: 25, mass_requests: 20, suspicious_pattern: 15, known_malicious: 50 };
+const _THREAT_CONFIGS = {
+  minimal:  { baseConfidenceThreshold: 0.80, maxFileSizeMB: 75, rateLimitMultiplier: 2.0, blockSuspicious: false, requireVerification: false },
+  low:      { baseConfidenceThreshold: 0.75, maxFileSizeMB: 60, rateLimitMultiplier: 1.5, blockSuspicious: false, requireVerification: false },
+  medium:   { baseConfidenceThreshold: 0.65, maxFileSizeMB: 50, rateLimitMultiplier: 1.0, blockSuspicious: true,  requireVerification: false },
+  high:     { baseConfidenceThreshold: 0.50, maxFileSizeMB: 35, rateLimitMultiplier: 0.5, blockSuspicious: true,  requireVerification: true  },
+  critical: { baseConfidenceThreshold: 0.30, maxFileSizeMB: 25, rateLimitMultiplier: 0.25,blockSuspicious: true,  requireVerification: true  },
+};
+let _dynThreatScore = 0;
+let _dynLastDecay = Date.now();
+const _dynThreatEvents = []; // { timestamp, vector, score }
+
+function _dynApplyDecay() {
+  const now = Date.now();
+  const minutesElapsed = (now - _dynLastDecay) / 60000;
+  if (minutesElapsed > 0) {
+    _dynThreatScore = Math.max(0, _dynThreatScore * Math.pow(0.95, minutesElapsed));
+    _dynLastDecay = now;
+    // Prune history older than 1 hour
+    const cutoff = now - 3600000;
+    while (_dynThreatEvents.length && _dynThreatEvents[0].timestamp < cutoff) _dynThreatEvents.shift();
+  }
+}
+function _dynThreatLevel(score) {
+  if (score >= 80) return 'critical';
+  if (score >= 60) return 'high';
+  if (score >= 40) return 'medium';
+  if (score >= 20) return 'low';
+  return 'minimal';
+}
+function _dynRecordThreat(vector) {
+  const w = _THREAT_WEIGHTS[vector] || 5;
+  _dynApplyDecay();
+  _dynThreatScore = Math.min(100, _dynThreatScore + w);
+  _dynThreatEvents.push({ timestamp: Date.now(), vector, score: w });
+  return { score: _dynThreatScore, level: _dynThreatLevel(_dynThreatScore) };
+}
+function _dynGetConfig() {
+  _dynApplyDecay();
+  return { level: _dynThreatLevel(_dynThreatScore), score: _dynThreatScore, ..._THREAT_CONFIGS[_dynThreatLevel(_dynThreatScore)] };
+}
+function _dynGetStats() {
+  _dynApplyDecay();
+  const counts = {};
+  for (const e of _dynThreatEvents) counts[e.vector] = (counts[e.vector] || 0) + 1;
+  return {
+    currentScore: _dynThreatScore,
+    currentLevel: _dynThreatLevel(_dynThreatScore),
+    recentEvents: Object.entries(counts).map(([v, c]) => ({ vector: v, count: c })).sort((a, b) => b.count - a.count).slice(0, 5),
+    config: _THREAT_CONFIGS[_dynThreatLevel(_dynThreatScore)],
+  };
+}
+
+// ── Privacy-First Framework ──────────────────────────────────────────────────
+// Implements: GPC/DNT compliance, consent management, data minimization,
+// purpose limitation. All new — additive only, zero regression.
+// KV stores used: PRIVACY_CONSENTS (consent records), PRIVACY_AUDIT (audit log)
+// Gated by env.PRIVACY_ENABLED === 'true'; defaults to passthrough when unset.
+
+const _PRIVACY_PURPOSES = {
+  deepfake_detection:  { allowedOps: ['read', 'process', 'analyze'], maxRetentionDays: 30 },
+  security:            { allowedOps: ['read', 'process', 'analyze', 'log'], maxRetentionDays: 90 },
+  analytics:           { allowedOps: ['aggregate'], maxRetentionDays: 7, requiresConsent: true },
+  model_training:      { allowedOps: ['read'], maxRetentionDays: 0, requiresConsent: true },
+};
+
+const _PRIVACY_MINIMIZATION_FIELDS = ['ip_address', 'user_agent', 'email', 'phone', 'ssn', 'location'];
+
+/**
+ * Detect Global Privacy Control (GPC) or DNT signals from request headers.
+ * Returns { gpc: bool, dnt: bool, restricted: bool }
+ */
+function _privacyDetectSignals(request) {
+  const gpc = request.headers.get('Sec-GPC') === '1';
+  const dnt = request.headers.get('DNT') === '1';
+  return { gpc, dnt, restricted: gpc || dnt };
+}
+
+/**
+ * Apply data minimization to a response payload.
+ * Strips or hashes PII fields from the output object.
+ * Returns a new object with minimized data.
+ */
+function _privacyMinimize(data, purpose = 'deepfake_detection') {
+  if (!data || typeof data !== 'object') return data;
+  const out = { ...data };
+
+  // Strip fields not needed for the given purpose
+  for (const field of _PRIVACY_MINIMIZATION_FIELDS) {
+    if (field in out) {
+      // Hash rather than fully remove so we can audit without exposing PII
+      if (typeof out[field] === 'string' && out[field].length > 0) {
+        // Simple FNV-1a 32-bit hex hash (no crypto dependency needed)
+        let h = 0x811c9dc5;
+        for (let i = 0; i < out[field].length; i++) {
+          h ^= out[field].charCodeAt(i);
+          h = (Math.imul(h, 0x01000193) >>> 0);
+        }
+        out[field] = `[minimized:${h.toString(16).padStart(8, '0')}]`;
+      } else {
+        out[field] = '[minimized]';
+      }
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Check if a principal has consent for a given purpose.
+ * Reads from PRIVACY_CONSENTS KV. Defaults to true if KV unavailable.
+ */
+async function _privacyCheckConsent(env, principal, purpose) {
+  if (!env.PRIVACY_CONSENTS) return { granted: true, source: 'default' };
+  try {
+    const record = await env.PRIVACY_CONSENTS.get(`${principal}:${purpose}`, 'json');
+    if (!record) return { granted: true, source: 'default' }; // opt-out not recorded = allow
+    return { granted: record.granted ?? true, source: 'kv', grantedAt: record.grantedAt };
+  } catch {
+    return { granted: true, source: 'error' };
+  }
+}
+
+/**
+ * Record a consent decision to KV.
+ */
+async function _privacyRecordConsent(env, principal, purpose, granted) {
+  if (!env.PRIVACY_CONSENTS) return;
+  try {
+    const record = { granted, purpose, principal, grantedAt: Date.now(), version: '1.0' };
+    const ttlDays = _PRIVACY_PURPOSES[purpose]?.maxRetentionDays || 90;
+    await env.PRIVACY_CONSENTS.put(
+      `${principal}:${purpose}`,
+      JSON.stringify(record),
+      { expirationTtl: ttlDays * 86400 }
+    );
+  } catch { /* non-blocking */ }
+}
+
+/**
+ * Write a privacy audit entry. Non-blocking.
+ */
+async function _privacyAudit(env, principal, action, purpose, details = {}) {
+  if (!env.PRIVACY_AUDIT) return;
+  try {
+    const entry = { principal, action, purpose, details, timestamp: Date.now() };
+    const key = `audit:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    await env.PRIVACY_AUDIT.put(key, JSON.stringify(entry), { expirationTtl: 7776000 }); // 90 days
+  } catch { /* non-blocking */ }
+}
+
+/**
+ * Main privacy middleware check.
+ * Call at the start of any endpoint that processes user data.
+ * Returns { allowed: bool, minimized: bool, gpc: bool, dnt: bool }
+ * When PRIVACY_ENABLED is not set, always returns allowed=true (passthrough).
+ */
+async function _privacyCheck(env, request, principal, purpose, operation) {
+  if (env.PRIVACY_ENABLED !== 'true') return { allowed: true, minimized: false, gpc: false, dnt: false };
+
+  const signals = _privacyDetectSignals(request);
+
+  // GPC = maximally restricted: only allow essential operations, force auto-delete
+  if (signals.gpc) {
+    const essential = ['read', 'process', 'analyze'];
+    if (!essential.includes(operation)) {
+      await _privacyAudit(env, principal, 'denied_gpc', purpose, { operation });
+      return { allowed: false, minimized: true, gpc: true, dnt: signals.dnt, reason: 'gpc_signal' };
+    }
+  }
+
+  // Check purpose-based consent for operations requiring it
+  const purposeConfig = _PRIVACY_PURPOSES[purpose];
+  if (purposeConfig?.requiresConsent) {
+    const consent = await _privacyCheckConsent(env, principal, purpose);
+    if (!consent.granted) {
+      await _privacyAudit(env, principal, 'denied_no_consent', purpose, { operation });
+      return { allowed: false, minimized: true, gpc: signals.gpc, dnt: signals.dnt, reason: 'no_consent' };
+    }
+  }
+
+  // Check if operation is allowed for this purpose
+  if (purposeConfig && !purposeConfig.allowedOps.includes(operation)) {
+    await _privacyAudit(env, principal, 'denied_purpose_limit', purpose, { operation });
+    return { allowed: false, minimized: true, gpc: signals.gpc, dnt: signals.dnt, reason: 'purpose_limitation' };
+  }
+
+  await _privacyAudit(env, principal, 'allowed', purpose, { operation, gpc: signals.gpc });
+  return { allowed: true, minimized: signals.gpc || signals.dnt, gpc: signals.gpc, dnt: signals.dnt };
+}
+
+// ── Privacy-First HTTP Handlers ──
+
+async function handlePrivacyConsent(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const { purpose, granted } = body;
+  if (!purpose || typeof granted !== 'boolean') return err('purpose and granted are required');
+  if (!_PRIVACY_PURPOSES[purpose]) return err(`Unknown purpose: ${purpose}. Valid: ${Object.keys(_PRIVACY_PURPOSES).join(', ')}`);
+
+  await _privacyRecordConsent(env, payload.email || payload.sub, purpose, granted);
+  await _privacyAudit(env, payload.email || payload.sub, granted ? 'consent_granted' : 'consent_withdrawn', purpose, {});
+
+  return json({ ok: true, purpose, granted, recorded_at: new Date().toISOString() });
+}
+
+async function handlePrivacyStatus(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  const principal = payload.email || payload.sub;
+  const signals = _privacyDetectSignals(request);
+
+  const consentStatus = {};
+  for (const purpose of Object.keys(_PRIVACY_PURPOSES)) {
+    const consent = await _privacyCheckConsent(env, principal, purpose);
+    consentStatus[purpose] = {
+      granted: consent.granted,
+      requires_consent: _PRIVACY_PURPOSES[purpose].requiresConsent ?? false,
+      max_retention_days: _PRIVACY_PURPOSES[purpose].maxRetentionDays,
+    };
+  }
+
+  return json({
+    ok: true,
+    principal,
+    gpc_detected: signals.gpc,
+    dnt_detected: signals.dnt,
+    privacy_mode: signals.gpc ? 'maximum' : signals.dnt ? 'enhanced' : 'standard',
+    consent: consentStatus,
+    framework_version: '1.0.0',
+  });
+}
+
+// ── End Privacy-First Framework ────────────────────────────────────────────────
+
+// ── Real-Time Stream Engine ───────────────────────────────────────────────────
+// Session tracking for live video/audio deepfake detection.
+// Supports Zoom, Teams, Meet, TikTok Live, and custom stream sources.
+// Sessions stored in STREAM_SESSIONS KV (optional — in-memory fallback).
+// All new — additive only, gated by authenticated endpoints.
+
+const _STREAM_PLATFORMS = ['zoom', 'teams', 'meet', 'tiktok', 'instagram', 'youtube', 'twitch', 'custom'];
+const _STREAM_ALERT_TYPES = ['face_swap', 'lip_sync', 'voice_clone', 'synthetic_audio', 'identity_theft', 'screen_manipulation'];
+
+/**
+ * Create a new stream session object (in-memory).
+ */
+function _streamCreateSession(sessionId, platform, streamType, userId) {
+  return {
+    id: sessionId,
+    platform,
+    stream_type: streamType,        // 'video' | 'audio' | 'screen'
+    user_id: userId,
+    status: 'active',               // 'active' | 'paused' | 'ended' | 'alert'
+    started_at: Date.now(),
+    last_analysis_at: null,
+    frames_analyzed: 0,
+    audio_segments_analyzed: 0,
+    threats_detected: 0,
+    trust_score: 100,               // 0-100, decreases with threats
+    participants: {},               // participantId -> ParticipantState
+    alerts: [],
+  };
+}
+
+/**
+ * Update trust score based on analysis result.
+ * Deepfake frames: -10 × confidence. Synthetic audio: -15 × confidence.
+ * Flags participant at score < 50. Alerts at score < 30.
+ */
+function _streamUpdateTrust(session, participantId, type, confidence) {
+  if (!session.participants[participantId]) {
+    session.participants[participantId] = {
+      id: participantId,
+      join_time: Date.now(),
+      trust_score: 100,
+      anomaly_count: 0,
+      last_seen: Date.now(),
+      flags: [],
+    };
+  }
+  const p = session.participants[participantId];
+  const penalty = type === 'synthetic_audio' ? 15 * confidence : 10 * confidence;
+  p.trust_score = Math.max(0, p.trust_score - penalty);
+  p.anomaly_count++;
+  p.last_seen = Date.now();
+
+  if (p.trust_score < 50 && !p.flags.includes('low_trust')) p.flags.push('low_trust');
+  if (p.trust_score < 30 && !p.flags.includes('alert')) {
+    p.flags.push('alert');
+    session.status = 'alert';
+    session.threats_detected++;
+    session.alerts.push({
+      id: `alert-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type: type === 'synthetic_audio' ? 'voice_clone' : 'face_swap',
+      severity: p.trust_score < 15 ? 'critical' : 'high',
+      timestamp: Date.now(),
+      confidence,
+      participant: participantId,
+      description: `Trust score dropped to ${p.trust_score.toFixed(1)} for participant ${participantId}`,
+      recommended_action: 'Remove participant and report session',
+      acknowledged: false,
+    });
+  }
+
+  // Update session-level trust score (average of all participants)
+  const scores = Object.values(session.participants).map(pp => pp.trust_score);
+  session.trust_score = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 100;
+}
+
+/**
+ * Persist session to KV (best-effort, non-blocking).
+ */
+async function _streamPersist(env, session) {
+  if (!env.STREAM_SESSIONS) return;
+  try {
+    await env.STREAM_SESSIONS.put(
+      `session:${session.id}`,
+      JSON.stringify(session),
+      { expirationTtl: 86400 }  // 24h retention
+    );
+  } catch { /* non-blocking */ }
+}
+
+/**
+ * Load session from KV (best-effort).
+ */
+async function _streamLoad(env, sessionId) {
+  if (!env.STREAM_SESSIONS) return null;
+  try {
+    return await env.STREAM_SESSIONS.get(`session:${sessionId}`, 'json');
+  } catch { return null; }
+}
+
+// ── Stream Session HTTP Handlers ──
+
+async function handleStreamSessionCreate(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const { platform = 'custom', stream_type = 'video' } = body;
+  if (!_STREAM_PLATFORMS.includes(platform)) return err(`Invalid platform. Valid: ${_STREAM_PLATFORMS.join(', ')}`);
+  if (!['video', 'audio', 'screen'].includes(stream_type)) return err('stream_type must be video, audio, or screen');
+
+  const sessionId = `sess-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const session = _streamCreateSession(sessionId, platform, stream_type, payload.userId || payload.email);
+  await _streamPersist(env, session);
+
+  return json({ ok: true, session_id: sessionId, status: 'active', started_at: session.started_at });
+}
+
+async function handleStreamSessionAnalyze(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const { session_id, participant_id = 'unknown', analysis_type = 'video', confidence = 0, is_threat = false } = body;
+  if (!session_id) return err('session_id required');
+
+  // Load or reconstruct session
+  let session = await _streamLoad(env, session_id);
+  if (!session) return err('Session not found', 404);
+  if (session.status === 'ended') return err('Session has ended', 400);
+
+  // Update analysis counts
+  if (analysis_type === 'audio') {
+    session.audio_segments_analyzed++;
+  } else {
+    session.frames_analyzed++;
+  }
+  session.last_analysis_at = Date.now();
+
+  // Apply trust score update if threat detected
+  if (is_threat && confidence > 0) {
+    _streamUpdateTrust(session, participant_id, analysis_type === 'audio' ? 'synthetic_audio' : 'deepfake_video', confidence);
+  }
+
+  await _streamPersist(env, session);
+
+  return json({
+    ok: true,
+    session_id,
+    status: session.status,
+    trust_score: Math.round(session.trust_score),
+    threats_detected: session.threats_detected,
+    new_alerts: session.alerts.filter(a => !a.acknowledged).length,
+    participant_trust: session.participants[participant_id]
+      ? Math.round(session.participants[participant_id].trust_score)
+      : 100,
+  });
+}
+
+async function handleStreamSessionGet(sessionId, request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  const session = await _streamLoad(env, sessionId);
+  if (!session) return err('Session not found', 404);
+
+  return json({
+    ok: true,
+    session: {
+      id: session.id,
+      platform: session.platform,
+      stream_type: session.stream_type,
+      status: session.status,
+      started_at: session.started_at,
+      last_analysis_at: session.last_analysis_at,
+      frames_analyzed: session.frames_analyzed,
+      audio_segments_analyzed: session.audio_segments_analyzed,
+      threats_detected: session.threats_detected,
+      trust_score: Math.round(session.trust_score),
+      participant_count: Object.keys(session.participants).length,
+      alerts: session.alerts,
+    }
+  });
+}
+
+async function handleStreamSessionEnd(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const { session_id } = body;
+  if (!session_id) return err('session_id required');
+
+  const session = await _streamLoad(env, session_id);
+  if (!session) return err('Session not found', 404);
+
+  session.status = 'ended';
+  session.ended_at = Date.now();
+  session.duration_ms = session.ended_at - session.started_at;
+  await _streamPersist(env, session);
+
+  return json({
+    ok: true,
+    session_id,
+    status: 'ended',
+    duration_ms: session.duration_ms,
+    frames_analyzed: session.frames_analyzed,
+    audio_segments_analyzed: session.audio_segments_analyzed,
+    threats_detected: session.threats_detected,
+    final_trust_score: Math.round(session.trust_score),
+  });
+}
+
+// ── End Real-Time Stream Engine ────────────────────────────────────────────────
+
+function _recordIndicator(name) {
+  _brittlenessState.indicators[name] = (_brittlenessState.indicators[name] || 0) + 1;
+  _brittlenessState.totalUsage++;
+}
+
+function _getBrittlenessStatus() {
+  const total = _brittlenessState.totalUsage;
+  if (total === 0) return { overall_brittleness: 0, total_indicators: 0, total_usage: 0, critical_indicators: [], top_indicators: [], recommendations: ['No indicator data yet'] };
+
+  let entropy = 0;
+  const indicators = [];
+  const critical = [];
+
+  for (const [name, usage] of Object.entries(_brittlenessState.indicators)) {
+    const b = usage / total;
+    if (b > 0) entropy -= b * Math.log2(b);
+    const risk = b > 0.5 ? 'critical' : b > 0.3 ? 'high' : b > 0.15 ? 'medium' : 'low';
+    indicators.push({ indicator: name, brittleness: b, risk, usage });
+    if (risk === 'critical' || risk === 'high') critical.push(name);
+  }
+
+  const maxEntropy = Math.log2(Math.max(1, Object.keys(_brittlenessState.indicators).length));
+  const normalized = maxEntropy > 0 ? entropy / maxEntropy : 0;
+  const overallBrittleness = 1.0 - normalized;
+
+  const recs = [];
+  if (overallBrittleness > 0.7) recs.push('System is VERY BRITTLE — diversify indicators');
+  else if (overallBrittleness > 0.5) recs.push('System is BRITTLE — add detection methods');
+  if (critical.length) recs.push(`Critical indicators over-relied upon: ${critical.join(', ')}`);
+  if (overallBrittleness < 0.3) recs.push('Indicator usage is well-balanced');
+
+  indicators.sort((a, b) => b.brittleness - a.brittleness);
+  return {
+    overall_brittleness: overallBrittleness,
+    entropy_score: entropy,
+    max_entropy: maxEntropy,
+    total_indicators: Object.keys(_brittlenessState.indicators).length,
+    total_usage: total,
+    critical_indicators: critical,
+    top_indicators: indicators.slice(0, 5),
+    recommendations: recs
+  };
+}
+
+function _getThreatForecast(forecastHours = 24) {
+  const PATTERNS = {
+    evasion: { indicators: ['obfuscation', 'encoding', 'mutation'], mitigations: ['Enable multi-layer decoding'], windows: ['1h', '6h', '24h'] },
+    injection: { indicators: ['payload', 'script', 'sql'], mitigations: ['Strengthen input validation'], windows: ['15m', '1h', '6h'] },
+    exfiltration: { indicators: ['secret', 'credential', 'api_key'], mitigations: ['Block outbound connections'], windows: ['5m', '30m', '2h'] },
+    manipulation: { indicators: ['deepfake', 'synthetic', 'generated'], mitigations: ['Increase detection sensitivity'], windows: ['1h', '12h', '48h'] },
+    bypass: { indicators: ['hook', 'override', 'patch'], mitigations: ['Verify hook integrity'], windows: ['10m', '1h', '6h'] }
+  };
+
+  const now = Date.now();
+  const categoryCounts = {};
+  for (const e of _threatHistory) categoryCounts[e.category] = (categoryCounts[e.category] || 0) + 1;
+
+  const total = _threatHistory.length;
+  const confidence = Math.min(total / 100, 1.0);
+
+  const predictions = Object.entries(PATTERNS).map(([category, p]) => ({
+    threat: `Potential ${category} attack`,
+    probability: total > 0 ? (categoryCounts[category] || 0) / total : 0.1,
+    category,
+    time_window: p.windows[0],
+    mitigation: p.mitigations[0],
+    indicators: p.indicators.slice(0, 3)
+  })).sort((a, b) => b.probability - a.probability).slice(0, 5);
+
+  return {
+    forecast_id: `forecast_${now}`,
+    generated_at: now,
+    valid_until: now + forecastHours * 3600000,
+    confidence,
+    based_on_events: total,
+    predictions,
+    trend: _threatHistory.length > 1 ? 'active' : 'calm'
+  };
+}
+
+async function handleMoatBrittleness(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  // Record scan/genai/obfuscation as indicators if present in KV stats
+  _recordIndicator('pattern_scan');
+  _recordIndicator('genai_detection');
+  _recordIndicator('obfuscation_decoder');
+
+  return json({ ok: true, brittleness: _getBrittlenessStatus() });
+}
+
+async function handleMoatForecast(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let forecastHours = 24;
+  try {
+    const url = new URL(request.url);
+    const h = parseInt(url.searchParams.get('hours') || '24', 10);
+    if (h > 0 && h <= 168) forecastHours = h;
+  } catch (_) {}
+
+  return json({ ok: true, forecast: _getThreatForecast(forecastHours) });
+}
+
+async function handleMoatRecordThreat(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const { vector, severity = 'medium', category = 'evasion', source = 'api' } = body;
+  if (!vector) return err('vector is required');
+
+  const event = { id: `threat_${Date.now()}`, timestamp: Date.now(), vector, severity, category, source };
+  _threatHistory.push(event);
+  if (_threatHistory.length > 10000) _threatHistory.shift();
+
+  // Also record in dynamic threshold system
+  _dynRecordThreat(category === 'evasion' ? 'evasion_attempt' : category === 'injection' ? 'suspicious_pattern' : 'suspicious_pattern');
+
+  return json({ ok: true, event_id: event.id, recorded_at: event.timestamp });
+}
+
+async function handleMoatThresholds(request, env) {
+  const token = extractBearer(request);
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+  return json({ ok: true, thresholds: _dynGetStats() });
+}
+
+// ── Cryptographic Commitment Proofs (Merkle-SHA256) ─────────────────────────
+// Note: these are Merkle tree commitments over SHA-256 leaf hashes,
+// NOT zero-knowledge proofs. They provide tamper-evident content binding.
 
 // In-memory proof store (Cloudflare Worker ephemeral — use KV for persistence)
 const _proofStore = new Map();
@@ -1549,29 +2618,157 @@ async function handleComplianceMapping(request, env) {
   });
 }
 
-async function handleGetPolicies(request, env) {
-  // Verify auth token
-  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-  if (!token || !(await verifyToken(env, token))) {
-    return err('Unauthorized', 401);
-  }
+// ── Policy KV helpers ──
+// Policies stored in KASBAH_KV as: policy_config:{org_id}
+// Individual named policies: policy:{org_id}:{policy_id}
 
-  // Return default policies
-  const policies = {
-    warn_threshold: 40,
-    block_threshold: 70,
-    deny_threshold: 90,
-    escalation_threshold: 85,
-    departments: {},
-    enabled: true,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
+async function _getPolicyConfig(env, orgId = 'default') {
+  const kv = env.KASBAH_KV;
+  if (!kv) return null;
+  const raw = await kv.get(`policy_config:${orgId}`);
+  return raw ? JSON.parse(raw) : null;
+}
+
+async function _savePolicyConfig(env, config, orgId = 'default') {
+  const kv = env.KASBAH_KV;
+  if (!kv) return false;
+  await kv.put(`policy_config:${orgId}`, JSON.stringify(config));
+  return true;
+}
+
+const _DEFAULT_POLICY_CONFIG = {
+  warn_threshold: 40,
+  block_threshold: 70,
+  deny_threshold: 90,
+  escalation_threshold: 85,
+  departments: {},
+  enabled: true,
+};
+
+async function handleGetPolicies(request, env) {
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  const orgId = payload.org_id || 'default';
+  const saved = await _getPolicyConfig(env, orgId);
+  const policies = saved || {
+    ..._DEFAULT_POLICY_CONFIG,
+    created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
 
-  return json({
-    ok: true,
-    policies: policies,
-  });
+  return json({ ok: true, policies });
+}
+
+async function handleUpdatePolicies(request, env) {
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const orgId = payload.org_id || 'default';
+  const existing = (await _getPolicyConfig(env, orgId)) || { ..._DEFAULT_POLICY_CONFIG };
+
+  // Merge — only allow known policy fields
+  const allowed = ['warn_threshold', 'block_threshold', 'deny_threshold', 'escalation_threshold', 'departments', 'enabled'];
+  for (const key of allowed) {
+    if (body[key] !== undefined) existing[key] = body[key];
+  }
+
+  // Validate thresholds are in range
+  for (const k of ['warn_threshold', 'block_threshold', 'deny_threshold', 'escalation_threshold']) {
+    if (typeof existing[k] === 'number' && (existing[k] < 0 || existing[k] > 100)) {
+      return err(`${k} must be between 0 and 100`);
+    }
+  }
+
+  existing.updated_at = new Date().toISOString();
+  if (!existing.created_at) existing.created_at = existing.updated_at;
+  existing.updated_by = payload.email || payload.sub;
+
+  await _savePolicyConfig(env, existing, orgId);
+  return json({ ok: true, policies: existing, message: 'Policy configuration saved.' });
+}
+
+async function handleCreateNamedPolicy(request, env) {
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  if (!body.name || typeof body.name !== 'string') return err('name is required');
+
+  const orgId = payload.org_id || 'default';
+  const policyId = `pol_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const policy = {
+    id: policyId,
+    name: body.name,
+    description: body.description || '',
+    patterns: Array.isArray(body.patterns) ? body.patterns : [],
+    threshold: typeof body.threshold === 'number' ? Math.min(100, Math.max(0, body.threshold)) : 70,
+    enabled: body.enabled !== false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    created_by: payload.email || payload.sub,
+  };
+
+  if (env.KASBAH_KV) {
+    await env.KASBAH_KV.put(`policy:${orgId}:${policyId}`, JSON.stringify(policy));
+  }
+
+  return json({ ok: true, policy }, 201);
+}
+
+async function handleUpdateNamedPolicy(request, env, policyId) {
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  if (!policyId) return err('policy_id required');
+
+  let body;
+  try { body = await request.json(); } catch { return err('Invalid JSON'); }
+
+  const orgId = payload.org_id || 'default';
+  const kv = env.KASBAH_KV;
+  if (!kv) return err('Storage not available', 503);
+
+  const raw = await kv.get(`policy:${orgId}:${policyId}`);
+  if (!raw) return err('Policy not found', 404);
+
+  const existing = JSON.parse(raw);
+  const allowed = ['name', 'description', 'patterns', 'threshold', 'enabled'];
+  for (const key of allowed) {
+    if (body[key] !== undefined) existing[key] = body[key];
+  }
+  existing.updated_at = new Date().toISOString();
+  existing.updated_by = payload.email || payload.sub;
+
+  await kv.put(`policy:${orgId}:${policyId}`, JSON.stringify(existing));
+  return json({ ok: true, policy: existing });
+}
+
+async function handleDeleteNamedPolicy(request, env, policyId) {
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+  const payload = await verifyToken(env, token);
+  if (!payload) return err('Unauthorized', 401);
+
+  if (!policyId) return err('policy_id required');
+
+  const orgId = payload.org_id || 'default';
+  const kv = env.KASBAH_KV;
+  if (!kv) return err('Storage not available', 503);
+
+  const raw = await kv.get(`policy:${orgId}:${policyId}`);
+  if (!raw) return err('Policy not found', 404);
+
+  await kv.delete(`policy:${orgId}:${policyId}`);
+  return json({ ok: true, deleted: policyId });
 }
 
 // ── User Management Handlers (RBAC) ──
@@ -2460,13 +3657,64 @@ async function handleListAllUsers(request, env) {
   }
 }
 
+// ── Email: Send confirmation email ──
+async function sendWaitlistConfirmationEmail(email, env) {
+  if (!env.RESEND_API_KEY) {
+    console.warn('[EMAIL] RESEND_API_KEY not configured, skipping email');
+    return { sent: false, reason: 'No API key' };
+  }
+
+  const html = `
+<p>Hey you,</p>
+
+<p>Thanks for giving us a chance to protect what matters to you.</p>
+
+<p>Reach out to us if you want anytime — yo@bekasbah.com</p>
+
+<p>Talk soon,<br>
+Kasbah Guard</p>
+  `;
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Kasbah Guard <yo@bekasbah.com>',
+        to: email,
+        subject: 'Thanks for giving us a chance',
+        html: html,
+        reply_to: 'yo@bekasbah.com'
+      })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`[EMAIL] Confirmation sent to ${email} (ID: ${result.id})`);
+      return { sent: true, id: result.id };
+    } else {
+      const error = await response.text();
+      console.error(`[EMAIL] Failed to send to ${email}: ${error}`);
+      return { sent: false, reason: 'API error' };
+    }
+  } catch (e) {
+    console.error(`[EMAIL] Error sending to ${email}: ${e.message}`);
+    return { sent: false, reason: e.message };
+  }
+}
+
 // ── Public: Join waitlist ──
 async function handleWaitlistSignup(request, env) {
+  const timestamp = new Date().toISOString();
   try {
     const body = await request.json();
     const email = (body.email || '').trim().toLowerCase();
 
     if (!email || !email.includes('@')) {
+      console.warn(`[WAITLIST] Invalid email format: "${body.email}" at ${timestamp}`);
       return err('Valid email required', 400);
     }
 
@@ -2474,17 +3722,41 @@ async function handleWaitlistSignup(request, env) {
     const key = `waitlist:${email}`;
     const data = JSON.stringify({
       email: email,
-      signupDate: new Date().toISOString(),
-      timestamp: Date.now()
+      signupDate: timestamp,
+      timestamp: Date.now(),
+      userAgent: request.headers.get('user-agent') || 'unknown',
+      ip: request.headers.get('cf-connecting-ip') || 'unknown'
     });
 
     await env.KASBAH_KV.put(key, data, { expirationTtl: 7776000 }); // 90 days
 
+    // Log successful signup
+    console.log(`[WAITLIST] SUCCESS: ${email} signed up at ${timestamp}`);
+
+    // Send confirmation email (async, don't block response)
+    const emailResult = await sendWaitlistConfirmationEmail(email, env);
+
+    // Store confirmation in audit trail
+    try {
+      const auditKey = `waitlist-audit:${timestamp}:${email}`;
+      await env.KASBAH_KV.put(auditKey, JSON.stringify({
+        email,
+        timestamp,
+        status: 'success',
+        emailSent: emailResult.sent
+      }), { expirationTtl: 2592000 }); // 30 days
+    } catch (auditErr) {
+      console.error(`[WAITLIST] Failed to write audit log: ${auditErr.message}`);
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
-        message: 'Thanks! We\'ll email you when Kasbah Guard is ready.',
-        email: email
+        message: emailResult.sent
+          ? 'Welcome! Check your email for an inspiring message.'
+          : 'Thanks! We\'ll reach out when Kasbah Guard is ready.',
+        email: email,
+        emailSent: emailResult.sent
       }),
       {
         status: 200,
@@ -2495,6 +3767,26 @@ async function handleWaitlistSignup(request, env) {
       }
     );
   } catch (e) {
+    const errorMsg = `[WAITLIST] ERROR at ${timestamp}: ${e.message}`;
+    console.error(errorMsg);
+
+    // Log error to Sentry
+    try {
+      await fetch('https://api.bekasbah.com/api/sentry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'WaitlistError',
+          message: e.message,
+          stack: e.stack,
+          context: { endpoint: '/waitlist', timestamp },
+          severity: 'error'
+        })
+      });
+    } catch (sentryErr) {
+      console.error(`[WAITLIST] Failed to log to Sentry: ${sentryErr.message}`);
+    }
+
     return err('Failed to join waitlist: ' + e.message, 500);
   }
 }
@@ -2729,6 +4021,33 @@ export default {
         response = await handleApiPolicies(request, env);
       } else if (method === 'GET' && path === '/api/team') {
         response = await handleApiTeam(request, env);
+      } else if (method === 'GET' && path === '/api/moats/brittleness') {
+        response = await handleMoatBrittleness(request, env);
+      } else if (method === 'GET' && path === '/api/moats/forecast') {
+        response = await handleMoatForecast(request, env);
+      } else if (method === 'POST' && path === '/api/moats/threats') {
+        response = await handleMoatRecordThreat(_clonedRequest, env);
+      } else if (method === 'GET' && path === '/api/moats/thresholds') {
+        response = await handleMoatThresholds(request, env);
+      } else if (method === 'POST' && path === '/api/privacy/consent') {
+        response = await handlePrivacyConsent(_clonedRequest, env);
+      } else if (method === 'GET' && path === '/api/privacy/status') {
+        response = await handlePrivacyStatus(request, env);
+      } else if (method === 'POST' && path === '/api/stream/sessions') {
+        response = await handleStreamSessionCreate(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/api/stream/analyze') {
+        response = await handleStreamSessionAnalyze(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/api/stream/end') {
+        response = await handleStreamSessionEnd(_clonedRequest, env);
+      } else if (method === 'GET' && path.startsWith('/api/stream/sessions/')) {
+        const streamSessionId = path.slice('/api/stream/sessions/'.length);
+        response = await handleStreamSessionGet(streamSessionId, request, env);
+      } else if (method === 'POST' && path === '/api/authz/delegate') {
+        response = await handleAuthZDelegate(_clonedRequest, env);
+      } else if (method === 'GET' && path === '/api/authz/budget') {
+        response = await handleAuthZBudget(request, env);
+      } else if (method === 'POST' && path === '/api/authz/rules') {
+        response = await handleAuthZRules(_clonedRequest, env);
       } else if (method === 'POST' && path === '/api/scan') {
         // ── Moat 2: Rate limiting for expensive scan operation ──
         const requestId = request.headers.get('x-request-id') || `req-${Date.now()}`;
@@ -2760,7 +4079,7 @@ export default {
         const gate = apiGateCheck(1.0, 0.0, 0.0);
         response = json({
           ok: true, service: 'kasbah-api', version: '2.0.0',
-          capabilities: ['constitutional-ai', 'zk-proofs', 'enterprise'],
+          capabilities: ['constitutional-ai', 'commitment-proofs', 'enterprise'],
           sii: parseFloat(sii.toFixed(4)),
           moats: {
             sii: parseFloat(sii.toFixed(4)),
@@ -2769,6 +4088,30 @@ export default {
             techniques: ['moat_f_sii', 'moat_o_gate', 'moat_i_risk_scan'],
           }
         });
+      } else if (method === 'GET' && path === '/health/waitlist') {
+        // Health check: Verify /waitlist endpoint is operational
+        try {
+          // Test: Attempt to read a key from KASBAH_KV (simulating the waitlist check)
+          const testKey = await env.KASBAH_KV.get('HEALTH_CHECK_MARKER');
+          response = json({
+            ok: true,
+            endpoint: '/waitlist',
+            status: 'operational',
+            timestamp: new Date().toISOString(),
+            kv_accessible: true,
+            lastFailureTime: null
+          });
+        } catch (healthErr) {
+          console.error(`[HEALTH] Waitlist health check failed: ${healthErr.message}`);
+          response = json({
+            ok: false,
+            endpoint: '/waitlist',
+            status: 'degraded',
+            timestamp: new Date().toISOString(),
+            kv_accessible: false,
+            error: healthErr.message
+          }, 503);
+        }
       } else if (method === 'POST' && path === '/moat/gate') {
         // Moat O: Three-gate check endpoint (for integrators / SDK health checks)
         let body = {};
@@ -2810,8 +4153,17 @@ export default {
         // Compliance: Map detection to frameworks
         response = await handleComplianceMapping(request, env);
       } else if (method === 'GET' && path === '/api/admin/org/policies') {
-        // Policy Engine: Get org policies
         response = await handleGetPolicies(request, env);
+      } else if (method === 'PUT' && path === '/api/admin/org/policies') {
+        response = await handleUpdatePolicies(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/api/admin/org/policies') {
+        response = await handleCreateNamedPolicy(_clonedRequest, env);
+      } else if (method === 'PUT' && path.startsWith('/api/admin/org/policies/')) {
+        const policyId = path.slice('/api/admin/org/policies/'.length);
+        response = await handleUpdateNamedPolicy(_clonedRequest, env, policyId);
+      } else if (method === 'DELETE' && path.startsWith('/api/admin/org/policies/')) {
+        const policyId = path.slice('/api/admin/org/policies/'.length);
+        response = await handleDeleteNamedPolicy(request, env, policyId);
       } else if (method === 'GET' && path === '/api/admin/team/users') {
         // User management: List team members
         response = await handleListTeamUsers(request, env);
@@ -2878,6 +4230,25 @@ export default {
       } else if (method === 'GET' && path === '/api/admin/waitlist/export') {
         // Admin: Export waitlist as CSV
         response = await handleExportWaitlist(request, env);
+
+      // ── Honeypot Network endpoints (gated by env.HONEYPOT_ENABLED) ──
+      } else if (method === 'POST' && path === '/api/honeypot/deploy') {
+        response = await handleHoneypotDeploy(_clonedRequest, env);
+      } else if (method === 'POST' && path === '/api/honeypot/check') {
+        response = await handleHoneypotCheck(_clonedRequest, env);
+      } else if (method === 'GET' && path === '/api/honeypot/triggers') {
+        response = await handleHoneypotTriggers(request, env);
+
+      // ── HyperCache stats endpoint ──
+      } else if (method === 'GET' && path === '/api/cache/stats') {
+        const token = extractBearer(request);
+        const payload = await verifyToken(env, token);
+        if (!payload) {
+          response = err('Unauthorized', 401);
+        } else {
+          response = json({ ok: true, cache: _hyperCacheStats() });
+        }
+
       } else {
         response = err('Not found', 404);
       }

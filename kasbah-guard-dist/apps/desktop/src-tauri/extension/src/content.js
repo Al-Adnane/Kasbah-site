@@ -10,7 +10,7 @@
 // MOAT 6  — WebSocket constructor URL scan: blocks new WebSocket("wss://evil?k=")
 // MOAT 7  — window.open URL scan: blocks navigation-based exfil
 // MOAT 8  — MutationObserver src-hook: blocks <img>/<script> pixel exfil
-// MOAT 9  — Base64 decode in scanStr: catches encoded payloads
+// MOAT 9  — Multi-layer obfuscation decoder: Base64+hex+URL+homoglyphs, 3 layers deep
 // MOAT 10 — Shannon entropy + 22-pattern detection engine  (detector.js)
 // MOAT 11 — Unicode normalization + zero-width char stripping (detector.js)
 // MOAT 12 — <all_urls> omnipresent coverage                 (manifest)
@@ -75,16 +75,82 @@
     return _FALLBACK.some(p => p.test(c));
   }
 
-  // ── MOAT 9: Base64 decode in scan ───────────────────────────────────────
-  // Catches: {"data":"c2stcHJvai0xMjM...", "encoding":"base64"}
-  function _scanBase64(str) {
-    const segs = str.match(/[A-Za-z0-9+/]{20,}={0,2}/g);
-    if (!segs) return false;
-    for (const seg of segs) {
+  // ── MOAT 9: Multi-layer obfuscation decoder ─────────────────────────────
+  // Catches secrets hidden behind Base64, hex, URL-encoding, homoglyphs,
+  // and zero-width chars — applied up to 3 layers deep.
+
+  function _checkDecoded(dec) {
+    if (!dec || dec.length < 6) return false;
+    const clean = dec.replace(/[\u200b-\u200d\u200e\u200f\ufeff\u00ad\u2060]/g, "");
+    if (_fallbackDeny(clean)) return true;
+    try { if (typeof getDecision === "function" && getDecision(clean) === DENY) return true; } catch {}
+    return false;
+  }
+
+  function _normalizeStr(str) {
+    const MAP = {
+      '\u0410':'A','\u0412':'B','\u0415':'E','\u041D':'H','\u041A':'K',
+      '\u041C':'M','\u041E':'O','\u0420':'P','\u0421':'C','\u0422':'T',
+      '\u0423':'Y','\u0425':'X','\u0430':'a','\u043E':'o','\u0435':'e',
+      '\u0440':'p','\u0441':'c','\u0445':'x',
+      '\u2013':'-','\u2014':'-','\u2018':"'",'\u2019':"'",
+    };
+    let r = str.replace(/[\u200b-\u200d\u200e\u200f\ufeff\u00ad\u2060]/g, "");
+    for (const [k, v] of Object.entries(MAP)) r = r.split(k).join(v);
+    return r;
+  }
+
+  function _decodeHex(str) {
+    try {
+      if (str.length < 16 || str.length % 2 !== 0) return null;
+      if (!/^[0-9A-Fa-f]+$/.test(str)) return null;
+      let out = "";
+      for (let i = 0; i < str.length; i += 2) {
+        out += String.fromCharCode(parseInt(str.slice(i, i + 2), 16));
+      }
+      return out.length > 0 ? out : null;
+    } catch { return null; }
+  }
+
+  function _tryDecode(seg) {
+    try {
+      if (/^[A-Za-z0-9+/]{20,}={0,2}$/.test(seg)) {
+        const d = atob(seg);
+        if (d && d.length > 5) return d;
+      }
+    } catch {}
+    const hexDec = _decodeHex(seg);
+    if (hexDec) return hexDec;
+    if (/%[0-9A-Fa-f]{2}/.test(seg)) {
       try {
-        const dec = atob(seg);
-        if (_fallbackDeny(dec)) return true;
-        try { if (typeof getDecision === "function" && getDecision(dec) === DENY) return true; } catch {}
+        const d = decodeURIComponent(seg);
+        if (d !== seg && d.length > 5) return d;
+      } catch {}
+    }
+    return null;
+  }
+
+  function _scanObfuscated(str) {
+    if (!str || str.length < 8) return false;
+    const norm = _normalizeStr(str);
+    if (norm !== str && _checkDecoded(norm)) return true;
+    const candidates = str.match(/[A-Za-z0-9+/%]{12,}={0,2}/g) || [];
+    if (str.length <= 2000) candidates.unshift(str);
+    for (const seg of candidates.slice(0, 20)) {
+      let current = seg;
+      for (let depth = 0; depth < 3; depth++) {
+        const decoded = _tryDecode(current);
+        if (!decoded) break;
+        if (_checkDecoded(decoded)) return true;
+        const normDec = _normalizeStr(decoded);
+        if (normDec !== decoded && _checkDecoded(normDec)) return true;
+        current = decoded;
+      }
+    }
+    if (str.includes('%') && /%[0-9A-Fa-f]{2}/.test(str)) {
+      try {
+        const urlDec = decodeURIComponent(str);
+        if (urlDec !== str && _checkDecoded(urlDec)) return true;
       } catch {}
     }
     return false;
@@ -97,8 +163,8 @@
     try { if (typeof getDecision === "function" && getDecision(str) === DENY) return true; } catch {}
     // Fallback: inline critical patterns (never fails open)
     if (_fallbackDeny(str)) return true;
-    // MOAT 9: base64 segments
-    if (_scanBase64(str)) return true;
+    // MOAT 9: multi-layer obfuscation (Base64 + hex + URL + homoglyphs, 3 layers deep)
+    if (_scanObfuscated(str)) return true;
     return false;
   }
 

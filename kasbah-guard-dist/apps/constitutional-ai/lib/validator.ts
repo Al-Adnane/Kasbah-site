@@ -13,6 +13,12 @@ export interface ValidationResult {
   reasoning: string;
   blocked_rules: string[];
   requires_approval: boolean;
+  ccl_level: number; // 0-5, mapped from risk_score
+  authz_context?: {
+    principal?: string;
+    ticket_id?: string;
+    audit_entry_id?: string;
+  };
 }
 
 interface PolicyConstraint {
@@ -69,7 +75,8 @@ export class ConstitutionalAIValidator {
   async validateIntent(
     intent: string,
     policy_id?: string,
-    context?: Record<string, unknown>
+    context?: Record<string, unknown>,
+    authzContext?: { principal?: string; ticket_id?: string }
   ): Promise<ValidationResult> {
     const policyKey = policy_id || 'default';
     const constraints = this.policies.get(policyKey) || DEFAULT_POLICIES;
@@ -101,12 +108,17 @@ export class ConstitutionalAIValidator {
 
     const reasoning = this.generateReasoning(blockedRules, riskScore, context);
 
+    // Map risk_score to CCL level (0-5)
+    const cclLevel = Math.min(5, Math.floor(riskScore * 5.5));
+
     return {
       valid,
       risk_score: riskScore,
       reasoning,
       blocked_rules: blockedRules,
       requires_approval: requiresApproval,
+      ccl_level: cclLevel,
+      ...(authzContext ? { authz_context: authzContext } : {}),
     };
   }
 
@@ -179,7 +191,7 @@ export class ConstitutionalAIValidator {
     else if (markerCount > 1) risk += 0.06;
 
     // High entropy alone isn't suspicious, but combined with markers is
-    if (entropy > 5.4 && markerCount > 0) risk += 0.05;
+    if (this.calculateEntropy(intent) > 5.4 && markerCount > 0) risk += 0.05;
 
     return Math.min(risk, 0.25); // Cap frontier contribution at 0.25
   }
@@ -244,3 +256,271 @@ export class ConstitutionalAIValidator {
     logger.info('Custom policy added', { policy_id, constraint_count: constraints.length });
   }
 }
+
+// ── Ethical AI Verification ───────────────────────────────────────────────────
+
+export type EthicalCategory =
+  | 'privacy' | 'transparency' | 'fairness' | 'accountability' | 'safety'
+  | 'autonomy' | 'islamic_ethics' | 'anti_surveillance' | 'community_first' | 'no_military_use';
+
+export type ComplianceLevel =
+  | 'non_compliant' | 'basic' | 'standard' | 'advanced' | 'exemplary' | 'platinum';
+
+export type CertificationBadge =
+  | 'ethical_ai' | 'privacy_first' | 'islamic_ethics' | 'community_trusted';
+
+export interface EthicalPrincipleResult {
+  principle: string;
+  score: number;          // 0.0-1.0
+  passed: boolean;
+  evidence: string[];
+}
+
+export interface EthicalCategoryResult {
+  category: EthicalCategory;
+  score: number;          // weighted average of principles
+  principles: EthicalPrincipleResult[];
+  weight: number;         // relative weight in overall score
+}
+
+export interface EthicalBadge {
+  type: CertificationBadge;
+  level: ComplianceLevel;
+  issued_at: number;      // Unix ms
+  expires_at: number;     // Unix ms (+1 year)
+  score: number;
+}
+
+export interface EthicalComplianceReport {
+  provider_id: string;
+  provider_name: string;
+  overall_score: number;           // 0.0-1.0
+  compliance_level: ComplianceLevel;
+  ccl_level: number;               // 0-5, mapped from risk_score (1 - overall_score)
+  categories: EthicalCategoryResult[];
+  badges: EthicalBadge[];
+  critical_issues: string[];
+  recommendations: string[];
+  verified_at: number;
+}
+
+/**
+ * Ethical AI Verifier
+ *
+ * Verifies AI providers/systems against 10 ethical categories including
+ * Islamic AI Ethics (Maqasid al-Shariah), privacy-first principles,
+ * anti-surveillance, and community-first values.
+ *
+ * Issues certification badges at 5 compliance levels.
+ * Additive to ConstitutionalAIValidator — zero regression.
+ */
+export class EthicalAIVerifier {
+  private readonly _weights: Record<EthicalCategory, number> = {
+    privacy:           1.5,
+    transparency:      1.0,
+    fairness:          1.2,
+    accountability:    1.0,
+    safety:            1.3,
+    autonomy:          1.0,
+    islamic_ethics:    1.1,
+    anti_surveillance: 1.4,
+    community_first:   0.8,
+    no_military_use:   1.3,
+  };
+
+  private readonly _principles: Record<EthicalCategory, string[]> = {
+    privacy: [
+      'privacy_first_design',
+      'no_training_on_user_data',
+      'data_minimization',
+      'strong_encryption',
+    ],
+    transparency: [
+      'model_transparency',
+      'decision_explainability',
+      'bias_disclosure',
+    ],
+    fairness: [
+      'non_discrimination',
+      'equal_access',
+      'cultural_sensitivity',
+    ],
+    accountability: [
+      'human_oversight',
+      'incident_response',
+      'audit_trails',
+    ],
+    safety: [
+      'harm_prevention',
+      'content_safety',
+      'security_testing',
+    ],
+    autonomy: [
+      'informed_consent',
+      'user_control',
+      'opt_out_rights',
+    ],
+    islamic_ethics: [
+      'preservation_of_life',
+      'preservation_of_religion',
+      'preservation_of_intellect',
+      'preservation_of_lineage',
+      'preservation_of_property',
+      'preservation_of_dignity',
+    ],
+    anti_surveillance: [
+      'no_mass_surveillance',
+      'no_government_contracts',
+      'resistance_technology',
+    ],
+    community_first: [
+      'community_benefit',
+      'marginalized_voices',
+      'open_source_commitment',
+    ],
+    no_military_use: [
+      'no_military_contracts',
+      'no_weaponization',
+    ],
+  };
+
+  /**
+   * Verify an AI provider/system against all ethical principles.
+   *
+   * @param providerId  Unique identifier for this provider
+   * @param providerName  Human-readable name
+   * @param attestations  Self-attestation map: {principle_name: boolean | string}
+   * @param technicalEvidence  Optional technical audit evidence
+   */
+  verify(
+    providerId: string,
+    providerName: string,
+    attestations: Record<string, unknown> = {},
+    technicalEvidence: Record<string, unknown> = {}
+  ): EthicalComplianceReport {
+    const categoryResults: EthicalCategoryResult[] = [];
+    const criticalIssues: string[] = [];
+
+    for (const [cat, principles] of Object.entries(this._principles)) {
+      const category = cat as EthicalCategory;
+      const principleResults: EthicalPrincipleResult[] = principles.map(p => {
+        const attestation = attestations[p];
+        let score = 0.5; // default: unknown
+        const evidence: string[] = [];
+
+        if (typeof attestation === 'boolean') {
+          score = attestation ? 1.0 : 0.0;
+          evidence.push(attestation ? 'self_attestation:pass' : 'self_attestation:fail');
+        } else if (typeof attestation === 'number') {
+          score = Math.min(1.0, Math.max(0.0, attestation));
+          evidence.push(`self_attestation:score=${score}`);
+        }
+
+        // Supplement with technical evidence
+        const techScore = technicalEvidence[p];
+        if (typeof techScore === 'number') {
+          score = (score + Math.min(1.0, Math.max(0.0, techScore))) / 2;
+          evidence.push(`technical:score=${techScore}`);
+        }
+
+        // Critical: no_military_use and anti_surveillance failures are blocking
+        if ((category === 'no_military_use' || category === 'anti_surveillance') && score < 0.3) {
+          criticalIssues.push(`CRITICAL: ${category}.${p} failed (score=${score.toFixed(2)})`);
+        }
+
+        return { principle: p, score, passed: score >= 0.5, evidence };
+      });
+
+      const categoryScore = principleResults.reduce((sum, r) => sum + r.score, 0) / principleResults.length;
+      categoryResults.push({
+        category,
+        score: categoryScore,
+        principles: principleResults,
+        weight: this._weights[category],
+      });
+    }
+
+    // Weighted overall score
+    const totalWeight = Object.values(this._weights).reduce((a, b) => a + b, 0);
+    const overallScore = categoryResults.reduce(
+      (sum, c) => sum + c.score * c.weight, 0
+    ) / totalWeight;
+
+    // Compliance level
+    let complianceLevel: ComplianceLevel;
+    if (criticalIssues.length > 0) {
+      complianceLevel = 'non_compliant';
+    } else if (overallScore >= 0.95) {
+      complianceLevel = 'platinum';
+    } else if (overallScore >= 0.85) {
+      complianceLevel = 'exemplary';
+    } else if (overallScore >= 0.75) {
+      complianceLevel = 'advanced';
+    } else if (overallScore >= 0.65) {
+      complianceLevel = 'standard';
+    } else if (overallScore >= 0.5) {
+      complianceLevel = 'basic';
+    } else {
+      complianceLevel = 'non_compliant';
+    }
+
+    // CCL level from risk (1 - score)
+    const riskScore = 1.0 - overallScore;
+    const cclLevel = Math.min(5, Math.floor(riskScore * 5.5));
+
+    // Issue badges
+    const badges: EthicalBadge[] = [];
+    const now = Date.now();
+    const oneYear = 365 * 24 * 60 * 60 * 1000;
+
+    if (complianceLevel !== 'non_compliant' && complianceLevel !== 'basic') {
+      badges.push({ type: 'ethical_ai', level: complianceLevel, issued_at: now, expires_at: now + oneYear, score: overallScore });
+    }
+    const privacyCat = categoryResults.find(c => c.category === 'privacy');
+    if (privacyCat && privacyCat.score >= 0.8) {
+      badges.push({ type: 'privacy_first', level: complianceLevel, issued_at: now, expires_at: now + oneYear, score: privacyCat.score });
+    }
+    const islamicCat = categoryResults.find(c => c.category === 'islamic_ethics');
+    if (islamicCat && islamicCat.score >= 0.75) {
+      badges.push({ type: 'islamic_ethics', level: complianceLevel, issued_at: now, expires_at: now + oneYear, score: islamicCat.score });
+    }
+    const communityCat = categoryResults.find(c => c.category === 'community_first');
+    if (communityCat && communityCat.score >= 0.7) {
+      badges.push({ type: 'community_trusted', level: complianceLevel, issued_at: now, expires_at: now + oneYear, score: communityCat.score });
+    }
+
+    // Recommendations
+    const recommendations: string[] = [];
+    for (const cat of categoryResults) {
+      if (cat.score < 0.65) {
+        const failing = cat.principles.filter(p => !p.passed).map(p => p.principle);
+        recommendations.push(`Improve ${cat.category}: address ${failing.join(', ')}`);
+      }
+    }
+    if (overallScore < 0.5) {
+      recommendations.push('Overall score below threshold: comprehensive ethics review required');
+    }
+
+    logger.info('Ethical AI verification complete', {
+      provider_id: providerId,
+      compliance_level: complianceLevel,
+      overall_score: overallScore.toFixed(3),
+      badge_count: badges.length,
+    });
+
+    return {
+      provider_id: providerId,
+      provider_name: providerName,
+      overall_score: overallScore,
+      compliance_level: complianceLevel,
+      ccl_level: cclLevel,
+      categories: categoryResults,
+      badges,
+      critical_issues: criticalIssues,
+      recommendations,
+      verified_at: now,
+    };
+  }
+}
+
+// ── End Ethical AI Verification ────────────────────────────────────────────────

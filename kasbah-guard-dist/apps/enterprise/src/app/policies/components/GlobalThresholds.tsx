@@ -69,8 +69,22 @@ export default function GlobalThresholds({ onSave }: GlobalThresholdsProps) {
       setSaving(true);
       setMessage('');
 
-      // Call API to save
-      // const response = await apiClient.updateThresholds(config);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.bekasbah.com'}/api/admin/org/policies`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('kasbah_token') || ''}`,
+        },
+        body: JSON.stringify({
+          warn_threshold: config.warn_threshold,
+          block_threshold: config.block_threshold,
+          deny_threshold: config.deny_threshold,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
 
       setMessage('✅ Thresholds saved successfully');
       setUnsavedChanges(false);

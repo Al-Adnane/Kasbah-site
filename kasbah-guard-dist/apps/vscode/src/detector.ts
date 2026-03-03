@@ -12,6 +12,9 @@ export interface DetectionResult {
   decision: string;
   reason: string;
   tiers?: Record<string, unknown>;
+  authz?: {
+    ccl_level: number;
+  };
 }
 
 /**
@@ -116,10 +119,17 @@ export async function detect(text: string): Promise<DetectionResult> {
       }
     }
 
+    // Compute CCL level from frontier confidence
+    const cclLevel = frontier.confidence >= 0.8 ? 3
+      : frontier.confidence >= 0.5 ? 2
+      : frontier.confidence >= 0.3 ? 1
+      : 0;
+
     return {
       risk: maxRisk,
       decision: worstDecision,
       reason: worstReason,
+      authz: { ccl_level: cclLevel },
     };
   } catch (err) {
     console.error('[kasbah-guard] Detection error:', err);

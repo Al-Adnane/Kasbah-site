@@ -18,7 +18,9 @@
   ],
   "background": {
     "service_worker": "background.js",
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
   "content_scripts": [
     {
@@ -56,6 +58,9 @@
       ],
       "js": [
         "src/detector.js",
+        "src/kasbah-frontier-image.js",
+        "src/kasbah-integration-bridge.js",
+        "src/kasbah-detector-hook.js",
         "src/content.js"
       ],
       "css": [
