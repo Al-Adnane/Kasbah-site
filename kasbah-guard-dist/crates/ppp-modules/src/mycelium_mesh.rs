@@ -53,7 +53,9 @@ impl MyceliumMesh {
     }
 
     fn tau(&self, from: &str, to: &str) -> f32 {
-        *self.pheromones.get(&Self::edge_key(from, to)).unwrap_or(&AS_TAU0)
+        self.pheromones.get(&Self::edge_key(from, to))
+            .map(|r| *r)
+            .unwrap_or(AS_TAU0)
     }
 
     fn deposit_pheromone(&self, from: &str, to: &str, delta: f32) {

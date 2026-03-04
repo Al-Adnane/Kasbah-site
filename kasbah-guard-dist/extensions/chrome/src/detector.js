@@ -73,6 +73,33 @@ function _laplaceNoise(sensitivity, epsilon) {
   return sign * scale * Math.log(1 - 2 * Math.abs(u - 0.5));
 }
 
+// ── Item E3: Performance telemetry for latency tracking ──
+var performanceMonitor = {
+  _latencies: [],
+  _maxSamples: 100,
+  recordLatency: function(ms) {
+    this._latencies.push(ms);
+    if (this._latencies.length > this._maxSamples) {
+      this._latencies.shift();
+    }
+  },
+  getMetrics: function() {
+    if (this._latencies.length === 0) {
+      return { p95: 0, p99: 0, mean: 0 };
+    }
+    var sorted = this._latencies.slice().sort(function(a, b) { return a - b; });
+    var n = sorted.length;
+    var p95Idx = Math.ceil(n * 0.95) - 1;
+    var p99Idx = Math.ceil(n * 0.99) - 1;
+    var mean = this._latencies.reduce(function(a, b) { return a + b; }) / n;
+    return {
+      p95: sorted[Math.max(0, p95Idx)],
+      p99: sorted[Math.max(0, p99Idx)],
+      mean: mean
+    };
+  }
+};
+
 // Feature flags for backward-compatible return objects
 var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof","anti_re_integrity","platform_fp","sealed_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral","l33t_deobfuscation","math_alphanumerics","beeodiversity","fungi_correlation","lanzatech_transform","soil_security","breathe_easy","aboriginal_fire","moat_bidirectional","moat_brittleness","moat_ticket_gate","moat_dynamic_threshold","moat_qift","moat_cail","moat_adversarial","moat_predictive","moat_toctou","moat_resource","moat_phase_lead","ml_scoring"];
 
@@ -1522,7 +1549,7 @@ function classify(text) {
   if (!text || text.length === 0) {
     var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
     var latency = perfEnd - perfStart;
-    performanceMonitor.recordDetection(latency);
+    performanceMonitor.recordLatency(latency);
     return { risk: 0, decision: "ALLOW", reason: "Empty text", content_hash: hybridHash(""),
       decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
       features: FEATURES, latency_ms: latency };
@@ -1530,7 +1557,7 @@ function classify(text) {
   if (text.length < 5) {
     var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
     var latency = perfEnd - perfStart;
-    performanceMonitor.recordDetection(latency);
+    performanceMonitor.recordLatency(latency);
     return { risk: 0, decision: "ALLOW", reason: "Too short", content_hash: hybridHash(text),
       decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
       features: FEATURES, latency_ms: latency };
@@ -1538,7 +1565,7 @@ function classify(text) {
   if (!/[a-zA-Z0-9]/.test(text)) {
     var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
     var latency = perfEnd - perfStart;
-    performanceMonitor.recordDetection(latency);
+    performanceMonitor.recordLatency(latency);
     return { risk: 0, decision: "ALLOW", reason: "No alphanumeric", content_hash: hybridHash(text),
       decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
       features: FEATURES, latency_ms: latency };
@@ -2093,7 +2120,7 @@ function classify(text) {
   // ── LAYER E3: Record performance ──
   var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
   var latency_ms = perfEnd - perfStart;
-  performanceMonitor.recordDetection(latency_ms);
+  performanceMonitor.recordLatency(latency_ms);
   recordSessionScore(score); // for SII sessionHealth stdDev
 
   // ── MOAT V1: Create threat fingerprint for federated intelligence ──

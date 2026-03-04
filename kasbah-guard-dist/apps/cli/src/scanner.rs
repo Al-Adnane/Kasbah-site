@@ -108,22 +108,21 @@ fn is_text_file(path: &str) -> bool {
 }
 
 fn is_ignored(name: &str) -> bool {
-    matches!(name,
+    const IGNORED: &[&str] = &[
         // Package managers
-        "node_modules" | ".pnp" | ".yarn" | "__pycache__" | ".venv" | "venv" | "env" | ".env",
+        "node_modules", ".pnp", ".yarn", "__pycache__", ".venv", "venv", "env", ".env",
         // Build outputs
-        "target" | "dist" | "build" | "out" | ".output" | "_build" | "pkg" | "bin" | "obj",
+        "target", "dist", "build", "out", ".output", "_build", "pkg", "bin", "obj",
         // Framework caches
-        ".next" | ".nuxt" | ".svelte-kit" | ".expo" | ".remix",
+        ".next", ".nuxt", ".svelte-kit", ".expo", ".remix",
         // VCS / IDE
-        ".git" | ".hg" | ".svn" | ".idea" | ".vscode",
-        // Lock files dir
-        ".cargo" | ".gradle",
-        // Terraform state (may contain secrets but is binary)
-        ".terraform",
+        ".git", ".hg", ".svn", ".idea", ".vscode",
+        // Lock files & Terraform
+        ".cargo", ".gradle", ".terraform",
         // Coverage / test artifacts
-        "coverage" | ".nyc_output" | "htmlcov" | ".pytest_cache" | ".mypy_cache"
-    )
+        "coverage", ".nyc_output", "htmlcov", ".pytest_cache", ".mypy_cache"
+    ];
+    IGNORED.contains(&name)
 }
 
 /// Run a scan on a path (file, directory, or "-" for stdin). Returns exit code.

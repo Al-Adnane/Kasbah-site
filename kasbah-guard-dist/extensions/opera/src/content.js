@@ -1317,7 +1317,7 @@
             localStorage.setItem('kasbah_logs', JSON.stringify(logs.slice(-100)));
           } catch(e) {}
           if (onBlockCb) onBlockCb();
-          try { chrome.runtime.sendMessage({ type: 'BLOCK_EVENT', verb: verb }); } catch(e) {}
+          try { chrome.runtime.sendMessage({ type: 'BLOCK_EVENT', verb: verb, decision: res.decision, risk: res.risk, reason: res.reason, proof: res.proof || null }); } catch(e) {}
         },
       });
       return;

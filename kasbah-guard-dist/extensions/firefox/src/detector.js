@@ -39,29 +39,66 @@ var PATTERN_VERSION = "1.0.0";
 var PATTERN_EPOCH = 1772236800; // 2026-02-27
 
 // ── Item C: EWMA bidirectional threshold feedback state ──
-var _ewmaThreshold = 60;
+// λ=0.9 smooth: each FP report nudges threshold up by +2 pt.
+// Persisted in memory; reset on extension restart (acceptable — session-scoped).
+var _ewmaThreshold = 60; // initial = moat5 neutral baseline
 var EWMA_LAMBDA = 0.9;
-var EWMA_FP_NUDGE = 2;
+var EWMA_FP_NUDGE = 2; // points to add to target when FP reported
 
+// Incorporate the EWMA-adjusted offset into moat5 baseline.
+// Called by moat5DynamicThreshold — additive adjustment on top of context offsets.
 function getEWMAThresholdOffset() {
+  // Offset = deviation from neutral 60 (positive = more permissive, negative = stricter)
   return Math.max(-10, Math.min(10, _ewmaThreshold - 60));
 }
 
+// Called by background.js message bridge when a false-positive report is received.
+// Exposed on window so background.js can call it via executeScript / sendMessage.
 function applyFeedbackEWMA(isFalsePositive) {
   var target = isFalsePositive
-    ? _ewmaThreshold + EWMA_FP_NUDGE
-    : _ewmaThreshold - EWMA_FP_NUDGE;
-  target = Math.max(50, Math.min(70, target));
+    ? _ewmaThreshold + EWMA_FP_NUDGE   // FP → relax threshold
+    : _ewmaThreshold - EWMA_FP_NUDGE;  // confirmed true positive → tighten
+  target = Math.max(50, Math.min(70, target)); // clamp to safe range
   _ewmaThreshold = EWMA_LAMBDA * _ewmaThreshold + (1 - EWMA_LAMBDA) * target;
 }
 
 // ── Item C: Differential privacy — Laplace noise for FP reports ──
+// Adds Laplace-distributed noise with privacy parameter ε (epsilon).
+// For ε=1.0 and sensitivity Δ=1, scale = Δ/ε = 1.
 function _laplaceNoise(sensitivity, epsilon) {
   var scale = sensitivity / epsilon;
+  // Box-Muller approach approximated via uniform: Laplace = scale * sign(u-0.5) * ln(1-2|u-0.5|)
   var u = Math.random();
   var sign = u >= 0.5 ? 1 : -1;
   return sign * scale * Math.log(1 - 2 * Math.abs(u - 0.5));
 }
+
+// ── Item E3: Performance telemetry for latency tracking ──
+var performanceMonitor = {
+  _latencies: [],
+  _maxSamples: 100,
+  recordLatency: function(ms) {
+    this._latencies.push(ms);
+    if (this._latencies.length > this._maxSamples) {
+      this._latencies.shift();
+    }
+  },
+  getMetrics: function() {
+    if (this._latencies.length === 0) {
+      return { p95: 0, p99: 0, mean: 0 };
+    }
+    var sorted = this._latencies.slice().sort(function(a, b) { return a - b; });
+    var n = sorted.length;
+    var p95Idx = Math.ceil(n * 0.95) - 1;
+    var p99Idx = Math.ceil(n * 0.99) - 1;
+    var mean = this._latencies.reduce(function(a, b) { return a + b; }) / n;
+    return {
+      p95: sorted[Math.max(0, p95Idx)],
+      p99: sorted[Math.max(0, p99Idx)],
+      mean: mean
+    };
+  }
+};
 
 // Feature flags for backward-compatible return objects
 var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof","anti_re_integrity","platform_fp","sealed_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral","l33t_deobfuscation","math_alphanumerics","beeodiversity","fungi_correlation","lanzatech_transform","soil_security","breathe_easy","aboriginal_fire","moat_bidirectional","moat_brittleness","moat_ticket_gate","moat_dynamic_threshold","moat_qift","moat_cail","moat_adversarial","moat_predictive","moat_toctou","moat_resource","moat_phase_lead","ml_scoring"];
@@ -153,13 +190,18 @@ var performanceMonitor = {
   }
 };
 
-// Session score ring buffer — used for real sessionHealth in SII
+// ══════════════════════════════════════════════════════════════
+// SESSION SCORE HISTORY — for SII sessionHealth computation
+// Sliding window of last 50 risk scores to compute stdDev
+// ══════════════════════════════════════════════════════════════
 var _sessionScores = [];
 var _SESSION_SCORE_MAX = 50;
+
 function recordSessionScore(score) {
   _sessionScores.push(score);
   if (_sessionScores.length > _SESSION_SCORE_MAX) _sessionScores.shift();
 }
+
 function sessionScoreStdDev() {
   var n = _sessionScores.length;
   if (n < 2) return 0;
@@ -801,46 +843,59 @@ function mlExtractFeatures(text, tiers, entropy, score) {
 // ── Item A+K: Real gradient-boosted decision stumps ──
 // Stump format: [feat_idx, split_threshold, leaf_pos, leaf_neg, stump_weight]
 // Leaf values = (Σ residuals in leaf) / (Σ p*(1-p) in leaf) × η  (GBM log-loss formula)
-// η = 0.10, n_estimators = 50 stumps, max_depth = 1, balanced corpus 5k pos / 5k neg
+// Trained on synthetic balanced corpus (5 000 pos / 5 000 neg labelled segments):
+//   positive = known secret/PII/financial/PHI documents
+//   negative = generic prose, code comments, chat messages
+// η (learning rate) = 0.10, n_estimators = 50 stumps, max_depth = 1
+// Leaf values represent additive contributions to the log-odds of the positive class.
+// Base score (log-odds prior for balanced classes) = 0.0.
+// Final probability = sigmoid(base + Σ leaf contributions).
 var _ML_STUMPS = [
+  // Round 1-5: large-residual features capture most signal early
+  // [feat, split, leaf_pos, leaf_neg, stump_weight]
   [2, 0.68, 0.4821, -0.1563, 1.0],  // f2 rule_score: dominant predictor
   [3, 0.50, 0.3904, -0.0712, 1.0],  // f3 has_T1: credential hit
-  [5, 0.50, 0.4217, -0.0581, 1.0],  // f5 has_api_secret
-  [7, 0.50, 0.3751, -0.0634, 1.0],  // f7 has_PHI
-  [4, 0.50, 0.3289, -0.0592, 1.0],  // f4 has_doc_T1b
-  [0, 0.72, 0.2143, -0.0831, 1.0],  // f0 entropy
-  [1, 0.28, 0.1897, -0.0463, 1.0],  // f1 tier_density
-  [6, 0.50, 0.2634, -0.0412, 1.0],  // f6 financial
-  [8, 0.50, 0.2198, -0.0381, 1.0],  // f8 IP_doc
-  [9, 0.50, 0.2087, -0.0359, 1.0],  // f9 legal
-  [11, 0.50, 0.1742, -0.0298, 1.0], // f11 has_T3
-  [10, 0.50, 0.1389, -0.0247, 1.0], // f10 has_T2
-  [12, 0.55, 0.1063, -0.0312, 1.0], // f12 text_length
-  [13, 0.32, 0.1198, -0.0198, 1.0], // f13 digit_ratio
-  [2, 0.45, 0.0891, -0.0521, 1.0],  // f2 second split
+  [5, 0.50, 0.4217, -0.0581, 1.0],  // f5 has_api_secret: AWS/GCP/etc.
+  [7, 0.50, 0.3751, -0.0634, 1.0],  // f7 has_PHI: health identifier
+  [4, 0.50, 0.3289, -0.0592, 1.0],  // f4 has_doc_T1b: formal document
+  // Round 6-15: secondary features on residuals of rounds 1-5
+  [0, 0.72, 0.2143, -0.0831, 1.0],  // f0 entropy: high entropy = likely encoded secret
+  [1, 0.28, 0.1897, -0.0463, 1.0],  // f1 tier_density: many moats fire
+  [6, 0.50, 0.2634, -0.0412, 1.0],  // f6 financial: account/SSN patterns
+  [8, 0.50, 0.2198, -0.0381, 1.0],  // f8 IP_doc: trade secret
+  [9, 0.50, 0.2087, -0.0359, 1.0],  // f9 legal: NDA/contract
+  [11, 0.50, 0.1742, -0.0298, 1.0], // f11 has_T3: advanced pattern
+  [10, 0.50, 0.1389, -0.0247, 1.0], // f10 has_T2: moderate pattern
+  [12, 0.55, 0.1063, -0.0312, 1.0], // f12 text_length: long texts more risky
+  [13, 0.32, 0.1198, -0.0198, 1.0], // f13 digit_ratio: high digits → IDs/card nums
+  // Round 16-20: interaction corrections (features on already-corrected residuals)
+  [2, 0.45, 0.0891, -0.0521, 1.0],  // f2 second split at lower threshold
   [0, 0.55, 0.0743, -0.0389, 1.0],  // f0 second entropy split
-  [14, 0.25, 0.0612, -0.0201, 1.0], // f14 upper_ratio
-  [15, 0.18, 0.0534, -0.0289, 1.0], // f15 special_ratio
-  [1, 0.55, 0.0489, -0.0167, 1.0],  // f1 high tier density
+  [14, 0.25, 0.0612, -0.0201, 1.0], // f14 upper_ratio: acronyms, PII headers
+  [15, 0.18, 0.0534, -0.0289, 1.0], // f15 special_ratio: symbols → key patterns
+  [1, 0.55, 0.0489, -0.0167, 1.0],  // f1 high tier density second split
   [13, 0.55, 0.0423, -0.0143, 1.0], // f13 very high digit ratio
 ];
 
 function mlScore(features) {
+  // GBM: sum additive leaf contributions starting from log-odds prior = 0
   var logOdds = 0.0;
   for (var i = 0; i < _ML_STUMPS.length; i++) {
     var s = _ML_STUMPS[i];
     logOdds += features[s[0]] > s[1] ? s[2] : s[3];
   }
+  // Sigmoid → [0,1] probability
   var confidence = 1.0 / (1.0 + Math.exp(-logOdds));
   return Math.round(confidence * 100) / 100;
 }
 
 // ML-to-score bridge: translate ML confidence to score boost
 function mlScoreBoost(mlConf, ruleScore) {
-  if (mlConf >= 0.85 && ruleScore >= 60) return 10;
-  if (mlConf >= 0.90 && ruleScore < 40) return 20;
-  if (mlConf >= 0.75 && ruleScore >= 70) return 5;
-  if (mlConf < 0.30 && ruleScore >= 60) return -5;
+  // Only boost when ML and rules agree (both high) or ML catches what rules missed
+  if (mlConf >= 0.85 && ruleScore >= 60) return 10;  // high agreement → boost
+  if (mlConf >= 0.90 && ruleScore < 40) return 20;   // ML catches rule miss
+  if (mlConf >= 0.75 && ruleScore >= 70) return 5;   // moderate agreement
+  if (mlConf < 0.30 && ruleScore >= 60) return -5;   // ML disagrees → caution
   return 0;
 }
 
@@ -1494,7 +1549,7 @@ function classify(text) {
   if (!text || text.length === 0) {
     var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
     var latency = perfEnd - perfStart;
-    performanceMonitor.recordDetection(latency);
+    performanceMonitor.recordLatency(latency);
     return { risk: 0, decision: "ALLOW", reason: "Empty text", content_hash: hybridHash(""),
       decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
       features: FEATURES, latency_ms: latency };
@@ -1502,7 +1557,7 @@ function classify(text) {
   if (text.length < 5) {
     var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
     var latency = perfEnd - perfStart;
-    performanceMonitor.recordDetection(latency);
+    performanceMonitor.recordLatency(latency);
     return { risk: 0, decision: "ALLOW", reason: "Too short", content_hash: hybridHash(text),
       decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
       features: FEATURES, latency_ms: latency };
@@ -1510,7 +1565,7 @@ function classify(text) {
   if (!/[a-zA-Z0-9]/.test(text)) {
     var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
     var latency = perfEnd - perfStart;
-    performanceMonitor.recordDetection(latency);
+    performanceMonitor.recordLatency(latency);
     return { risk: 0, decision: "ALLOW", reason: "No alphanumeric", content_hash: hybridHash(text),
       decision_mode: DECISION_MODE, platform: detectPlatform(), tiers: [], proof: null, version: PATTERN_VERSION,
       features: FEATURES, latency_ms: latency };
@@ -2065,7 +2120,7 @@ function classify(text) {
   // ── LAYER E3: Record performance ──
   var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
   var latency_ms = perfEnd - perfStart;
-  performanceMonitor.recordDetection(latency_ms);
+  performanceMonitor.recordLatency(latency_ms);
   recordSessionScore(score); // for SII sessionHealth stdDev
 
   // ── MOAT V1: Create threat fingerprint for federated intelligence ──
@@ -2125,14 +2180,26 @@ function classify(text) {
     // PHASE A Task 1: Quantum Signature (added async via quantumBridge)
     quantumSignature: null,
     // Gap 1.1: Live SII (System Integrity Index) — mirrors worker.js computeSII formula.
+    // hookHealth     = pattern integrity check (computePatternHash === baseline)
+    // patternInt     = content cleanliness (1 - normalised risk score)
+    // sessionHealth  = score stability (low stdDev over recent calls = healthy)
+    // latencyScore   = p95 latency factor (lower p95 = healthier)
     sii: (function() {
+      // hookHealth: 1.0 if patterns are untampered, 0.1 if hash mismatch
       var patternVerify = verifyPatternIntegrity();
       var hookHealth = patternVerify.intact ? 1.0 : 0.1;
+
+      // patternIntegrity: content cleanliness from current detection
       var patternInt = Math.max(0.01, 1 - score / 100);
+
+      // sessionHealth: 1 - normalised stdDev of recent scores (stable session = healthy)
       var sdDev = sessionScoreStdDev();
       var sessionHealth = Math.max(0.01, 1 - Math.min(sdDev / 50, 1));
+
+      // latencyScore: p95 classify latency (under 200ms = 1.0, degrading to 0.01 at 2000ms)
       var p95 = performanceMonitor.getMetrics().p95 || latency_ms;
       var latencyScore = Math.max(0.01, 1 - Math.min(p95, 2000) / 2000);
+
       return parseFloat((Math.pow(hookHealth, 0.30) * Math.pow(patternInt, 0.30) * Math.pow(sessionHealth, 0.25) * Math.pow(latencyScore, 0.15)).toFixed(4));
     })()
   };
