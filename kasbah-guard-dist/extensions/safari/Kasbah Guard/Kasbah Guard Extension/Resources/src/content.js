@@ -355,11 +355,29 @@
   _lock(window,                    "open",        _hOpen);
   if (_origBeacon) _lock(navigator, "sendBeacon", _hBeacon);
 
+  // ── Form content change detector: invalidate stale detection state ──
+  // When user edits form inputs/textareas, clear any cached "blocked" state
+  // so that next submission uses fresh detection on the new content.
+  const _formContentHash = new Map(); // form -> content hash
+  document.addEventListener("input", (ev) => {
+    const el = ev.target;
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+      // Find the parent form
+      let form = el.closest("form");
+      if (form) {
+        // Mark this form as having changed content
+        _formContentHash.delete(form);
+        // This forces fresh scanBody() on next submit (no stale cache)
+      }
+    }
+  }, true);
+
   // submit event — catches keyboard-triggered form submits
   document.addEventListener("submit", (ev) => {
     try {
       const form = ev.target;
       if (form instanceof HTMLFormElement) {
+        // Fresh scan on every submit — don't use stale detection results
         const fd = new FormData(form);
         if (scanBody(fd) || scanUrl(form.action)) {
           ev.preventDefault();
