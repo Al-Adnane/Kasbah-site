@@ -354,9 +354,9 @@ var threatConsensusCache = null;
 var consensusCacheExpiry = 0;
 
 async function loadThreatsConsensus() {
-  // Gate: only fetch if user has explicitly opted in
+  // Gate: enabled by default, opt-out via Settings → "Network threat intelligence"
   var enabled = await new Promise((resolve) => {
-    chrome.storage.local.get(['threatIntelligence'], (d) => resolve(d.threatIntelligence === true));
+    chrome.storage.local.get(['threatIntelligence'], (d) => resolve(d.threatIntelligence !== false));
   });
   if (!enabled) return null;
 

@@ -54,6 +54,14 @@
     .btn-danger{background:rgba(220,38,38,.06);color:#dc2626;border:1px solid rgba(220,38,38,.15)}
     .btn-danger:hover{background:rgba(220,38,38,.12)}
 
+    /* ZK Proof Row */
+    .zk-row{display:flex;align-items:center;gap:8px;padding:8px 18px;border-top:1px solid var(--border);background:rgba(6,95,70,.03)}
+    .zk-dot{width:7px;height:7px;border-radius:50%;background:#94A3B8;flex-shrink:0}
+    .zk-dot.verified{background:var(--green)}
+    .zk-dot.pending{background:#F59E0B;animation:pulse 2s ease infinite}
+    .zk-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+    .zk-id{font-size:9px;color:var(--green);font-weight:700;font-family:monospace;margin-left:auto}
+
     /* Footer */
     .footer{padding:10px 18px;border-top:1px solid var(--border);text-align:center;font-size:10px;color:var(--muted)}
     .footer a{color:var(--ink);text-decoration:none;font-weight:700}
@@ -153,6 +161,13 @@
         <p style="margin:6px 0 0 0;color:#666">✅ We never collect secrets, URLs, or your identity</p>
       </div>
     </details>
+  </div>
+
+  <!-- ZK Proof Status -->
+  <div class="zk-row" id="zkRow">
+    <div class="zk-dot" id="zkDot"></div>
+    <span class="zk-label">ZK Proof</span>
+    <span class="zk-id" id="zkId">—</span>
   </div>
 
   <div class="footer">
@@ -424,6 +439,33 @@
     }
 
     initPrivacyControls();
+
+    // ZK Proof Status — load last proof from storage and listen for new proofs
+    function updateZKProofUI(proof) {
+      var dot = document.getElementById('zkDot');
+      var idEl = document.getElementById('zkId');
+      if (!proof) return;
+      var verified = proof.schnorr && proof.schnorr.verified;
+      dot.className = 'zk-dot ' + (verified ? 'verified' : 'pending');
+      var shortId = proof.id ? proof.id.slice(0, 8) : '?';
+      idEl.textContent = verified ? ('✓ #' + shortId) : ('○ #' + shortId);
+    }
+
+    // Load most recent proof from detection history on popup open
+    chrome.storage.local.get(['detectionHistory'], function(result) {
+      var history = result.detectionHistory || [];
+      if (history.length > 0) {
+        var last = history[history.length - 1];
+        updateZKProofUI(last);
+      }
+    });
+
+    // Listen for new proofs generated while popup is open
+    chrome.runtime.onMessage.addListener(function(msg) {
+      if (msg.type === 'PROOF_GENERATED' && msg.proof) {
+        updateZKProofUI(msg.proof);
+      }
+    });
   </script>
 </body>
 </html>

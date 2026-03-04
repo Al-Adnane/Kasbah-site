@@ -237,8 +237,19 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
         // Generate compliance proof (will call popup.js::generateComplianceProof)
         const proof = await generateComplianceProofFromDetection(detection, sender);
 
+        // M2: SII Integration — store SII value and alert on degradation
+        if (detection.sii !== undefined && detection.sii !== null) {
+          chrome.storage.local.set({ lastSII: detection.sii, lastSIITime: Date.now() });
+          if (detection.sii < 0.7) {
+            console.warn('[background.js] ⚠️ SII degraded:', detection.sii, '— possible tampering');
+            sendSentryError('sii_degraded', 'System Integrity Index below threshold', null, {
+              sii: detection.sii, url: sender.url, decision: detection.decision
+            });
+          }
+        }
+
         if (proof) {
-          appendAuditEntry('DETECTION', { verdict: detection.decision, risk: detection.risk, platform: detection.platform, proofId: proof.id, url: sender.url });
+          appendAuditEntry('DETECTION', { verdict: detection.decision, risk: detection.risk, platform: detection.platform, proofId: proof.id, sii: detection.sii, url: sender.url });
           // Store in local history
           chrome.storage.local.get('detectionHistory', (result) => {
             const history = result.detectionHistory || [];
