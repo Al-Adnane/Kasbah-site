@@ -73,33 +73,6 @@ function _laplaceNoise(sensitivity, epsilon) {
   return sign * scale * Math.log(1 - 2 * Math.abs(u - 0.5));
 }
 
-// ── Item E3: Performance telemetry for latency tracking ──
-var performanceMonitor = {
-  _latencies: [],
-  _maxSamples: 100,
-  recordLatency: function(ms) {
-    this._latencies.push(ms);
-    if (this._latencies.length > this._maxSamples) {
-      this._latencies.shift();
-    }
-  },
-  getMetrics: function() {
-    if (this._latencies.length === 0) {
-      return { p95: 0, p99: 0, mean: 0 };
-    }
-    var sorted = this._latencies.slice().sort(function(a, b) { return a - b; });
-    var n = sorted.length;
-    var p95Idx = Math.ceil(n * 0.95) - 1;
-    var p99Idx = Math.ceil(n * 0.99) - 1;
-    var mean = this._latencies.reduce(function(a, b) { return a + b; }) / n;
-    return {
-      p95: sorted[Math.max(0, p95Idx)],
-      p99: sorted[Math.max(0, p99Idx)],
-      mean: mean
-    };
-  }
-};
-
 // Feature flags for backward-compatible return objects
 var FEATURES = ["hybrid_hash","pattern_confidence","multi_tier","detection_proof","anti_re_integrity","platform_fp","sealed_patterns","self_test","zk_proof","efficiency","luhn","decision_mode","structured_proof","entropy_threshold","bulk_email","connstr","homoglyph_norm","unicode_digits","nfkc","zalgo_strip","behavioral","l33t_deobfuscation","math_alphanumerics","beeodiversity","fungi_correlation","lanzatech_transform","soil_security","breathe_easy","aboriginal_fire","moat_bidirectional","moat_brittleness","moat_ticket_gate","moat_dynamic_threshold","moat_qift","moat_cail","moat_adversarial","moat_predictive","moat_toctou","moat_resource","moat_phase_lead","ml_scoring"];
 
@@ -173,6 +146,9 @@ var performanceMonitor = {
     if (this.samples.length > 1000) {
       this.samples.shift();
     }
+  },
+  recordLatency: function(latency_ms) {
+    this.recordDetection(latency_ms); // Alias for consistency
   },
   getMetrics: function() {
     if (this.samples.length === 0) {
