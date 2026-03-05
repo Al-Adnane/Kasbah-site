@@ -45,6 +45,16 @@ export default function IncidentPage() {
   const [inputText, setInputText] = useState('');
   const [violations, setViolations] = useState<any[]>([]);
   const [maxRisk, setMaxRisk] = useState(0);
+  const [challengeText, setChallengeText] = useState('');
+  const [challengeViolations, setChallengeViolations] = useState<any[]>([]);
+  const [challengeScore, setChallengeScore] = useState(0);
+
+  const handleChallengeExample = (example: string) => {
+    setChallengeText(example);
+    const result = detectSecrets(example);
+    setChallengeViolations(result.violations);
+    setChallengeScore(challengeScore + 1);
+  };
 
   return (
     <div style={{ background: DESIGN.bg, minHeight: '100vh', color: DESIGN.text }}>
@@ -186,9 +196,40 @@ export default function IncidentPage() {
         </div>
       </div>
 
-      {/* PLACEHOLDER FOR SECTIONS 3-4 */}
+      {/* SECTION 3: THE CHALLENGE */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '80px 40px', borderTop: `1px solid ${DESIGN.border}` }}>
+        <h2 style={{ fontSize: '42px', fontWeight: 900, marginBottom: '12px', textAlign: 'center' }}>
+          Think You Can Trick Kasbah?
+        </h2>
+        <p style={{ fontSize: '16px', color: DESIGN.muted, textAlign: 'center', maxWidth: '600px', margin: '0 auto 40px' }}>
+          We caught {challengeScore} secrets. Try to fool us.
+        </p>
+
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '40px' }}>
+            <button onClick={() => handleChallengeExample('AKIAIOSFODNN7EXAMPLE')} style={{ padding: '16px', border: `1px solid ${DESIGN.border}`, background: '#fff', borderRadius: DESIGN.radius, cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>AWS Key</button>
+            <button onClick={() => handleChallengeExample('ghp_1234567890abcdefghijklmnopqrstuvwxyz')} style={{ padding: '16px', border: `1px solid ${DESIGN.border}`, background: '#fff', borderRadius: DESIGN.radius, cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>GitHub Token</button>
+            <button onClick={() => handleChallengeExample('123-45-6789')} style={{ padding: '16px', border: `1px solid ${DESIGN.border}`, background: '#fff', borderRadius: DESIGN.radius, cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>SSN</button>
+            <button onClick={() => handleChallengeExample('4532-1234-5678-9999')} style={{ padding: '16px', border: `1px solid ${DESIGN.border}`, background: '#fff', borderRadius: DESIGN.radius, cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>Credit Card</button>
+          </div>
+
+          {challengeViolations.length > 0 && (
+            <div style={{ padding: '24px', background: '#FEE2E2', borderRadius: DESIGN.radius, textAlign: 'center', borderLeft: `4px solid ${DESIGN.red}` }}>
+              <p style={{ fontSize: '24px', fontWeight: 900, color: DESIGN.red }}>Nope! 😄</p>
+              <p style={{ fontSize: '14px', color: DESIGN.text, marginTop: '8px' }}>
+                We caught <strong>{challengeViolations.map(v => v.name).join(', ')}</strong>
+              </p>
+              <p style={{ fontSize: '12px', color: DESIGN.muted, marginTop: '8px' }}>
+                Every. Single. Time.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* PLACEHOLDER FOR SECTION 4 */}
       <div style={{ padding: '400px 40px', textAlign: 'center', color: DESIGN.muted }}>
-        Sections 3-4 coming next...
+        Section 4 coming next...
       </div>
     </div>
   );
