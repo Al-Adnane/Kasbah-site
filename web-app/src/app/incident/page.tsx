@@ -45,20 +45,28 @@ export default function IncidentPage() {
   const [inputText, setInputText] = useState('');
   const [violations, setViolations] = useState<any[]>([]);
   const [maxRisk, setMaxRisk] = useState(0);
-  const [challengeText, setChallengeText] = useState('');
-  const [challengeViolations, setChallengeViolations] = useState<any[]>([]);
-  const [challengeScore, setChallengeScore] = useState(0);
 
-  const handleChallengeExample = (example: string) => {
-    setChallengeText(example);
+  const handleDetection = (text: string) => {
+    if (text.trim()) {
+      const result = detectSecrets(text);
+      setViolations(result.violations);
+      setMaxRisk(result.maxRisk);
+    } else {
+      setViolations([]);
+      setMaxRisk(0);
+    }
+  };
+
+  const handleExampleClick = (example: string) => {
+    setInputText(example);
     const result = detectSecrets(example);
-    setChallengeViolations(result.violations);
-    setChallengeScore(challengeScore + 1);
+    setViolations(result.violations);
+    setMaxRisk(result.maxRisk);
   };
 
   return (
     <div style={{ background: DESIGN.bg, minHeight: '100vh', color: DESIGN.text }}>
-      {/* NAV - Match website */}
+      {/* NAV */}
       <nav style={{
         position: 'sticky',
         top: 0,
@@ -73,222 +81,231 @@ export default function IncidentPage() {
         borderBottom: `1px solid ${DESIGN.border}`,
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '9px', textDecoration: 'none', color: DESIGN.text, fontWeight: 800, fontSize: '15px' }}>
-          <span style={{ fontSize: '28px' }}>🛡️</span>
+          <img src="/logo-200.png" alt="Kasbah" style={{ width: '28px', height: '28px', borderRadius: '7px' }} />
           <span>Kasbah Guard</span>
         </Link>
         <div style={{ display: 'flex', gap: '4px' }}>
           <Link href="/" style={{ color: DESIGN.muted, fontSize: '13px', fontWeight: 500, textDecoration: 'none', padding: '6px 12px', borderRadius: '8px' }}>Home</Link>
-          <span style={{ color: DESIGN.text, fontSize: '13px', fontWeight: 500, padding: '6px 12px', background: '#F7F4F0', borderRadius: '8px' }}>Incident Simulator</span>
+          <span style={{ color: DESIGN.text, fontSize: '13px', fontWeight: 500, padding: '6px 12px', background: '#F7F4F0', borderRadius: '8px' }}>Try It</span>
         </div>
       </nav>
 
-      {/* SECTION 1: THE INCIDENT */}
+      {/* SECTION 1: THE PROBLEM */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '80px 40px' }}>
-        <div style={{ maxWidth: '700px', margin: '0 auto', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '56px', fontWeight: 900, letterSpacing: '-0.05em', marginBottom: '24px' }}>
-            This Happened Today
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '48px', fontWeight: 900, letterSpacing: '-0.05em', marginBottom: '24px', lineHeight: 1.2 }}>
+            Secrets Slip Into AI Tools Every Day
           </h1>
-          <p style={{ fontSize: '18px', color: DESIGN.muted, lineHeight: 1.7, marginBottom: '40px' }}>
-            A developer pasted an API key into ChatGPT while asking for help with a bug.
-            <br /><br />
-            <strong style={{ color: DESIGN.text }}>48 hours later:</strong> Their AWS account was compromised. Attackers launched crypto miners. $12K in unauthorized charges.
-            <br /><br />
-            <span style={{ color: DESIGN.red, fontWeight: 700 }}>They thought it would never happen to them.</span>
+          <p style={{ fontSize: '16px', color: DESIGN.muted, lineHeight: 1.8, marginBottom: '32px' }}>
+            Developers routinely paste API keys, database credentials, and authentication tokens into ChatGPT, Claude, and other AI tools while asking for help with code. The credentials are processed by external servers and stored permanently.
           </p>
 
           <div style={{
-            padding: '24px',
+            padding: '20px',
             background: '#F7F4F0',
             borderLeft: `4px solid ${DESIGN.red}`,
             borderRadius: DESIGN.radius,
-            textAlign: 'left',
-            marginTop: '40px'
+            marginBottom: '48px'
           }}>
-            <p style={{ fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>Could this be you?</p>
-            <p style={{ fontSize: '14px', color: DESIGN.muted }}>
-              78% of developers have pasted credentials into AI tools. Most don't realize it happens until it's too late.
+            <p style={{ fontSize: '14px', fontWeight: 600, color: DESIGN.text, marginBottom: '8px' }}>
+              What can be leaked:
             </p>
+            <ul style={{ fontSize: '14px', color: DESIGN.muted, margin: 0, paddingLeft: '20px' }}>
+              <li style={{ marginBottom: '6px' }}>AWS, Google, Azure credentials</li>
+              <li style={{ marginBottom: '6px' }}>GitHub, GitLab, Stripe API keys</li>
+              <li style={{ marginBottom: '6px' }}>Database URLs and passwords</li>
+              <li style={{ marginBottom: '6px' }}>SSH keys and private certificates</li>
+              <li>SSN, credit cards, PII</li>
+            </ul>
           </div>
 
-          <button
-            onClick={() => window.scrollBy({ top: 600, behavior: 'smooth' })}
-            style={{
-              marginTop: '48px',
-              padding: '12px 28px',
-              background: DESIGN.red,
-              color: '#fff',
-              border: 'none',
-              borderRadius: DESIGN.radius,
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.background = '#E85D2A')}
-            onMouseOut={(e) => (e.currentTarget.style.background = DESIGN.red)}
-          >
-            Check Your Risk →
-          </button>
+          <p style={{ fontSize: '15px', color: DESIGN.muted, fontWeight: 500 }}>
+            Kasbah detects these secrets locally in your browser before you paste—stopping leaks before they happen.
+          </p>
         </div>
       </div>
 
-      {/* SECTION 2: PERSONAL SCAN */}
+      {/* SECTION 2: DETECTION DEMO */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '80px 40px', borderTop: `1px solid ${DESIGN.border}` }}>
-        <h2 style={{ fontSize: '42px', fontWeight: 900, marginBottom: '12px', textAlign: 'center' }}>
-          Let's Check Your Risk
+        <h2 style={{ fontSize: '36px', fontWeight: 900, marginBottom: '32px', textAlign: 'center' }}>
+          See It In Action
         </h2>
-        <p style={{ fontSize: '16px', color: DESIGN.muted, textAlign: 'center', maxWidth: '600px', margin: '0 auto 40px' }}>
-          Paste any code snippet below. 100% private—all detection runs in your browser.
-        </p>
 
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <p style={{ fontSize: '14px', color: DESIGN.muted, textAlign: 'center', marginBottom: '24px' }}>
+            Paste code or credentials below. Detection runs 100% locally in your browser.
+          </p>
+
           <textarea
             value={inputText}
             onChange={(e) => {
               setInputText(e.target.value);
-              if (e.target.value.trim()) {
-                const result = detectSecrets(e.target.value);
-                setViolations(result.violations);
-                setMaxRisk(result.maxRisk);
-              } else {
-                setViolations([]);
-                setMaxRisk(0);
-              }
+              handleDetection(e.target.value);
             }}
             placeholder="Paste code here..."
             style={{
               width: '100%',
-              height: '200px',
+              height: '180px',
               border: `1px solid ${DESIGN.border}`,
               borderRadius: DESIGN.radius,
               padding: '16px',
               fontFamily: "'Inter', monospace",
-              fontSize: '14px',
+              fontSize: '13px',
               color: DESIGN.text,
               background: '#fff',
               resize: 'none',
               outline: 'none',
               boxSizing: 'border-box',
+              marginBottom: '16px',
             }}
           />
 
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
+            <button
+              onClick={() => handleExampleClick('AKIAIOSFODNN7EXAMPLE')}
+              style={{
+                padding: '12px 16px',
+                border: `1px solid ${DESIGN.border}`,
+                background: '#fff',
+                borderRadius: DESIGN.radius,
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: DESIGN.text,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#F7F4F0'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+            >
+              AWS Key
+            </button>
+            <button
+              onClick={() => handleExampleClick('ghp_1234567890abcdefghijklmnopqrstuvwxyz')}
+              style={{
+                padding: '12px 16px',
+                border: `1px solid ${DESIGN.border}`,
+                background: '#fff',
+                borderRadius: DESIGN.radius,
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: DESIGN.text,
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#F7F4F0'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+            >
+              GitHub Token
+            </button>
+            <button
+              onClick={() => handleExampleClick('123-45-6789')}
+              style={{
+                padding: '12px 16px',
+                border: `1px solid ${DESIGN.border}`,
+                background: '#fff',
+                borderRadius: DESIGN.radius,
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: DESIGN.text,
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#F7F4F0'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+            >
+              Social Security #
+            </button>
+            <button
+              onClick={() => handleExampleClick('4532-1234-5678-9999')}
+              style={{
+                padding: '12px 16px',
+                border: `1px solid ${DESIGN.border}`,
+                background: '#fff',
+                borderRadius: DESIGN.radius,
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: DESIGN.text,
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#F7F4F0'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+            >
+              Credit Card
+            </button>
+          </div>
+
           {violations.length > 0 && (
-            <div style={{ marginTop: '24px', padding: '20px', background: '#FEE2E2', border: `1px solid #FECACA`, borderRadius: DESIGN.radius }}>
-              <p style={{ fontWeight: 700, color: '#991B1B', marginBottom: '12px' }}>
-                ⚠️ We found {violations.length} secret{violations.length > 1 ? 's' : ''}:
+            <div style={{
+              padding: '16px',
+              background: '#FEE2E2',
+              border: `1px solid #FECACA`,
+              borderRadius: DESIGN.radius,
+              marginBottom: '24px'
+            }}>
+              <p style={{ fontSize: '13px', fontWeight: 700, color: '#991B1B', marginBottom: '12px' }}>
+                Detected {violations.length} secret{violations.length > 1 ? 's' : ''}:
               </p>
               {violations.map((v, i) => (
-                <div key={i} style={{ fontSize: '14px', color: '#7F1D1D', marginBottom: '8px' }}>
-                  <strong>{v.name}</strong> (Risk: {v.risk}/100)
+                <div key={i} style={{ fontSize: '13px', color: '#7F1D1D', marginBottom: '6px' }}>
+                  <strong>{v.name}</strong> · Risk: {v.risk}/100
                 </div>
               ))}
-              <p style={{ fontSize: '13px', marginTop: '12px', color: '#991B1B' }}>
-                You were probably about to paste this into ChatGPT or Slack. Kasbah catches it first.
-              </p>
             </div>
           )}
 
           {inputText.trim() && violations.length === 0 && (
-            <div style={{ marginTop: '24px', padding: '20px', background: '#F0FDF4', border: `1px solid #BBFF00`, borderRadius: DESIGN.radius }}>
-              <p style={{ fontWeight: 700, color: '#15803D' }}>✓ No secrets detected</p>
+            <div style={{
+              padding: '16px',
+              background: '#F0FDF4',
+              border: `1px solid #DCFCE7`,
+              borderRadius: DESIGN.radius,
+              marginBottom: '24px',
+              fontSize: '13px',
+              fontWeight: 600,
+              color: '#15803D'
+            }}>
+              No secrets detected
             </div>
           )}
+
+          <p style={{ fontSize: '12px', color: DESIGN.muted, textAlign: 'center' }}>
+            All detection runs locally. Your data never leaves your browser.
+          </p>
         </div>
       </div>
 
-      {/* SECTION 3: THE CHALLENGE */}
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '80px 40px', borderTop: `1px solid ${DESIGN.border}` }}>
-        <h2 style={{ fontSize: '42px', fontWeight: 900, marginBottom: '12px', textAlign: 'center' }}>
-          Think You Can Trick Kasbah?
+      {/* SECTION 3: INSTALL CTA */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '80px 40px', borderTop: `1px solid ${DESIGN.border}`, textAlign: 'center' }}>
+        <h2 style={{ fontSize: '36px', fontWeight: 900, marginBottom: '16px' }}>
+          Stop Leaks Before They Happen
         </h2>
-        <p style={{ fontSize: '16px', color: DESIGN.muted, textAlign: 'center', maxWidth: '600px', margin: '0 auto 40px' }}>
-          We caught {challengeScore} secrets. Try to fool us.
+        <p style={{ fontSize: '15px', color: DESIGN.muted, marginBottom: '40px', maxWidth: '600px', margin: '0 auto 40px' }}>
+          Kasbah runs locally in your browser as a browser extension. It detects secrets as you type—across ChatGPT, Gmail, Slack, and any website.
         </p>
 
-        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '40px' }}>
-            <button onClick={() => handleChallengeExample('AKIAIOSFODNN7EXAMPLE')} style={{ padding: '16px', border: `1px solid ${DESIGN.border}`, background: '#fff', borderRadius: DESIGN.radius, cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>AWS Key</button>
-            <button onClick={() => handleChallengeExample('ghp_1234567890abcdefghijklmnopqrstuvwxyz')} style={{ padding: '16px', border: `1px solid ${DESIGN.border}`, background: '#fff', borderRadius: DESIGN.radius, cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>GitHub Token</button>
-            <button onClick={() => handleChallengeExample('123-45-6789')} style={{ padding: '16px', border: `1px solid ${DESIGN.border}`, background: '#fff', borderRadius: DESIGN.radius, cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>SSN</button>
-            <button onClick={() => handleChallengeExample('4532-1234-5678-9999')} style={{ padding: '16px', border: `1px solid ${DESIGN.border}`, background: '#fff', borderRadius: DESIGN.radius, cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>Credit Card</button>
-          </div>
+        <a href="https://chromewebstore.google.com/detail/kasbah-guard/XXXX" style={{
+          display: 'inline-block',
+          padding: '14px 32px',
+          background: DESIGN.red,
+          color: '#fff',
+          textDecoration: 'none',
+          borderRadius: DESIGN.radius,
+          fontWeight: 700,
+          fontSize: '15px',
+          marginBottom: '40px',
+        }}>
+          Install Browser Extension
+        </a>
 
-          {challengeViolations.length > 0 && (
-            <div style={{ padding: '24px', background: '#FEE2E2', borderRadius: DESIGN.radius, textAlign: 'center', borderLeft: `4px solid ${DESIGN.red}` }}>
-              <p style={{ fontSize: '24px', fontWeight: 900, color: DESIGN.red }}>Nope! 😄</p>
-              <p style={{ fontSize: '14px', color: DESIGN.text, marginTop: '8px' }}>
-                We caught <strong>{challengeViolations.map(v => v.name).join(', ')}</strong>
-              </p>
-              <p style={{ fontSize: '12px', color: DESIGN.muted, marginTop: '8px' }}>
-                Every. Single. Time.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* SECTION 4: CONVERSION */}
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '80px 40px', borderTop: `1px solid ${DESIGN.border}` }}>
-        <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-          <h2 style={{ fontSize: '42px', fontWeight: 900, marginBottom: '24px' }}>
-            Thousands Are Already Protected
-          </h2>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '40px', maxWidth: '900px', margin: '0 auto 80px' }}>
-            <div>
-              <p style={{ fontSize: '32px', fontWeight: 900, color: DESIGN.red }}>2.5M+</p>
-              <p style={{ fontSize: '14px', color: DESIGN.muted }}>Secrets caught this month</p>
-            </div>
-            <div>
-              <p style={{ fontSize: '32px', fontWeight: 900, color: DESIGN.red }}>50+</p>
-              <p style={{ fontSize: '14px', color: DESIGN.muted }}>Secret patterns detected</p>
-            </div>
-            <div>
-              <p style={{ fontSize: '32px', fontWeight: 900, color: DESIGN.red }}>&lt;5ms</p>
-              <p style={{ fontSize: '14px', color: DESIGN.muted }}>Detection latency</p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '80px' }}>
-            <a href="https://chromewebstore.google.com" style={{
-              padding: '14px 28px',
-              background: DESIGN.red,
-              color: '#fff',
-              textDecoration: 'none',
-              borderRadius: DESIGN.radius,
-              fontWeight: 700,
-              fontSize: '14px',
-            }}>
-              Install Extension
-            </a>
-            <a href="/sign-up" style={{
-              padding: '14px 28px',
-              border: `1px solid ${DESIGN.border}`,
-              background: '#fff',
-              color: DESIGN.text,
-              textDecoration: 'none',
-              borderRadius: DESIGN.radius,
-              fontWeight: 700,
-              fontSize: '14px',
-            }}>
-              Create Account
-            </a>
-          </div>
-        </div>
-
-        {/* Privacy Notice */}
         <div style={{
-          padding: '20px',
+          padding: '16px',
           background: 'rgba(193,68,14,.1)',
           border: `1px solid rgba(193,68,14,.2)`,
           borderRadius: DESIGN.radius,
-          textAlign: 'center',
-          fontSize: '13px',
-          color: DESIGN.text,
           maxWidth: '600px',
-          margin: '0 auto'
+          margin: '0 auto',
+          fontSize: '13px',
+          color: DESIGN.text',
         }}>
-          <strong style={{ color: DESIGN.red }}>🔒 Privacy First:</strong> All detection happens in your browser. Nothing leaves your device.
+          <strong style={{ color: DESIGN.red }}>100% Private:</strong> All detection runs locally in your browser. No data is sent to servers. No logging. No tracking.
         </div>
       </div>
     </div>

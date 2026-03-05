@@ -2,7 +2,7 @@
 
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Shield, Key, Copy, Trash, Plus, Check, RefreshCw } from 'lucide-react'
 
 export default function ApiConsolePage() {
