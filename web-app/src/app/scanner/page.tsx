@@ -1,361 +1,462 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useState, useRef, useEffect } from 'react';
+import { scanText, PATTERN_DATABASE } from '@/lib/scanner';
+import { AnimatedRiskGauge } from '@/components/AnimatedRiskGauge';
+import { PatternBadge } from '@/components/PatternBadge';
+import { useConfetti, useSlideIn } from '@/hooks/useAnimations';
 
 export default function Scanner() {
-  const router = useRouter()
-  const [inputText, setInputText] = useState('')
-  const [isScanning, setIsScanning] = useState(false)
-  const [result, setResult] = useState<any>(null)
-  const [history, setHistory] = useState<any[]>([])
-  const [dragActive, setDragActive] = useState(false)
+  const [inputText, setInputText] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [showPatternExplorer, setShowPatternExplorer] = useState(false);
+  const [selectedPattern, setSelectedPattern] = useState<any>(null);
+  const [showTour, setShowTour] = useState(false);
+  const [showBeforeAfter, setShowBeforeAfter] = useState(false);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const { triggerConfetti } = useConfetti();
+  const isResultVisible = useSlideIn(!!result);
+
+  // Show tour on first scan
+  useEffect(() => {
+    const hasScanned = localStorage.getItem('kasbah-scanned');
+    setShowTour(!hasScanned);
+  }, []);
 
   const handleScan = async () => {
-    if (!inputText.trim()) return
+    if (!inputText.trim()) return;
 
-    setIsScanning(true)
-    
-    try {
-      const response = await fetch('/api/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: inputText })
-      })
+    setIsScanning(true);
+    const scanResult = await scanText(inputText);
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.details || 'Scan failed')
-      }
+    setResult(scanResult);
+    setHistory([scanResult, ...history].slice(0, 10));
+    setShowTour(false);
+    localStorage.setItem('kasbah-scanned', 'true');
 
-      const result = await response.json()
-      setResult(result)
-      setHistory(prev => [result, ...prev.slice(0, 9)])
-    } catch (error) {
-      console.error('Scan failed:', error)
-      setResult({
-        error: error instanceof Error ? error.message : 'Scan failed',
-        risk: 0,
-        decision: 'ERROR'
-      })
-    } finally {
-      setIsScanning(false)
+    // Trigger confetti if safe
+    if (scanResult.decision === 'ALLOW' && resultRef.current) {
+      setTimeout(() => {
+        triggerConfetti(resultRef.current);
+      }, 300);
     }
-  }
+
+    setIsScanning(false);
+  };
+
+  const handlePasteExample = (exampleText: string) => {
+    setInputText(exampleText);
+  };
+
+  const handleClear = () => {
+    setInputText('');
+    setResult(null);
+    setShowBeforeAfter(false);
+  };
 
   const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true)
+      setDragActive(true);
     } else if (e.type === 'dragleave') {
-      setDragActive(false)
+      setDragActive(false);
     }
-  }
+  };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const text = e.target?.result as string
-        setInputText(text)
-      }
-      reader.readAsText(e.dataTransfer.files[0])
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        setInputText(text);
+      };
+      reader.readAsText(file);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <span className="text-3xl">🛡️</span>
-              <span className="text-xl font-bold text-[#C1440E]">Kasbah Guard</span>
-            </Link>
-            <nav className="hidden md:flex space-x-8">
-              <Link href="/scanner" className="text-[#C1440E] font-medium">Scanner</Link>
-              <Link href="/files" className="text-gray-600 hover:text-[#C1440E] font-medium">Files</Link>
-              <Link href="/dashboard" className="text-gray-600 hover:text-[#C1440E] font-medium">Dashboard</Link>
-              <Link href="/api-console" className="text-gray-600 hover:text-[#C1440E] font-medium">API</Link>
-            </nav>
-            <div className="flex space-x-4">
-              <Link href="/" className="text-gray-600 hover:text-[#C1440E] font-medium px-4 py-2">Home</Link>
-              <Link href="/dashboard" className="btn-primary">Dashboard</Link>
-            </div>
-          </div>
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <h1 className="text-3xl font-bold" style={{ color: '#C1440E' }}>
+            Kasbah Secret Scanner
+          </h1>
+          <p className="text-gray-600 mt-1">100% local processing • No data sent to servers</p>
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-5xl mx-auto">
-          {/* Title */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-2 text-gray-900">Web Scanner</h2>
-            <p className="text-gray-600">
-              Scan text for secrets, PII, and sensitive data in real-time
-            </p>
-          </div>
-
-          {/* Input Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Text Input */}
-            <div className="space-y-4">
-              <div
-                className={`border-2 border-dashed rounded-xl p-6 transition-colors ${
-                  dragActive ? 'border-[#C1440E] bg-[#C1440E]/5' : 'border-gray-300 bg-white'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Guided Tour Modal */}
+        {showTour && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
+            <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md">
+              <h2 className="text-2xl font-bold mb-4">Welcome to Kasbah Scanner</h2>
+              <div className="space-y-4 mb-6 text-gray-700">
+                <div className="flex gap-3">
+                  <span className="text-2xl">🔍</span>
+                  <div>
+                    <h3 className="font-semibold">Real-time Detection</h3>
+                    <p className="text-sm">Instantly scan for 50+ secret formats</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-2xl">🛡️</span>
+                  <div>
+                    <h3 className="font-semibold">100% Local</h3>
+                    <p className="text-sm">All detection happens in your browser</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-2xl">⚡</span>
+                  <div>
+                    <h3 className="font-semibold">Instant Results</h3>
+                    <p className="text-sm">Get remediation guidance immediately</p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTour(false)}
+                className="w-full px-4 py-2 rounded-lg font-semibold text-white transition-all"
+                style={{ backgroundColor: '#C1440E' }}
               >
-                <div className="flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                </div>
-                <p className="text-center text-sm text-gray-600 mb-2">
-                  Drag and drop a file here, or
-                </p>
-                <textarea
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Paste text to scan... (e.g., AKIAIOSFODNN7EXAMPLE)"
-                  className="w-full h-48 p-4 border border-gray-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-[#C1440E] focus:border-transparent"
-                />
-                <div className="flex items-center justify-between mt-4">
-                  <button
-                    onClick={() => setInputText('')}
-                    className="flex items-center space-x-2 text-sm text-gray-600 hover:text-[#C1440E]"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <span>Clear</span>
-                  </button>
-                  <button
-                    onClick={handleScan}
-                    disabled={!inputText.trim() || isScanning}
-                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    {isScanning ? (
-                      <>
-                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        <span>Scanning...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        <span>Scan</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Tests */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Tests</h3>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setInputText('AKIAIOSFODNN7EXAMPLE')}
-                    className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    AWS Key
-                  </button>
-                  <button
-                    onClick={() => setInputText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')}
-                    className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    GitHub Token
-                  </button>
-                  <button
-                    onClick={() => setInputText('sk-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP')}
-                    className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    OpenAI Key
-                  </button>
-                  <button
-                    onClick={() => setInputText('123-45-6789')}
-                    className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    SSN
-                  </button>
-                  <button
-                    onClick={() => setInputText('This is safe text with no secrets')}
-                    className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    Safe Text
-                  </button>
-                </div>
-              </div>
+                Got it, let&apos;s scan!
+              </button>
             </div>
+          </div>
+        )}
 
-            {/* Results */}
-            <div className="space-y-4">
-              {result ? (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  {/* Result Header */}
-                  <div className={`p-4 ${
-                    result.decision === 'DENY' ? 'bg-red-500' :
-                    result.decision === 'WARN' ? 'bg-yellow-500' :
-                    result.decision === 'ERROR' ? 'bg-gray-500' :
-                    'bg-green-500'
-                  } text-white`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        {result.decision === 'DENY' ? (
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                        ) : result.decision === 'WARN' ? (
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                        ) : result.decision === 'ERROR' ? (
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        ) : (
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        )}
-                        <div>
-                          <div className="text-2xl font-bold">{result.decision}</div>
-                          <div className="text-sm opacity-90">Risk: {result.risk}/100</div>
-                        </div>
-                      </div>
-                      {result.latencyMs && (
-                        <div className="text-right">
-                          <div className="text-sm">Latency</div>
-                          <div className="text-lg font-mono">{result.latencyMs}ms</div>
-                        </div>
-                      )}
+        {/* Pattern Explorer Modal */}
+        {showPatternExplorer && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40 overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-2xl p-8 max-w-2xl my-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Pattern Explorer</h2>
+                <button
+                  onClick={() => {
+                    setShowPatternExplorer(false);
+                    setSelectedPattern(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {selectedPattern ? (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold">{selectedPattern.type}</h3>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Example Format:
+                    </label>
+                    <code className="block bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      {selectedPattern.example}
+                    </code>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-600">Risk Score</p>
+                      <p className="text-lg font-bold" style={{ color: '#C1440E' }}>
+                        {selectedPattern.risk}/100
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">False Positive Rate</p>
+                      <p className="text-lg font-bold">{selectedPattern.fpRate}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">CCL Level</p>
+                      <p className="text-lg font-bold">{selectedPattern.ccl}</p>
                     </div>
                   </div>
-
-                  {/* Violations */}
-                  {result.violations && result.violations.length > 0 && (
-                    <div className="p-4 border-b border-gray-200">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Detections</h3>
-                      <div className="space-y-2">
-                        {result.violations.map((v: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                              <div className="font-medium text-sm text-gray-900">{v.type}</div>
-                              <div className="text-xs text-gray-500">{v.pattern}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm font-medium text-gray-900">Confidence: {(v.confidence * 100).toFixed(0)}%</div>
-                              <div className="text-xs text-gray-500">Risk: {v.risk}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Redacted Text */}
-                  {result.redacted && (
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-gray-900">Redacted Output</h3>
-                        <button
-                          onClick={() => navigator.clipboard.writeText(result.redacted)}
-                          className="flex items-center space-x-1 text-xs text-[#C1440E] hover:underline"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                          <span>Copy</span>
-                        </button>
-                      </div>
-                      <pre className="bg-gray-50 p-3 rounded-lg text-sm overflow-auto max-h-48 text-gray-900">
-                        {result.redacted}
-                      </pre>
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Remediation Steps:
+                    </label>
+                    <p className="text-gray-700">{selectedPattern.remediation}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setInputText(selectedPattern.example);
+                        setShowPatternExplorer(false);
+                        setSelectedPattern(null);
+                      }}
+                      className="px-4 py-2 rounded-lg font-semibold text-white transition-all"
+                      style={{ backgroundColor: '#C1440E' }}
+                    >
+                      Test This Pattern
+                    </button>
+                    <button
+                      onClick={() => setSelectedPattern(null)}
+                      className="px-4 py-2 rounded-lg font-semibold text-gray-700 border border-gray-300 hover:bg-gray-50"
+                    >
+                      Back
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  <p className="text-gray-500">Scan results will appear here</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                  {PATTERN_DATABASE.map((pattern) => (
+                    <button
+                      key={pattern.id}
+                      onClick={() => setSelectedPattern(pattern)}
+                      className="p-4 border border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-md transition-all text-left"
+                    >
+                      <h4 className="font-semibold text-gray-900">{pattern.type}</h4>
+                      <p className="text-xs text-gray-500 mt-1">Risk: {pattern.risk}/100</p>
+                      <p className="text-xs text-gray-500">Category: {pattern.category}</p>
+                    </button>
+                  ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
 
-              {/* Scan History */}
-              {history.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200">
-                  <div className="p-4 border-b border-gray-200">
-                    <h3 className="text-sm font-semibold text-gray-900">Recent Scans</h3>
-                  </div>
-                  <div className="max-h-64 overflow-auto">
-                    {history.map((scan, i) => (
-                      <div
-                        key={i}
-                        className="p-3 border-b border-gray-200 last:border-0 flex items-center justify-between hover:bg-gray-50"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-2 h-2 rounded-full ${
-                            scan.decision === 'DENY' ? 'bg-red-500' :
-                            scan.decision === 'WARN' ? 'bg-yellow-500' :
-                            'bg-green-500'
-                          }`} />
-                          <span className="text-sm text-gray-900">{scan.reason || 'Scan completed'}</span>
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          Risk: {scan.risk}
-                        </span>
+        {/* Main Scanner Area */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Input Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold mb-4">Paste Your Code</h2>
+
+            {/* Drag and Drop Area */}
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
+                dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50 hover:border-gray-400'
+              }`}
+            >
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Paste code, credentials, or files here... or drag & drop a file"
+                className="w-full h-40 bg-transparent border-none focus:outline-none resize-none placeholder-gray-400"
+              />
+            </div>
+
+            {/* Quick Test Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handlePasteExample('AKIAIOSFODNN7EXAMPLE')}
+                className="px-3 py-2 text-xs rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all"
+              >
+                Test AWS Key
+              </button>
+              <button
+                onClick={() => handlePasteExample('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')}
+                className="px-3 py-2 text-xs rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all"
+              >
+                Test GitHub Token
+              </button>
+              <button
+                onClick={() => handlePasteExample('sk-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV')}
+                className="px-3 py-2 text-xs rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-all"
+              >
+                Test OpenAI Key
+              </button>
+              <button
+                onClick={() => handlePasteExample('123-45-6789')}
+                className="px-3 py-2 text-xs rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-all"
+              >
+                Test SSN
+              </button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleScan}
+                disabled={isScanning || !inputText.trim()}
+                className="flex-1 px-4 py-3 rounded-lg font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
+                style={{ backgroundColor: '#C1440E' }}
+              >
+                {isScanning ? 'Scanning...' : 'Scan Now'}
+              </button>
+              <button
+                onClick={handleClear}
+                className="px-4 py-3 rounded-lg font-semibold text-gray-700 border border-gray-300 hover:bg-gray-50"
+              >
+                Clear
+              </button>
+            </div>
+
+            {/* Features */}
+            <div className="space-y-3 mt-6">
+              <h3 className="font-semibold text-gray-900">Features</h3>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { icon: '🔍', title: '50+ Patterns', desc: 'AWS, GitHub, APIs, PII, more' },
+                  { icon: '⚡', title: '<1ms Detection', desc: 'Local processing only' },
+                  { icon: '🔒', title: '100% Private', desc: 'Zero data transmission' },
+                ].map((feature, i) => (
+                  <div key={i} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
+                    <div className="flex items-start gap-3">
+                      <span className="text-xl">{feature.icon}</span>
+                      <div>
+                        <h4 className="font-semibold text-sm text-gray-900">{feature.title}</h4>
+                        <p className="text-xs text-gray-600">{feature.desc}</p>
                       </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Results Section */}
+          <div>
+            {result && isResultVisible && (
+              <div ref={resultRef} className="space-y-6 animate-fade-in">
+                <h2 className="text-xl font-bold mb-4">Scan Results</h2>
+
+                {/* Risk Gauge */}
+                <AnimatedRiskGauge risk={result.risk} ccl={result.ccl} confidence={result.confidence} />
+
+                {/* Decision Banner */}
+                <div
+                  className="p-4 rounded-lg text-center text-white font-semibold"
+                  style={{
+                    backgroundColor:
+                      result.decision === 'ALLOW'
+                        ? '#10B981'
+                        : result.decision === 'WARN'
+                          ? '#F59E0B'
+                          : '#EF4444',
+                  }}
+                >
+                  {result.message}
+                </div>
+
+                {/* Pattern Violations */}
+                {result.violations.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-gray-900">Detected Patterns</h3>
+                    {result.violations.map((violation: any, i: number) => (
+                      <PatternBadge
+                        key={i}
+                        type={violation.type}
+                        pattern={violation.pattern}
+                        confidence={violation.confidence}
+                        risk={violation.risk}
+                        ccl={violation.ccl}
+                        remediation={PATTERN_DATABASE.find((p) => p.type === violation.type)?.remediation}
+                        animated={true}
+                      />
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
-          </div>
+                )}
 
-          {/* Features */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <svg className="w-8 h-8 text-[#C1440E] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">140+ Patterns</h3>
-              <p className="text-gray-600">Detect AWS keys, GitHub tokens, SSNs, credit cards, and more</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <svg className="w-8 h-8 text-[#C1440E] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">&lt;5ms Detection</h3>
-              <p className="text-gray-600">Lightning-fast scanning with WebAssembly acceleration</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <svg className="w-8 h-8 text-[#C1440E] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Zero False Positives</h3>
-              <p className="text-gray-600">ML-powered detection with continuous learning</p>
-            </div>
+                {/* Before/After Preview */}
+                {result.redacted !== inputText && (
+                  <div className="space-y-3 border-t pt-4">
+                    <button
+                      onClick={() => setShowBeforeAfter(!showBeforeAfter)}
+                      className="w-full px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 font-semibold text-gray-900 transition-all"
+                    >
+                      {showBeforeAfter ? 'Hide Before/After' : 'Show Before/After'}
+                    </button>
+
+                    {showBeforeAfter && (
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <p className="text-xs font-semibold text-red-600 mb-2">BEFORE (Unsafe)</p>
+                          <pre className="bg-red-50 p-3 rounded text-xs text-red-900 overflow-x-auto max-h-32">
+                            {inputText}
+                          </pre>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-green-600 mb-2">AFTER (Safe)</p>
+                          <pre className="bg-green-50 p-3 rounded text-xs text-green-900 overflow-x-auto max-h-32">
+                            {result.redacted}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Latency Badge */}
+                <div className="text-xs text-gray-500 text-center pt-2">
+                  Scanned in {result.latency.toFixed(1)}ms • 100% local processing
+                </div>
+
+                {/* Pattern Explorer Link */}
+                <button
+                  onClick={() => setShowPatternExplorer(true)}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 font-semibold text-gray-900 transition-all"
+                >
+                  Explore All Patterns
+                </button>
+              </div>
+            )}
+
+            {!result && (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-lg mb-2">👀</p>
+                <p>Paste code above to get started</p>
+              </div>
+            )}
           </div>
         </div>
-      </main>
+
+        {/* Scan History */}
+        {history.length > 1 && (
+          <div className="mt-12 pt-8 border-t">
+            <h3 className="text-lg font-semibold mb-4">Recent Scans</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {history.slice(1, 4).map((scan, i) => (
+                <div
+                  key={i}
+                  onClick={() => {
+                    setResult(scan);
+                    setInputText('');
+                  }}
+                  className="p-4 border rounded-lg hover:shadow-md cursor-pointer transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold text-gray-900">{scan.decision}</div>
+                    <div className="text-sm" style={{ color: scan.decision === 'ALLOW' ? '#10B981' : '#EF4444' }}>
+                      {scan.risk}/100
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2 truncate">{scan.message}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
-  )
+  );
 }

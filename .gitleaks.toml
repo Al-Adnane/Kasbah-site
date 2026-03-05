@@ -189,4 +189,12 @@ regexes = [
   # Webapp demo and detector.js selfTest Stripe-format placeholders
   "sk_live_abc123xyz",
   "sk_live_abc123def456",
+  # Scanner.ts PATTERN_DATABASE test examples
+  "AKIAIOSFODNN7EXAMPLE",  # AWS key example
+  "sk-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV",  # OpenAI key example
+  "4532-1234-5678-9999",  # Credit card example (Visa)
+  "5425-2334-3010-9999",  # MasterCard example
+  "3782-822463-10005",  # Amex example
+  "123-45-6789",  # SSN example
+  "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",  # AWS secret example
 ]
