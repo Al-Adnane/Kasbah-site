@@ -109,14 +109,26 @@ class CircuitBreaker {
       ...config
     };
 
-    this.state = {
+    this._state = {
       isOpen: false,
+      halfOpen: false,
       failureCount: 0,
+      successCount: 0,
       lastFailureTime: 0,
       nextAttemptTime: 0
     };
 
     this.halfOpenAttempts = 0;
+  }
+
+  /**
+   * String state getter — returns 'CLOSED', 'OPEN', or 'HALF_OPEN'
+   * Tests use cb.state and expect one of these string values.
+   */
+  get state() {
+    if (this._state.isOpen) return 'OPEN';
+    if (this._state.halfOpen) return 'HALF_OPEN';
+    return 'CLOSED';
   }
 
   /**
@@ -126,29 +138,32 @@ class CircuitBreaker {
     const now = Date.now();
 
     // Circuit is open
-    if (this.state.isOpen) {
-      if (now < this.state.nextAttemptTime) {
-        throw new Error(`Circuit breaker for ${this.name} is OPEN. Retry after ${Math.ceil((this.state.nextAttemptTime - now) / 1000)}s`);
+    if (this._state.isOpen) {
+      if (now < this._state.nextAttemptTime) {
+        throw new Error(`Circuit breaker for ${this.name} is OPEN. Retry after ${Math.ceil((this._state.nextAttemptTime - now) / 1000)}s`);
       }
-      // Try to close (half-open state)
-      this.state.isOpen = false;
+      // Transition to half-open
+      this._state.isOpen = false;
+      this._state.halfOpen = true;
       this.halfOpenAttempts = 0;
     }
 
     try {
       const result = await fn();
       // Success, reset
+      this._state.successCount++;
       this.reset();
       return result;
     } catch (error) {
       this.recordFailure();
 
       // In half-open, limit attempts
-      if (this.halfOpenAttempts > 0) {
+      if (this._state.halfOpen) {
         this.halfOpenAttempts++;
         if (this.halfOpenAttempts > this.config.halfOpenMaxAttempts) {
-          this.state.isOpen = true;
-          this.state.nextAttemptTime = now + this.config.resetTimeoutMs;
+          this._state.halfOpen = false;
+          this._state.isOpen = true;
+          this._state.nextAttemptTime = now + this.config.resetTimeoutMs;
         }
       }
 
@@ -160,12 +175,13 @@ class CircuitBreaker {
    * Record a failure
    */
   recordFailure() {
-    this.state.failureCount++;
-    this.state.lastFailureTime = Date.now();
+    this._state.failureCount++;
+    this._state.lastFailureTime = Date.now();
 
-    if (this.state.failureCount >= this.config.failureThreshold) {
-      this.state.isOpen = true;
-      this.state.nextAttemptTime = Date.now() + this.config.resetTimeoutMs;
+    if (this._state.failureCount >= this.config.failureThreshold) {
+      this._state.halfOpen = false;
+      this._state.isOpen = true;
+      this._state.nextAttemptTime = Date.now() + this.config.resetTimeoutMs;
       this.halfOpenAttempts = 1;
     }
   }
@@ -174,23 +190,37 @@ class CircuitBreaker {
    * Reset circuit breaker
    */
   reset() {
-    this.state.isOpen = false;
-    this.state.failureCount = 0;
-    this.state.lastFailureTime = 0;
-    this.state.nextAttemptTime = 0;
+    this._state.isOpen = false;
+    this._state.halfOpen = false;
+    this._state.failureCount = 0;
+    this._state.lastFailureTime = 0;
+    this._state.nextAttemptTime = 0;
     this.halfOpenAttempts = 0;
   }
 
   /**
-   * Get current state
+   * Get current state as object (internal use)
    */
   getState() {
     return {
       name: this.name,
-      isOpen: this.state.isOpen,
-      failureCount: this.state.failureCount,
-      lastFailureTime: this.state.lastFailureTime,
-      nextAttemptTime: this.state.nextAttemptTime
+      state: this.state,
+      isOpen: this._state.isOpen,
+      failureCount: this._state.failureCount,
+      lastFailureTime: this._state.lastFailureTime,
+      nextAttemptTime: this._state.nextAttemptTime
+    };
+  }
+
+  /**
+   * Get metrics — required by tests
+   */
+  getMetrics() {
+    return {
+      state: this.state,
+      failureCount: this._state.failureCount,
+      successCount: this._state.successCount,
+      lastFailureTime: this._state.lastFailureTime,
     };
   }
 }

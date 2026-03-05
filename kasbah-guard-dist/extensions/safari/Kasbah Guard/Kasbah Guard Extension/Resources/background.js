@@ -1,6 +1,7 @@
 // Kasbah Guard - Background Service Worker v2.0.0
 // 100% BROWSER INDEPENDENT — NO Guard service, NO server calls
 try { importScripts('src/zk_proof_verifier.js'); } catch (e) { console.warn('[background] zk_proof_verifier not loaded:', e); }
+try { importScripts('src/zk_proof_controller.js'); } catch (e) { console.warn('[background] zk_proof_controller not loaded:', e); }
 let badgeFlashTimeout = null;
 
 // ── Local Audit Ledger (Gap 1.3) ───────────────────────────────────────────
@@ -21,7 +22,8 @@ function appendAuditEntry(event, data) {
     try {
       const ledger = stored[_AUDIT_KEY] || [];
       const prevHash = ledger.length > 0 ? ledger[ledger.length - 1].hash : '0'.repeat(64);
-      const id = `aud-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const _ab = new Uint8Array(4); crypto.getRandomValues(_ab);
+      const id = `aud-${Date.now()}-${Array.from(_ab).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,8)}`;
       const ts = new Date().toISOString();
       const hash = await _sha256(prevHash + id + ts + event + JSON.stringify(data || {}));
       ledger.push({ id, ts, event, data: data || {}, prevHash, hash });
@@ -51,7 +53,7 @@ function sendSentryError(type, message, stack, context = {}) {
     stack: stack ? stack.toString().split('\n').slice(0, 5).join('\n') : '',
     context: {
       extensionVersion: '2.0.0',
-      browser: 'safari',
+      browser: 'chrome',
       timestamp: new Date().toISOString(),
       ...context
     }
@@ -135,6 +137,7 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
       chrome.action.setBadgeText({ text: '' });
     }, 5000);
 
+    // Store for popup display
     chrome.storage.local.get(['secretBlockCount'], (data) => {
       const count = (data.secretBlockCount || 0) + 1;
       chrome.storage.local.set({
@@ -148,6 +151,57 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
       });
     });
     appendAuditEntry('SECRET_EXFILTRATION_BLOCKED', { secretName: msg.secretName, requestType: msg.requestType, url: msg.url });
+
+    respond({ ok: true });
+    return true;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // FALSE POSITIVE REPORTING: Forward report to API endpoint
+  // ───────────────────────────────────────────────────────────────────────────
+  if (msg.action === 'reportFalsePositive') {
+    chrome.storage.local.get(['guardEnabled', 'lastDetection'], (data) => {
+      const detection = data.lastDetection || null;
+
+      // Item C: differential privacy — add Laplace noise (ε=1.0, Δ=1) to risk score
+      // before transmission so individual detections cannot be fingerprinted.
+      let noisyRisk = null;
+      if (detection && typeof detection.risk === 'number') {
+        const _arr = new Uint32Array(1); crypto.getRandomValues(_arr);
+        const u = _arr[0] / 0xFFFFFFFF;
+        const sign = u >= 0.5 ? 1 : -1;
+        const laplace = sign * 1.0 * Math.log(1 - 2 * Math.abs(u - 0.5)); // scale = Δ/ε = 1
+        noisyRisk = Math.max(0, Math.min(100, Math.round(detection.risk + laplace)));
+      }
+
+      const report = {
+        context: msg.context || '',
+        timestamp: msg.timestamp || new Date().toISOString(),
+        detection: detection ? { ...detection, risk: noisyRisk } : null,
+        extensionVersion: '2.0.0',
+        browser: 'chrome',
+      };
+
+      fetch('https://api.bekasbah.com/api/false-positives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(report),
+      }).catch(() => {}); // Silent fail — don't break extension on network error
+    });
+
+    // Item C: EWMA bidirectional feedback — nudge threshold toward permissive
+    // Inject into active content-script contexts via scripting API
+    chrome.tabs.query({ active: true }, (tabs) => {
+      tabs.forEach((tab) => {
+        if (!tab.id) return;
+        try {
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => { if (typeof applyFeedbackEWMA === 'function') applyFeedbackEWMA(true); }
+          });
+        } catch (_) {}
+      });
+    });
 
     respond({ ok: true });
     return true;
@@ -168,48 +222,6 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
       // Silent fail - network error shouldn't break extension
     });
 
-    respond({ ok: true });
-    return true;
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // FALSE POSITIVE REPORTING: Forward report to API endpoint
-  // Item C: differential privacy (Laplace noise) + EWMA feedback injection
-  // ───────────────────────────────────────────────────────────────────────────
-  if (msg.action === 'reportFalsePositive') {
-    chrome.storage.local.get(['lastDetection'], (data) => {
-      const detection = data.lastDetection || null;
-      let noisyRisk = null;
-      if (detection && typeof detection.risk === 'number') {
-        const u = Math.random();
-        const sign = u >= 0.5 ? 1 : -1;
-        const laplace = sign * 1.0 * Math.log(1 - 2 * Math.abs(u - 0.5));
-        noisyRisk = Math.max(0, Math.min(100, Math.round(detection.risk + laplace)));
-      }
-      const report = {
-        context: msg.context || '',
-        timestamp: msg.timestamp || new Date().toISOString(),
-        detection: detection ? { ...detection, risk: noisyRisk } : null,
-        extensionVersion: '2.0.0',
-        browser: 'safari',
-      };
-      fetch('https://api.bekasbah.com/api/false-positives', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(report),
-      }).catch(() => {});
-    });
-    chrome.tabs.query({ active: true }, (tabs) => {
-      tabs.forEach((tab) => {
-        if (!tab.id) return;
-        try {
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => { if (typeof applyFeedbackEWMA === 'function') applyFeedbackEWMA(true); }
-          });
-        } catch (_) {}
-      });
-    });
     respond({ ok: true });
     return true;
   }
@@ -259,15 +271,14 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
             console.log('[background.js] ✅ Detection stored with proof:', proof.id);
           });
 
-          // Send proof back to popup
-          try {
-            chrome.runtime.sendMessage({
-              type: 'PROOF_GENERATED',
-              proof: proof
-            }).catch(() => {}); // Tab may be closed, ignore
-          } catch (e) {
-            // Silent fail - popup may not be open
-          }
+          // Send proof back to popup (best-effort — popup may not be open)
+          chrome.runtime.sendMessage({
+            type: 'PROOF_GENERATED',
+            proof: proof
+          }).catch((e) => {
+            // Expected: popup closed or no listener — not an error
+            console.debug('[background.js] PROOF_GENERATED not delivered (popup closed):', e?.message);
+          });
         }
       } catch (error) {
         console.error('[background.js] Compliance proof generation failed:', error);
@@ -285,12 +296,12 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
 });
 
 /**
- * Generate compliance proof from detection (wrapper for popup.js logic)
- * Called from background service worker
+ * Generate compliance proof from detection using ZK proof controller
+ * Called from background service worker during detection event
  *
  * @param {Object} detection - Detection result from content.js
- * @param {Object} sender - Message sender info
- * @returns {Promise<Object>} Compliance proof
+ * @param {Object} sender - Message sender info (tab, url, frameId)
+ * @returns {Promise<Object>} Compliance proof with ZK verification
  */
 async function generateComplianceProofFromDetection(detection, sender) {
   try {
@@ -300,84 +311,35 @@ async function generateComplianceProofFromDetection(detection, sender) {
       return null;
     }
 
-    // Prepare detection data with content hash
-    const detectionData = {
-      ...detection,
-      content_hash: detection.content_hash || hashContent(detection.content || ''),
-      source: {
-        url: sender.url,
-        tabId: sender.tab?.id,
-        title: sender.tab?.title || 'Unknown'
-      }
-    };
-
-    // Generate proof structure
-    const proof = {
-      id: `proof-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
-
-      // Layer 1: Quantum signature (if available from detector)
-      quantum: detection.quantumSignature || null,
-
-      // Layer 2: ZK proof — Schnorr sigma protocol via SubtleCrypto ECDSA-P256
-      zk: null,
-
-      // Layer 3: Blockchain (to be filled in Task 3)
-      blockchain: null,
-
-      // Detection metadata
-      detection: {
-        verdict: detection.decision,
-        riskScore: detection.risk || 0,
-        contentHash: detectionData.content_hash,
-        platform: detection.platform || 'unknown',
-        reason: detection.reason || 'Detection flagged'
-      },
-
-      // Source information
-      source: detectionData.source,
-
-      // Compliance status
-      status: {
-        quantumSigned: detection.quantumSignature !== null && detection.quantumSignature !== undefined,
-        zkProofReady: false,
-        blockchainRegistered: false
-      }
-    };
-
-    if (typeof ZKProof !== 'undefined') {
-      try {
-        const zkProof = new ZKProof(
-          `zk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          detectionData.content_hash,
-          detection.decision,
-          detection.risk || 0
-        );
-        await zkProof.generateProof();
-        const verified = await zkProof.verify();
-        proof.zk = zkProof.exportProof();
-        proof.status.zkProofReady = verified;
-        console.log('[background.js] ✅ ZK proof generated, verified:', verified);
-      } catch (zkErr) {
-        console.warn('[background.js] ZK proof generation failed:', zkErr);
-        proof.zk = { proofId: `zk-${Date.now()}`, status: 'error', verified: false };
-      }
-    } else {
-      proof.zk = { proofId: `zk-${Date.now()}`, status: 'pending', verified: false };
+    // Use ZK proof controller to generate complete proof
+    if (typeof ZKProofController === 'undefined') {
+      console.error('[background.js] ZKProofController not available');
+      return null;
     }
 
-    // Store proof in chrome.storage.local
-    await new Promise((resolve) => {
-      chrome.storage.local.set({
-        [`proof-${proof.id}`]: proof
-      }, resolve);
-    });
+    // Generate complete ZK proof (Schnorr sigma protocol via ECDSA-P256)
+    const proof = await ZKProofController.generateProof(detection, sender);
 
-    console.log('[background.js] ✅ Compliance proof created:', proof.id);
+    // Store proof in chrome.storage.local (with audit trail)
+    const stored = await ZKProofController.storeProof(proof);
+
+    if (!stored) {
+      console.warn('[background.js] Failed to store proof:', proof.id);
+      return null;
+    }
+
+    console.log('[background.js] ✅ Compliance proof generated & stored:', proof.id);
+    console.log('[background.js]    ZK verified:', proof.schnorr.verified);
+    console.log('[background.js]    Risk score:', proof.detection.risk_score);
+    console.log('[background.js]    Decision:', proof.detection.decision);
+
     return proof;
 
   } catch (error) {
     console.error('[background.js] Proof generation error:', error);
+    sendSentryError('zk_proof_generation_failed', error.message, error.stack, {
+      detectionType: detection?.decision || 'unknown'
+    });
     return null;
   }
 }

@@ -260,24 +260,97 @@ async function redactSelection() {
 }
 
 function reportFalsePositive() {
-  // Open report modal (simplified)
-  const context = prompt('Describe why this is a false positive (optional):');
+  // Show the FP modal overlay
+  const modal = document.getElementById('fp-modal');
+  modal.style.display = 'flex';
+  document.getElementById('fp-pattern').value = '';
+  document.getElementById('fp-context').value = '';
+  const statusEl = document.getElementById('fp-status');
+  statusEl.style.display = 'none';
+  statusEl.textContent = '';
+  document.getElementById('fp-pattern').focus();
+}
 
-  if (context !== null) {
-    chrome.runtime.sendMessage(
-      {
-        action: 'reportFalsePositive',
-        context,
-        timestamp: new Date().toISOString(),
-      },
-      () => {
-        if (window.KasbahAccessibility) {
-          window.KasbahAccessibility.screenReaderAnnounce('False positive report submitted. Thank you!');
-          window.KasbahAccessibility.audioAlerts.success();
-        }
-      }
-    );
+function closeFpModal() {
+  const modal = document.getElementById('fp-modal');
+  modal.style.display = 'none';
+  document.getElementById('fp-pattern').value = '';
+  document.getElementById('fp-context').value = '';
+  const statusEl = document.getElementById('fp-status');
+  statusEl.style.display = 'none';
+  statusEl.textContent = '';
+}
+
+async function submitFpReport() {
+  const fpPattern = document.getElementById('fp-pattern').value.trim();
+  const fpContext = document.getElementById('fp-context').value.trim();
+  const statusEl = document.getElementById('fp-status');
+
+  if (!fpPattern) {
+    statusEl.textContent = 'Pattern is required.';
+    statusEl.style.color = '#ff6b6b';
+    statusEl.style.display = 'block';
+    return;
   }
+
+  statusEl.textContent = 'Submitting...';
+  statusEl.style.color = '#aaa';
+  statusEl.style.display = 'block';
+  document.getElementById('fp-submit').disabled = true;
+
+  try {
+    const response = await fetch('https://api.bekasbah.com/api/false-positives', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pattern: fpPattern,
+        context: fpContext,
+        version: '1.0.0',
+        browser: 'chrome',
+        timestamp: Date.now(),
+      }),
+    });
+
+    if (response.ok) {
+      statusEl.textContent = 'Thank you! Report submitted.';
+      statusEl.style.color = '#28a745';
+      if (window.KasbahAccessibility) {
+        window.KasbahAccessibility.screenReaderAnnounce('False positive report submitted. Thank you!');
+        window.KasbahAccessibility.audioAlerts.success();
+      }
+      setTimeout(() => closeFpModal(), 1500);
+    } else {
+      statusEl.textContent = 'Submission failed. Please try again.';
+      statusEl.style.color = '#ff6b6b';
+      document.getElementById('fp-submit').disabled = false;
+    }
+  } catch (err) {
+    statusEl.textContent = 'Network error. Please try again.';
+    statusEl.style.color = '#ff6b6b';
+    document.getElementById('fp-submit').disabled = false;
+  }
+}
+
+function initFpModal() {
+  document.getElementById('fp-cancel').addEventListener('click', closeFpModal);
+  document.getElementById('fp-submit').addEventListener('click', submitFpReport);
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('fp-modal');
+      if (modal.style.display === 'flex') {
+        closeFpModal();
+      }
+    }
+  });
+
+  // Close modal when clicking the backdrop (outside the inner div)
+  document.getElementById('fp-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('fp-modal')) {
+      closeFpModal();
+    }
+  });
 }
 
 function showKeyboardHelp() {
@@ -451,7 +524,7 @@ function initThreatIntelligence() {
  * Generate unique ID for proofs
  */
 function generateId() {
-  return 'proof-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  return 'proof-' + Date.now() + '-' + Array.from(crypto.getRandomValues(new Uint8Array(6))).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
 }
 
 /**
@@ -492,7 +565,7 @@ async function generateComplianceProof(detection) {
 
     // Step 1: Create ZK proof (no content revealed to verifier)
     const zkProof = new ZKProof(
-      `zk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      `zk-${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b=>b.toString(16).padStart(2,'0')).join('')}`,
       detection.content_hash || await sha256Async(detection.content || ''),
       detection.decision,
       detection.risk || 0
@@ -886,6 +959,7 @@ function setupBlockchainRegistrationHandler() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initPopup();
+  initFpModal();
   initThreatIntelligence();
 
   // PHASE A Task 2: Initialize proof handlers
@@ -901,3 +975,198 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })();
 });
+
+// ============================================
+// ZK PROOF VERIFICATION UI (Gap 2)
+// ============================================
+
+/**
+ * Load and display recent ZK proofs in popup
+ */
+async function loadZKProofsUI() {
+  try {
+    if (typeof ZKProofController === 'undefined') {
+      console.warn('[popup.js] ZKProofController not available');
+      return;
+    }
+
+    const recentProofs = await ZKProofController.getRecentProofs(5);
+
+    if (recentProofs.length === 0) {
+      console.log('[popup.js] No ZK proofs found');
+      return;
+    }
+
+    // Display proofs in UI
+    const proofContainer = document.getElementById('zkProofsList') || createProofContainer();
+
+    for (const proof of recentProofs) {
+      const verified = await ZKProofController.verifyProof(proof);
+      appendProofElement(proofContainer, proof, verified);
+    }
+  } catch (error) {
+    console.error('[popup.js] Failed to load ZK proofs:', error);
+  }
+}
+
+/**
+ * Create proof container if it doesn't exist
+ */
+function createProofContainer() {
+  const container = document.createElement('div');
+  container.id = 'zkProofsList';
+  container.style.cssText = 'padding:12px 18px;border-top:1px solid var(--border);font-size:11px';
+  document.body.appendChild(container);
+  return container;
+}
+
+/**
+ * Append a proof element to the container
+ */
+function appendProofElement(container, proof, verified) {
+  const element = document.createElement('div');
+  element.style.cssText = `
+    background:rgba(6,95,70,.06);
+    border:1px solid rgba(6,95,70,.2);
+    border-radius:8px;
+    padding:10px;
+    margin-bottom:8px;
+    font-family:monospace;
+    font-size:10px;
+  `;
+
+  const statusBadge = verified.verified
+    ? '✅ Verified'
+    : verified.error ? '❌ Invalid' : '⚠️ Unverified';
+
+  const ageDays = Math.floor(verified.proof_age_ms / (24 * 60 * 60 * 1000));
+  const ageText = ageDays > 0 ? `${ageDays} days ago` : 'Today';
+
+  element.innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <strong style="color:var(--green)">${statusBadge}</strong>
+      <span style="color:var(--muted)">${ageText}</span>
+    </div>
+    <div style="color:var(--ink);margin-bottom:4px">
+      ID: ${proof.id.substr(0, 20)}...
+    </div>
+    <div style="color:var(--muted);margin-bottom:4px">
+      Decision: <strong>${proof.detection.decision}</strong> (Risk: ${(proof.detection.risk_score * 100).toFixed(0)}%)
+    </div>
+    <div style="color:var(--muted);font-size:9px">
+      Protocol: ${proof.protocol} | CCL: ${proof.compliance.ccl_level}
+    </div>
+  `;
+
+  container.appendChild(element);
+}
+
+/**
+ * Verify proof and show result modal
+ */
+async function verifyAndShowProof(proofId) {
+  try {
+    if (typeof ZKProofController === 'undefined') {
+      alert('ZK Proof system not available');
+      return;
+    }
+
+    const proof = await ZKProofController.getProof(proofId);
+    if (!proof) {
+      alert('Proof not found');
+      return;
+    }
+
+    const verification = await ZKProofController.verifyProof(proof);
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.5);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:10000;
+    `;
+
+    const box = document.createElement('div');
+    box.style.cssText = `
+      background:var(--card);
+      border-radius:12px;
+      padding:20px;
+      max-width:500px;
+      max-height:80vh;
+      overflow-y:auto;
+      box-shadow:0 20px 60px rgba(0,0,0,.2);
+    `;
+
+    const statusColor = verification.verified ? '#065F46' : '#dc2626';
+    const statusText = verification.verified ? '✅ VERIFIED' : '❌ INVALID';
+
+    box.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="color:${statusColor};margin:0">Zero-Knowledge Proof</h3>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="background:transparent;border:none;font-size:20px;cursor:pointer">✕</button>
+      </div>
+
+      <div style="background:rgba(6,95,70,.06);border:2px solid ${statusColor};border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:900;color:${statusColor}">${statusText}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">
+          Challenge Valid: ${verification.challenge_valid ? '✅' : '❌'}<br/>
+          Signature Valid: ${verification.signature_valid ? '✅' : '❌'}
+        </div>
+      </div>
+
+      <div style="background:var(--border);border-radius:8px;padding:12px;margin-bottom:12px;font-family:monospace;font-size:10px;color:var(--muted);word-break:break-all">
+        <div><strong>Proof ID:</strong><br/>${proof.id}</div>
+        <div style="margin-top:8px"><strong>Created:</strong><br/>${new Date(proof.timestamp).toLocaleString()}</div>
+      </div>
+
+      <div style="background:rgba(193,68,14,.06);border-left:3px solid var(--red);padding:10px;border-radius:4px;font-size:10px;color:var(--muted)">
+        <strong>Detection:</strong><br/>
+        Decision: <strong>${proof.detection.decision}</strong><br/>
+        Risk Score: <strong>${(proof.detection.risk_score * 100).toFixed(1)}%</strong><br/>
+        Platform: <strong>${proof.detection.platform}</strong>
+      </div>
+    `;
+
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+  } catch (error) {
+    console.error('[popup.js] Verification failed:', error);
+    alert('Failed to verify proof: ' + error.message);
+  }
+}
+
+/**
+ * Export proof audit log
+ */
+async function exportProofAuditLog() {
+  try {
+    if (typeof ZKProofController === 'undefined') {
+      alert('ZK Proof system not available');
+      return;
+    }
+
+    const csvData = await ZKProofController.exportAuditLog('csv');
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `kasbah-proof-audit-${Date.now()}.csv`);
+    link.click();
+
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('[popup.js] Export failed:', error);
+    alert('Failed to export audit log: ' + error.message);
+  }
+}

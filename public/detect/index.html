@@ -167,7 +167,7 @@
     async function loadJSFallback() {
       return new Promise((resolve) => {
         const s = document.createElement('script');
-        s.src = '/extensions/chrome/src/detector.js'; // use local copy
+        s.src = '/detector.js'; // use public copy (synced with all extensions)
         s.onload = () => {
           if (typeof classify !== 'undefined') {
             wasmClassify = (text) => {

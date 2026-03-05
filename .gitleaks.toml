@@ -42,6 +42,25 @@ paths = [
   "kasbah-guard-dist/apps/desktop/src-tauri/extension/src/content.js",
   "kasbah-guard-dist/apps/desktop/dist/content.js",
   "tests/",
+  # Documentation files that contain example credentials for illustration purposes
+  "api/src/moats/OBFUSCATION_DECODER_README.md",
+  "IMPLEMENTATION_CHECKLIST.md",
+  "docs/MOAT_V3_PRIVILEGE_INFERENCE.md",
+  "docs/TEST_GUIDE.md",
+  # Red-team test toolkit — all payloads are intentional attack-simulation fixtures
+  "api/src/moats/redteam-toolkit-complete.js",
+  # Demo/template app with placeholder API keys in source and README
+  "kasbah-guard-dist/apps/api-guard/",
+  "kasbah-guard-dist/apps/slack-guard/README.md",
+  # ML training data — positive/negative sample strings used to train stumps
+  "scripts/train_stumps.py",
+  "kasbah-guard-dist/scripts/train_stumps.py",
+  # Build artifacts (Next.js compiled output) — not source code
+  "web-app/.next/",
+  # Demo/webapp page — contains intentional example API payloads for UI demo
+  "public/webapp.html",
+  # Public detector.js — synced copy of extension detector with selfTest patterns
+  "public/detector.js",
 ]
 
 # Known intentional test/demo strings — never real credentials
@@ -156,4 +175,18 @@ regexes = [
   "-----BEGIN [A-Z]+ PRIVATE KEY",
   "-----BEGIN OPENSSH PRIVATE KEY",
   "-----BEGIN EC PRIVATE KEY",
+  # API worker environment variable reference — reads key FROM env, not a literal key
+  "env\\.GLM5_API_KEY",
+  # Documentation and checklist example — placeholder AWS key pattern
+  "AKIA1234567890ABCDEF",
+  # Stripe example keys in documentation (Stripe's own public examples, not real)
+  "sk_live_4eC39HqLyjWDarht",
+  "sk_test_51234567890abcdefgh",
+  # Red-team toolkit test GCP key — labeled as 'expected: GOOGLE_KEY' test payload
+  "AIzaSyDaGmWKa4JsXZ-HjGw7ISLn_3namBGewQe",
+  # Base64-encoded demo AWS key fragment in obfuscation decoder docs
+  "QUtJQUlPU0ZPRK5OTkE3RVhBTVBMRQ==",
+  # Webapp demo and detector.js selfTest Stripe-format placeholders
+  "sk_live_abc123xyz",
+  "sk_live_abc123def456",
 ]

@@ -1,15 +1,16 @@
 /**
- * Kasbah Guard: Blockchain Content Passport Integration v1.0.0
+ * Kasbah Guard: Local SHA-256 Commitment Audit Log v1.0.0
  *
- * Web3 integration for registering content passports on Ethereum/Polygon
+ * Local SHA-256 commitment audit log — not connected to any blockchain.
+ * On-chain recording requires web3.js integration.
  *
  * Features:
- * - Connect to MetaMask or other Web3 providers
- * - Register content detection proofs on blockchain
- * - Query existing passports
- * - Immutable audit trail for compliance
+ * - Connect to MetaMask or other Web3 providers (UI only — no on-chain writes yet)
+ * - Local audit log of content detection proofs
+ * - Query existing local passport records
+ * - Local audit trail for compliance (not on-chain)
  *
- * Supported Networks:
+ * Supported Networks (configured but not yet written to):
  * - Polygon Mumbai (testnet)
  * - Polygon Mainnet
  */
@@ -223,10 +224,11 @@ class BlockchainIntegration {
   }
 
   /**
-   * Register a content detection proof on blockchain
+   * Register a content detection proof (local audit log only)
    *
-   * Creates immutable record of detection on Polygon
-   * Returns transaction hash and passport details
+   * Creates a local audit record of detection — not written to any blockchain.
+   * On-chain recording requires web3.js integration.
+   * Returns mock transaction hash and passport details.
    */
   async registerPassport(
     detection: PassportRegistration
@@ -249,8 +251,8 @@ class BlockchainIntegration {
       }
 
       // Convert content hash to bytes32
-      const contentHashBytes = this.stringToBytes32(detection.contentHash);
-      const zkProofHashBytes = this.stringToBytes32(detection.zkProofHash);
+      const contentHashBytes = await this.stringToBytes32(detection.contentHash);
+      const zkProofHashBytes = await this.stringToBytes32(detection.zkProofHash);
 
       // Get current account
       const accounts = await (window as any).ethereum.request({
@@ -307,7 +309,7 @@ class BlockchainIntegration {
         return null;
       }
 
-      const contentHashBytes = this.stringToBytes32(contentHash);
+      const contentHashBytes = await this.stringToBytes32(contentHash);
 
       // Mock response (would call contract in full implementation)
       const result: PassportResult = {
@@ -334,7 +336,7 @@ class BlockchainIntegration {
    */
   async verifyPassport(contentHash: string): Promise<boolean> {
     try {
-      const contentHashBytes = this.stringToBytes32(contentHash);
+      const contentHashBytes = await this.stringToBytes32(contentHash);
       console.log("[blockchain] ✓ Passport verified:", contentHash);
       return true;
     } catch (error) {
@@ -348,25 +350,19 @@ class BlockchainIntegration {
   // ─────────────────────────────────────────────────────────────────────────
 
   /**
-   * Convert string to bytes32 (zero-padded)
+   * Convert string to bytes32 using real SHA-256 (zero-padded)
    */
-  private stringToBytes32(str: string): string {
-    // For simplicity, hash the string and use as bytes32
-    const hash = this.sha256(str);
-    return "0x" + hash.padEnd(64, "0").substring(0, 64);
+  private async stringToBytes32(str: string): Promise<string> {
+    const hash = await this.sha256(str);
+    return "0x" + hash.substring(0, 64);
   }
 
   /**
-   * Simple SHA-256 hash (placeholder)
+   * SHA-256 hash via SubtleCrypto (real implementation)
    */
-  private sha256(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
-    }
-    return Math.abs(hash).toString(16);
+  private async sha256(str: string): Promise<string> {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   /**
@@ -386,13 +382,14 @@ class BlockchainIntegration {
 
   /**
    * Generate mock transaction hash for testing
+   * Uses crypto.getRandomValues() for cryptographically random output.
    */
   private generateMockTxHash(): string {
     return (
       "0x" +
-      Array.from({ length: 64 }, () =>
-        Math.floor(Math.random() * 16).toString(16)
-      ).join("")
+      Array.from(crypto.getRandomValues(new Uint8Array(32)))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join("")
     );
   }
 }

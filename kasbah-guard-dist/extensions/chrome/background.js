@@ -22,7 +22,8 @@ function appendAuditEntry(event, data) {
     try {
       const ledger = stored[_AUDIT_KEY] || [];
       const prevHash = ledger.length > 0 ? ledger[ledger.length - 1].hash : '0'.repeat(64);
-      const id = `aud-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const _ab = new Uint8Array(4); crypto.getRandomValues(_ab);
+      const id = `aud-${Date.now()}-${Array.from(_ab).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,8)}`;
       const ts = new Date().toISOString();
       const hash = await _sha256(prevHash + id + ts + event + JSON.stringify(data || {}));
       ledger.push({ id, ts, event, data: data || {}, prevHash, hash });
@@ -166,7 +167,8 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
       // before transmission so individual detections cannot be fingerprinted.
       let noisyRisk = null;
       if (detection && typeof detection.risk === 'number') {
-        const u = Math.random();
+        const _arr = new Uint32Array(1); crypto.getRandomValues(_arr);
+        const u = _arr[0] / 0xFFFFFFFF;
         const sign = u >= 0.5 ? 1 : -1;
         const laplace = sign * 1.0 * Math.log(1 - 2 * Math.abs(u - 0.5)); // scale = Δ/ε = 1
         noisyRisk = Math.max(0, Math.min(100, Math.round(detection.risk + laplace)));
@@ -269,15 +271,14 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
             console.log('[background.js] ✅ Detection stored with proof:', proof.id);
           });
 
-          // Send proof back to popup
-          try {
-            chrome.runtime.sendMessage({
-              type: 'PROOF_GENERATED',
-              proof: proof
-            }).catch(() => {}); // Tab may be closed, ignore
-          } catch (e) {
-            // Silent fail - popup may not be open
-          }
+          // Send proof back to popup (best-effort — popup may not be open)
+          chrome.runtime.sendMessage({
+            type: 'PROOF_GENERATED',
+            proof: proof
+          }).catch((e) => {
+            // Expected: popup closed or no listener — not an error
+            console.debug('[background.js] PROOF_GENERATED not delivered (popup closed):', e?.message);
+          });
         }
       } catch (error) {
         console.error('[background.js] Compliance proof generation failed:', error);

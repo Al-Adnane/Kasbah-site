@@ -1,10 +1,10 @@
 /**
- * Kasbah Guard: Schnorr Sigma Protocol ZK Proof — SubtleCrypto ECDSA-P256
+ * Kasbah Guard: ECDSA-P256 Signed Commitment Proof — SubtleCrypto ECDSA-P256
  *
- * Implements a Schnorr-style sigma protocol (proof of knowledge of signing key)
+ * Implements an ECDSA-P256 signed commitment proof for detection results
  * using the browser's native SubtleCrypto API (ECDSA P-256).
  *
- * Protocol (3-move):
+ * Protocol (3-move commitment):
  *   1. Prover generates ephemeral keypair (r, R=r·G), sends commitment R
  *   2. Verifier issues challenge c = SHA-256(R || message)
  *   3. Prover responds with signature s = ECDSA_sign(privateKey, c)
@@ -13,7 +13,7 @@
  * Properties:
  *   - Completeness: honest prover always passes verification
  *   - Soundness: forging a valid (R, c, s) without the private key is infeasible
- *   - Zero-knowledge: verifier learns nothing about privateKey from (R, c, s)
+ *   - Binding: commitment ties the proof to a specific detection hash
  *
  * NOTE: SubtleCrypto is async — all proof operations return Promises.
  */
@@ -44,7 +44,7 @@ async function _sha256Hex(data) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Schnorr Sigma Protocol via SubtleCrypto ECDSA-P256
+// ECDSA-P256 Signed Commitment Proof via SubtleCrypto
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -69,7 +69,7 @@ async function generateProverKey() {
 }
 
 /**
- * Prover step: create a Schnorr commitment.
+ * Prover step: create an ECDSA-P256 commitment.
  *
  * Generates an ephemeral keypair (r, R=r·G).
  * Returns commitment R as hex (the ephemeral public key bytes).
@@ -123,7 +123,7 @@ async function proverRespond(identityPrivateKey, challengeHex) {
 }
 
 /**
- * Verifier step: verify the proof.
+ * Verifier step: verify the ECDSA-P256 signed commitment proof.
  *
  * Checks that the response (signature) was produced by the identity key
  * whose public key was previously registered, against the challenge.
@@ -159,10 +159,10 @@ async function verifierVerify(publicKeyHex, challengeHex, responseHex) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Create a Schnorr ZK compliance proof for a detection result.
+ * Create an ECDSA-P256 signed commitment compliance proof for a detection result.
  *
  * The proof asserts: "I hold the private key corresponding to publicKeyHex
- * and I sign a commitment to this detection hash" — without revealing the key.
+ * and I sign a commitment to this detection hash."
  *
  * @param {Object} detection   Detection result {decision, risk, content_hash, platform}
  * @param {Object} proverKey   From generateProverKey() — {publicKeyHex, privateKey}
@@ -185,21 +185,28 @@ async function createComplianceProof(detection, proverKey) {
   // Step 3: Prover responds with identity key
   const responseHex = await proverRespond(proverKey.privateKey, challengeHex);
 
+  // Step 4: Verify the proof immediately so `verified` reflects reality
+  const verified = await verifierVerify(proverKey.publicKeyHex, challengeHex, responseHex);
+
+  // Generate a cryptographically random proof ID
+  const randHex = Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b => b.toString(16).padStart(2,'0')).join('');
+
   return {
-    proofId: `zk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    proofId: `proof-${Date.now()}-${randHex}`,
     timestamp: Date.now(),
-    protocol: 'schnorr-sigma-ecdsa-p256',
+    protocol: 'ecdsa-p256-commitment-proof',
+    signature_scheme: 'ECDSA-P256',
     message,
     commitment: commitmentHex,
     challenge: challengeHex,
     response: responseHex,
     publicKey: proverKey.publicKeyHex,
-    verified: false, // will be set to true after verify() call
+    verified,
   };
 }
 
 /**
- * Verify a compliance proof.
+ * Verify an ECDSA-P256 signed commitment compliance proof.
  *
  * @param {Object} proof   Proof object from createComplianceProof()
  * @returns {Promise<boolean>}
@@ -219,7 +226,7 @@ async function verifyComplianceProof(proof) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ZKProof compatibility wrapper (maintains interface for background.js callers)
+// ECDSAProof compatibility wrapper (maintains interface for background.js callers)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ZKProof {
@@ -234,11 +241,11 @@ class ZKProof {
     this.response = null;
     this.publicKey = null;
     this.verified = false;
-    this._protocol = 'schnorr-sigma-ecdsa-p256';
+    this._protocol = 'ecdsa-p256-commitment-proof';
   }
 
   /**
-   * Generate proof asynchronously using Schnorr sigma protocol.
+   * Generate ECDSA-P256 signed commitment proof asynchronously.
    * @returns {Promise<Object>} Proof components
    */
   async generateProof() {
@@ -253,7 +260,7 @@ class ZKProof {
   }
 
   /**
-   * Verify this proof using Schnorr verification.
+   * Verify this ECDSA-P256 signed commitment proof.
    * @returns {Promise<boolean>}
    */
   async verify() {
@@ -278,6 +285,7 @@ class ZKProof {
       publicKey: this.publicKey,
       verified: this.verified,
       protocol: this._protocol,
+      signature_scheme: 'ECDSA-P256',
     };
   }
 }

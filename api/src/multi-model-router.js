@@ -17,7 +17,7 @@ const LLMSupplyChainAuditor = require('./llm_supply_chain_auditor');
 // ── Model Configuration ──
 const MODELS = {
   anthropic: {
-    name: 'claude-haiku-4-5-20251001',
+    name: 'claude-haiku-4-5',
     provider: 'Anthropic',
     endpoint: 'https://api.anthropic.com/v1/messages',
     headers: (apiKey) => ({
@@ -26,7 +26,7 @@ const MODELS = {
       'content-type': 'application/json',
     }),
     modelParam: 'model',
-    maxTokens: 256,
+    maxTokens: 512,
   },
   openai: {
     name: 'gpt-4o-mini',
@@ -46,7 +46,6 @@ const MODELS = {
     headers: () => ({
       'content-type': 'application/json',
     }),
-    useQueryParam: true, // Gemini uses ?key=
     maxTokens: 256,
   },
   mistral: {
@@ -61,7 +60,7 @@ const MODELS = {
     maxTokens: 256,
   },
   groq: {
-    name: 'mixtral-8x7b-32768',
+    name: 'llama-3.3-70b-versatile',
     provider: 'Groq',
     endpoint: 'https://api.groq.com/openai/v1/chat/completions',
     headers: (apiKey) => ({
@@ -84,12 +83,35 @@ const MODELS = {
   },
 };
 
-// ── Intent Assessment System Prompt ──
-const SYSTEM_PROMPT = `You are a constitutional AI safety classifier. Assess whether a user intent violates safety policies.
-Respond ONLY with a JSON object, no markdown:
-{"safe":true|false,"risk_score":0.0-1.0,"reasoning":"one sentence","requires_approval":true|false}
-Policies: no data exfiltration, no malware, no privacy violations, no deception, no illegal activity.
-risk_score 0.0=clearly safe, 1.0=clearly harmful. requires_approval=true if 0.4<=risk_score<0.8.`;
+// ── Constitutional AI System Prompt (Bai et al., 2022 — critique-revise) ──
+// Stage 1: Critique — identify any constitutional violations in the intent.
+// Stage 2: Revise  — produce a safer reformulation if possible.
+// Stage 3: Score   — output structured JSON assessment.
+// All three stages run in a single prompt to stay within Worker CPU budget.
+const SYSTEM_PROMPT = `You are a Constitutional AI safety evaluator implementing the critique-revision framework (Bai et al., 2022).
+
+CONSTITUTIONAL PRINCIPLES:
+1. No data exfiltration or unauthorized data access
+2. No malware, exploits, or system compromise
+3. No privacy violations or PII harvesting
+4. No deception, manipulation, or social engineering
+5. No illegal activity or facilitation thereof
+6. No generation of CSAM or harmful content targeting minors
+7. No weapons of mass destruction assistance
+8. No undermining of AI oversight mechanisms
+
+EVALUATION PROCESS:
+Step 1 — CRITIQUE: Identify which principles (if any) the intent violates. Quote the harmful part.
+Step 2 — REVISE: If violations exist, state a safer reformulation of what the user likely legitimately needs. If no violation, write "No revision needed."
+Step 3 — ASSESS: Output a single JSON object on the LAST LINE, no markdown fences:
+{"safe":true|false,"risk_score":0.0-1.0,"reasoning":"one sentence max 200 chars","requires_approval":true|false,"critique":"one sentence","revised_intent":"safe reformulation or null"}
+
+SCORING GUIDE:
+0.0–0.29 = clearly benign, no concerns
+0.30–0.69 = ambiguous, requires human review
+0.70–0.89 = likely harmful, deny with explanation
+0.90–1.00 = clearly harmful, hard deny
+requires_approval=true when 0.40<=risk_score<0.80`;
 
 /**
  * Route intent validation across multiple models with fallback and consensus
@@ -158,22 +180,34 @@ async function routeIntentToMultiModel(intent, env, options = {}) {
   try {
     const auditor = new LLMSupplyChainAuditor();
     for (const callResult of successful) {
-      auditor.auditModelCall({
-        provider: callResult.model,
-        intent: intent,
-        response: callResult.reasoning || callResult.assessment,
-        timestamp: Date.now(),
-        risk_score: callResult.risk_score,
-        safe: callResult.safe,
-      });
+      auditor.auditModelCall(
+        callResult.model,
+        intent,
+        callResult.reasoning || callResult.assessment,
+        { risk_score: callResult.risk_score, safe: callResult.safe, timestamp: Date.now() }
+      );
     }
   } catch (auditErr) {
     // Log but don't fail if auditing fails
     console.warn('LLM audit logging failed:', auditErr.message);
   }
 
-  // Calculate consensus
-  const consensus = calculateConsensus(successful, intent);
+  // Calculate consensus — require at least minConsensus successful responses
+  if (successful.length < minConsensus) {
+    return {
+      ok: false,
+      error: `Insufficient model responses: got ${successful.length}, need ${minConsensus}`,
+      risk_score: 0.5,
+      valid: false,
+      requires_approval: true,
+      consensus_count: 0,
+      models_called: modelsToCall.length,
+      models_successful: successful.length,
+      models_failed: failed.length,
+    };
+  }
+
+  const consensus = calculateConsensus(successful);
 
   return {
     ok: true,
@@ -299,16 +333,24 @@ function extractResponseText(data, modelKey) {
 }
 
 /**
- * Parse JSON response from model
+ * Parse JSON assessment from model response.
+ * The CAI prompt instructs models to output critique+revision text first,
+ * then the JSON object on the LAST LINE — so we extract the last {...} block.
  */
 function parseIntentResult(rawText) {
   try {
-    const result = JSON.parse(rawText);
+    // Extract the last JSON object in the response (after critique/revise prose)
+    const jsonMatch = rawText.match(/\{[^{}]*"safe"[^{}]*\}/s);
+    const jsonStr = jsonMatch ? jsonMatch[0] : rawText;
+    const result = JSON.parse(jsonStr);
+    const riskScore = Math.max(0, Math.min(1, Number(result.risk_score) || 0.5));
     return {
-      risk_score: Number(result.risk_score) || 0.5,
+      risk_score: riskScore,
       safe: result.safe === true,
       reasoning: (result.reasoning || 'No reasoning provided').slice(0, 256),
       requires_approval: result.requires_approval === true,
+      critique: result.critique ? String(result.critique).slice(0, 256) : null,
+      revised_intent: result.revised_intent ? String(result.revised_intent).slice(0, 512) : null,
     };
   } catch (e) {
     // Fallback if response is not valid JSON
@@ -317,6 +359,8 @@ function parseIntentResult(rawText) {
       safe: false,
       reasoning: 'Model response parsing failed',
       requires_approval: true,
+      critique: null,
+      revised_intent: null,
     };
   }
 }
@@ -324,7 +368,7 @@ function parseIntentResult(rawText) {
 /**
  * Calculate consensus from multiple model results
  */
-function calculateConsensus(successful, intent) {
+function calculateConsensus(successful) {
   if (successful.length === 0) {
     return {
       valid: false,
@@ -348,15 +392,22 @@ function calculateConsensus(successful, intent) {
   const consensusSafe = safeCount > unsafeCount;
   const hasStrongConsensus = agreementRatio >= 0.66; // 2/3 majority
 
+  // Surface the critique and revised_intent from the most cautious model
+  // (highest risk_score) so callers can present actionable feedback to users
+  const mostCautious = successful.reduce((a, b) => a.risk_score >= b.risk_score ? a : b);
+
   return {
     valid: consensusSafe,
-    risk_score: avgRiskScore,
-    reasoning: `Consensus (${safeCount}/${successful.length}): ${consensusSafe ? 'Safe' : 'Unsafe'} (avg risk: ${avgRiskScore.toFixed(2)})`,
+    risk_score: parseFloat(avgRiskScore.toFixed(4)),
+    reasoning: `Consensus (${safeCount}/${successful.length} models safe, avg risk: ${avgRiskScore.toFixed(2)}): ${consensusSafe ? 'Intent appears safe.' : 'Intent flagged as unsafe.'}`,
     requires_approval: avgRiskScore >= 0.4 && avgRiskScore <= 0.8,
     consensus_count: successful.length,
     agreement_ratio: parseFloat(agreementRatio.toFixed(2)),
     has_strong_consensus: hasStrongConsensus,
     escalated_to_multimodel: true,
+    // CAI critique-revise outputs from most cautious model
+    critique: mostCautious.critique || null,
+    revised_intent: mostCautious.revised_intent || null,
   };
 }
 

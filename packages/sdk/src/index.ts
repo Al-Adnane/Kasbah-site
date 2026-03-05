@@ -39,3 +39,7 @@ export type {
 // Version constant
 export const VERSION = '1.0.0';
 export const ENGINE_VERSION = '1.0.0';
+
+// Data Supply Chain Tracker
+export { DataSupplyChainTracker, PIICategory } from './supply-chain';
+export type { DataLineageNode, DataLineageReport, ComplianceViolation, ComplianceFramework } from './supply-chain';

@@ -6,7 +6,7 @@ compatibility_date = "2024-12-01"
 routes = [{ pattern = "api.bekasbah.com/*", zone_name = "bekasbah.com" }]
 
 [vars]
-CORS_ORIGIN = "*"
+CORS_ORIGIN = "https://bekasbah.com"
 JWT_ISSUER = "kasbah-guard"
 PLAN_DEFAULT = "pioneer"
 

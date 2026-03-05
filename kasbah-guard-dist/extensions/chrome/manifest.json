@@ -1,55 +1,55 @@
 {
   "manifest_version": 3,
-  "name": "__MSG_extensionName__",
-  "version": "1.0.0",
-  "description": "__MSG_extensionDescription__",
-  "default_locale": "en",
+  "name": "Kasbah Guard",
+  "version": "2.0.0",
+  "description": "AI-powered data loss prevention and secret detection - Local-first AI security",
   "permissions": [
+    "activeTab",
     "storage",
-    "activeTab"
+    "webRequest",
+    "webNavigation",
+    "tabs",
+    "clipboardRead",
+    "downloads"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "src/detector.js",
-        "src/kasbah-frontier-image.js",
-        "src/kasbah-analysis/kasbah-integration-bridge.js",
-        "src/kasbah-analysis/kasbah-detector-hook.js",
-        "src/secret-guard.js",
-        "src/content.js"
-      ],
-      "css": [
-        "src/styles.css"
-      ],
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
       "run_at": "document_start",
-      "world": "MAIN",
-      "all_frames": true
+      "all_frames": true,
+      "world": "MAIN"
     }
   ],
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup.html",
     "default_icon": {
       "48": "icon48.png",
       "128": "icon128.png"
-    }
+    },
+    "default_title": "Kasbah Guard"
   },
   "icons": {
     "48": "icon48.png",
     "128": "icon128.png"
   },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://api.bekasbah.com https://bekasbah.com https://api.kasbah.ai https://federated.kasbah.ai https://*.kasbah.ai; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' https: data:; default-src 'self'"
+  },
   "web_accessible_resources": [
     {
-      "resources": ["redteam/*", "popup/*", "i18n/*"],
+      "resources": ["src/*.js", "icon*.png", "assets/*"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "minimum_chrome_version": "88",
+  "author": "Kasbah Security",
+  "homepage_url": "https://bekasbah.com"
 }

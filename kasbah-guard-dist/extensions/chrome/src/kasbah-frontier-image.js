@@ -479,6 +479,15 @@
     //   StyleGAN3 (GAN):        kurt≈3.7 → 0.37, |slope|≈3.4 → 0.68, high≈0.31, cb≈0.52
     //   Midjourney v6:          kurt≈3.4 → 0.34, |slope|≈3.1 → 0.62, high≈0.26, cb≈0.29
     //   FLUX.1:                 kurt≈3.3 → 0.33, |slope|≈3.3 → 0.66, high≈0.30, cb≈0.22
+    // Prototype provenance — update by running: python3 scripts/derive_prototypes.py
+    // Feature vector: [kurt/10, |psdSlope|/5, dct_high_band, checkerboard_var]
+    var PROTOTYPE_VERSION = {
+      version: '1.0.0',
+      dataset: 'FF++v1+DFDC-preview (hand-estimated centroids)',
+      date: '2026-03',
+      n_samples: 'run: python3 scripts/derive_prototypes.py --update-js',
+      roc_auc: 'run: python3 scripts/derive_prototypes.py --update-js'
+    };
     var PROTOS = {
       'stable-diffusion': [0.35, 0.64, 0.28, 0.38],  // FF++ + DFDC centroid
       'dall-e':           [0.32, 0.60, 0.24, 0.18],  // DFDC transformer
@@ -654,6 +663,6 @@
     global.kasbahBridge._patchFrontier();
   }
 
-  console.log('[Kasbah] Frontier+Image detection layer loaded v' + kasbahFrontier.version);
+  console.debug('[Kasbah] Frontier+Image detection layer loaded v' + kasbahFrontier.version);
 
 })(typeof window !== 'undefined' ? window : this);

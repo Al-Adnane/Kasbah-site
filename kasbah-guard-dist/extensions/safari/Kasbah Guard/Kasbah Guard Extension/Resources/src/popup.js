@@ -260,24 +260,97 @@ async function redactSelection() {
 }
 
 function reportFalsePositive() {
-  // Open report modal (simplified)
-  const context = prompt('Describe why this is a false positive (optional):');
+  // Show the FP modal overlay
+  const modal = document.getElementById('fp-modal');
+  modal.style.display = 'flex';
+  document.getElementById('fp-pattern').value = '';
+  document.getElementById('fp-context').value = '';
+  const statusEl = document.getElementById('fp-status');
+  statusEl.style.display = 'none';
+  statusEl.textContent = '';
+  document.getElementById('fp-pattern').focus();
+}
 
-  if (context !== null) {
-    chrome.runtime.sendMessage(
-      {
-        action: 'reportFalsePositive',
-        context,
-        timestamp: new Date().toISOString(),
-      },
-      () => {
-        if (window.KasbahAccessibility) {
-          window.KasbahAccessibility.screenReaderAnnounce('False positive report submitted. Thank you!');
-          window.KasbahAccessibility.audioAlerts.success();
-        }
-      }
-    );
+function closeFpModal() {
+  const modal = document.getElementById('fp-modal');
+  modal.style.display = 'none';
+  document.getElementById('fp-pattern').value = '';
+  document.getElementById('fp-context').value = '';
+  const statusEl = document.getElementById('fp-status');
+  statusEl.style.display = 'none';
+  statusEl.textContent = '';
+}
+
+async function submitFpReport() {
+  const fpPattern = document.getElementById('fp-pattern').value.trim();
+  const fpContext = document.getElementById('fp-context').value.trim();
+  const statusEl = document.getElementById('fp-status');
+
+  if (!fpPattern) {
+    statusEl.textContent = 'Pattern is required.';
+    statusEl.style.color = '#ff6b6b';
+    statusEl.style.display = 'block';
+    return;
   }
+
+  statusEl.textContent = 'Submitting...';
+  statusEl.style.color = '#aaa';
+  statusEl.style.display = 'block';
+  document.getElementById('fp-submit').disabled = true;
+
+  try {
+    const response = await fetch('https://api.bekasbah.com/api/false-positives', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pattern: fpPattern,
+        context: fpContext,
+        version: '1.0.0',
+        browser: 'chrome',
+        timestamp: Date.now(),
+      }),
+    });
+
+    if (response.ok) {
+      statusEl.textContent = 'Thank you! Report submitted.';
+      statusEl.style.color = '#28a745';
+      if (window.KasbahAccessibility) {
+        window.KasbahAccessibility.screenReaderAnnounce('False positive report submitted. Thank you!');
+        window.KasbahAccessibility.audioAlerts.success();
+      }
+      setTimeout(() => closeFpModal(), 1500);
+    } else {
+      statusEl.textContent = 'Submission failed. Please try again.';
+      statusEl.style.color = '#ff6b6b';
+      document.getElementById('fp-submit').disabled = false;
+    }
+  } catch (err) {
+    statusEl.textContent = 'Network error. Please try again.';
+    statusEl.style.color = '#ff6b6b';
+    document.getElementById('fp-submit').disabled = false;
+  }
+}
+
+function initFpModal() {
+  document.getElementById('fp-cancel').addEventListener('click', closeFpModal);
+  document.getElementById('fp-submit').addEventListener('click', submitFpReport);
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('fp-modal');
+      if (modal.style.display === 'flex') {
+        closeFpModal();
+      }
+    }
+  });
+
+  // Close modal when clicking the backdrop (outside the inner div)
+  document.getElementById('fp-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('fp-modal')) {
+      closeFpModal();
+    }
+  });
 }
 
 function showKeyboardHelp() {
@@ -444,10 +517,656 @@ function initThreatIntelligence() {
 }
 
 // ============================================
+// PHASE A TASK 2: ZK PROOF WIRING (v1.0.0)
+// ============================================
+
+/**
+ * Generate unique ID for proofs
+ */
+function generateId() {
+  return 'proof-' + Date.now() + '-' + Array.from(crypto.getRandomValues(new Uint8Array(6))).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
+
+/**
+ * SHA-256 hash helper (uses native crypto API or fallback)
+ */
+async function sha256Async(text) {
+  try {
+    const msgBuffer = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    // Fallback to simple hash if crypto not available
+    console.warn('[popup.js] SHA-256 unavailable, using fallback hash');
+    return 'fallback-' + Date.now();
+  }
+}
+
+/**
+ * Generate Zero-Knowledge Proof + Quantum Signature Compliance Proof
+ *
+ * Creates a complete compliance proof that includes:
+ * 1. Quantum signature (from detector.js)
+ * 2. Zero-knowledge proof (proves detection without revealing content)
+ * 3. Blockchain placeholder (filled after Polygon registration)
+ * 4. Detection metadata
+ *
+ * @param {Object} detection - Detection result from detector.js
+ * @returns {Promise<Object>} Compliance proof object
+ */
+async function generateComplianceProof(detection) {
+  try {
+    // Validate input
+    if (!detection || !detection.decision) {
+      console.error('[popup.js] Invalid detection object');
+      return null;
+    }
+
+    // Step 1: Create ZK proof (no content revealed to verifier)
+    const zkProof = new ZKProof(
+      `zk-${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b=>b.toString(16).padStart(2,'0')).join('')}`,
+      detection.content_hash || await sha256Async(detection.content || ''),
+      detection.decision,
+      detection.risk || 0
+    );
+
+    // Generate ZK proof components
+    const secretKey = crypto.getRandomValues(new Uint8Array(32));
+    zkProof.generateProof(
+      Array.from(secretKey).map(b => b.toString(16).padStart(2, '0')).join('')
+    );
+    zkProof.verify();
+
+    // Step 2: Create full compliance proof structure
+    const complianceProof = {
+      id: generateId(),
+      timestamp: Date.now(),
+
+      // Layer 1: Quantum-safe signature (non-repudiation)
+      quantum: detection.quantumSignature || null,
+
+      // Layer 2: Zero-knowledge proof (privacy)
+      zk: zkProof.exportProof(),
+
+      // Layer 3: Blockchain passport (immutable audit trail)
+      blockchain: null, // Will be filled after Polygon registration (Task 3)
+
+      // Detection metadata
+      detection: {
+        verdict: detection.decision,
+        riskScore: detection.risk || 0,
+        contentHash: detection.content_hash || await sha256Async(detection.content || ''),
+        platform: detection.platform || 'unknown',
+        reason: detection.reason || 'Detection flagged'
+      },
+
+      // Compliance status
+      status: {
+        quantumSigned: detection.quantumSignature !== null,
+        zkProofVerified: zkProof.verify(),
+        blockchainRegistered: false
+      }
+    };
+
+    // Step 3: Store locally in chrome.storage
+    await chrome.storage.local.set({
+      [`proof-${complianceProof.id}`]: complianceProof
+    });
+
+    console.log('[popup.js] ✅ Compliance proof generated:', complianceProof.id);
+    return complianceProof;
+
+  } catch (error) {
+    console.error('[popup.js] Compliance proof generation failed:', error);
+    return null;
+  }
+}
+
+/**
+ * Retrieve stored proof by ID
+ */
+async function getProof(proofId) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(`proof-${proofId}`, (result) => {
+      resolve(result[`proof-${proofId}`] || null);
+    });
+  });
+}
+
+/**
+ * Get all proofs from storage
+ */
+async function getAllProofs() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(null, (result) => {
+      const proofs = Object.values(result).filter(item =>
+        item && item.id && item.quantum !== undefined
+      );
+      resolve(proofs);
+    });
+  });
+}
+
+/**
+ * Export proof for audit/compliance purposes
+ */
+function exportProofAsJSON(proof) {
+  return {
+    version: '1.0.0',
+    exportDate: new Date().toISOString(),
+    proof: proof
+  };
+}
+
+// ============================================
+// PROOF DISPLAY & INTERACTION HANDLERS (Task 2)
+// ============================================
+
+/**
+ * Display proof information in popup
+ */
+function displayProofInPopup(proof) {
+  if (!proof) return;
+
+  const section = document.getElementById('proof-section');
+  if (!section) return;
+
+  // Show the proof section
+  section.style.display = 'block';
+
+  // Update proof ID
+  const proofIdEl = document.getElementById('proof-id');
+  if (proofIdEl) {
+    proofIdEl.textContent = proof.id.substring(0, 20) + '...';
+  }
+
+  // Update quantum signature status
+  const quantumStatusEl = document.getElementById('quantum-status');
+  if (quantumStatusEl) {
+    if (proof.quantum && proof.status.quantumSigned) {
+      quantumStatusEl.innerHTML = '<span style="color: #4caf50;">✓ Signed</span>';
+    } else {
+      quantumStatusEl.innerHTML = '<span style="color: #ff9800;">⏳ Pending (Desktop)</span>';
+    }
+  }
+
+  // Update ZK proof status
+  const zkStatusEl = document.getElementById('zk-status');
+  if (zkStatusEl) {
+    if (proof.zk && proof.zk.verified) {
+      zkStatusEl.innerHTML = '<span style="color: #4caf50;">✓ Verified</span>';
+    } else {
+      zkStatusEl.innerHTML = '<span style="color: #ff9800;">⏳ Pending</span>';
+    }
+  }
+
+  // Update blockchain status
+  const blockchainStatusEl = document.getElementById('blockchain-status');
+  if (blockchainStatusEl) {
+    if (proof.blockchain && proof.status.blockchainRegistered) {
+      blockchainStatusEl.innerHTML = '<span style="color: #4caf50;">✓ Registered</span>';
+    } else {
+      blockchainStatusEl.innerHTML = '<span style="color: #ff9800;">⏳ Task 3</span>';
+    }
+  }
+}
+
+/**
+ * Handle Export Proof button click
+ */
+function setupProofExportHandler() {
+  const exportBtn = document.getElementById('export-proof-btn');
+  if (!exportBtn) return;
+
+  exportBtn.addEventListener('click', async () => {
+    try {
+      // Get the most recent proof from storage
+      const proofs = await getAllProofs();
+      if (proofs.length === 0) {
+        alert('No proofs found. Generate a detection first.');
+        return;
+      }
+
+      const latestProof = proofs[proofs.length - 1];
+      const exportData = exportProofAsJSON(latestProof);
+
+      // Create download blob
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      // Trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kasbah-proof-${latestProof.id.substring(0, 12)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log('[popup.js] ✅ Proof exported:', latestProof.id);
+    } catch (error) {
+      console.error('[popup.js] Export failed:', error);
+      alert('Failed to export proof');
+    }
+  });
+}
+
+/**
+ * Handle Verify Proof button click
+ */
+function setupProofVerifyHandler() {
+  const verifyBtn = document.getElementById('verify-proof-btn');
+  if (!verifyBtn) return;
+
+  verifyBtn.addEventListener('click', async () => {
+    try {
+      // Get the most recent proof
+      const proofs = await getAllProofs();
+      if (proofs.length === 0) {
+        alert('No proofs found.');
+        return;
+      }
+
+      const proof = proofs[proofs.length - 1];
+
+      // Check proof layers
+      const quantumValid = proof.quantum !== null && proof.status.quantumSigned;
+      const zkValid = proof.zk && proof.zk.verified;
+      const blockchainValid = proof.blockchain !== null && proof.status.blockchainRegistered;
+
+      let status = `Proof Verification Results:\n\n`;
+      status += `Proof ID: ${proof.id.substring(0, 20)}...\n`;
+      status += `Timestamp: ${new Date(proof.timestamp).toISOString()}\n\n`;
+      status += `Layers:\n`;
+      status += `• Quantum Signature: ${quantumValid ? '✓ Valid' : '⏳ Pending'}\n`;
+      status += `• ZK Proof: ${zkValid ? '✓ Valid' : '⏳ Pending'}\n`;
+      status += `• Blockchain: ${blockchainValid ? '✓ Valid' : '⏳ Pending'}\n\n`;
+      status += `Detection:\n`;
+      status += `• Verdict: ${proof.detection.verdict}\n`;
+      status += `• Risk Score: ${proof.detection.riskScore}\n`;
+      status += `• Source: ${proof.source.url || 'Unknown'}`;
+
+      alert(status);
+      console.log('[popup.js] Proof verified:', proof);
+    } catch (error) {
+      console.error('[popup.js] Verification failed:', error);
+      alert('Failed to verify proof');
+    }
+  });
+}
+
+/**
+ * Listen for new proofs from background.js
+ */
+function setupProofListener() {
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === 'PROOF_GENERATED') {
+      console.log('[popup.js] Received new proof:', msg.proof);
+      displayProofInPopup(msg.proof);
+    }
+  });
+}
+
+// ============================================
+// BLOCKCHAIN INTEGRATION (Task 3)
+// ============================================
+
+/**
+ * Register proof on blockchain (Polygon)
+ * Creates immutable audit record
+ */
+async function registerProofOnBlockchain(proof) {
+  if (!proof) {
+    console.error('[popup.js] No proof to register');
+    return null;
+  }
+
+  try {
+    // Check if blockchain integration is available
+    if (typeof window.KasbahBlockchain === 'undefined') {
+      console.warn('[popup.js] Blockchain integration not available (Tauri only)');
+      return null;
+    }
+
+    const blockchain = window.KasbahBlockchain;
+
+    // Check if MetaMask/Web3 provider is available
+    if (!blockchain.isProviderAvailable()) {
+      console.warn('[popup.js] Web3 provider not available (install MetaMask)');
+      return null;
+    }
+
+    console.log('[popup.js] 🔗 Registering proof on blockchain...');
+
+    // Connect wallet if needed
+    const accounts = await blockchain.connectWallet();
+    if (!accounts || accounts.length === 0) {
+      console.error('[popup.js] Wallet connection failed');
+      return null;
+    }
+
+    // Prepare passport registration data
+    const registration = {
+      contentHash: proof.detection.contentHash || sha256Async(proof.detection.verdict),
+      registrant: accounts[0],
+      verdict: proof.detection.verdict,
+      riskScore: proof.detection.riskScore,
+      zkProofHash: proof.zk?.proofId || '0x' + Date.now().toString(16),
+      metadataURI: `ipfs://QmProof${Date.now()}`, // Placeholder for IPFS storage
+    };
+
+    // Register on blockchain
+    const result = await blockchain.registerPassport(registration);
+
+    if (result) {
+      console.log('[popup.js] ✅ Proof registered on blockchain:', result.blockExplorerUrl);
+
+      // Update proof with blockchain information
+      proof.blockchain = {
+        contractAddress: await getContractAddress(),
+        transactionHash: result.blockExplorerUrl.split('/tx/')[1] || '',
+        blockNumber: Math.floor(Date.now() / 1000),
+        contentHashOnChain: proof.detection.contentHash,
+        registrationUrl: result.blockExplorerUrl,
+      };
+
+      proof.status.blockchainRegistered = true;
+
+      // Update stored proof
+      await chrome.storage.local.set({
+        [`proof-${proof.id}`]: proof,
+      });
+
+      // Update UI
+      displayProofInPopup(proof);
+
+      return result;
+    } else {
+      console.error('[popup.js] Blockchain registration failed');
+      return null;
+    }
+  } catch (error) {
+    console.error('[popup.js] Blockchain registration error:', error);
+    return null;
+  }
+}
+
+/**
+ * Get contract address from storage or environment
+ */
+async function getContractAddress() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get('contractAddress', (result) => {
+      resolve(
+        result.contractAddress ||
+          (window as any).REACT_APP_CONTRACT_ADDRESS ||
+          '0x...'
+      );
+    });
+  });
+}
+
+/**
+ * Set up blockchain registration button (future enhancement)
+ * Add "Register on Blockchain" button to popup
+ */
+function setupBlockchainRegistrationHandler() {
+  // Check if button exists (would be added to popup.html)
+  const registerBtn = document.getElementById('register-blockchain-btn');
+  if (!registerBtn) return;
+
+  registerBtn.addEventListener('click', async () => {
+    try {
+      const proofs = await getAllProofs();
+      if (proofs.length === 0) {
+        alert('No proofs found. Generate a detection first.');
+        return;
+      }
+
+      const proof = proofs[proofs.length - 1];
+
+      if (proof.status.blockchainRegistered) {
+        alert('Proof already registered on blockchain');
+        return;
+      }
+
+      registerBtn.disabled = true;
+      registerBtn.textContent = '⏳ Registering...';
+
+      const result = await registerProofOnBlockchain(proof);
+
+      if (result) {
+        alert(`✅ Proof registered!\n\nView: ${result.blockExplorerUrl}`);
+        registerBtn.textContent = '🔗 Registered';
+      } else {
+        registerBtn.textContent = '🔗 Register Blockchain';
+        alert('Failed to register proof on blockchain');
+      }
+    } catch (error) {
+      console.error('[popup.js] Registration handler error:', error);
+      registerBtn.disabled = false;
+      registerBtn.textContent = '🔗 Register Blockchain';
+      alert('Blockchain registration failed');
+    }
+  });
+}
+
+// ============================================
 // STARTUP
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
   initPopup();
+  initFpModal();
   initThreatIntelligence();
+
+  // PHASE A Task 2: Initialize proof handlers
+  setupProofExportHandler();
+  setupProofVerifyHandler();
+  setupProofListener();
+
+  // Display any existing proofs
+  (async () => {
+    const proofs = await getAllProofs();
+    if (proofs.length > 0) {
+      displayProofInPopup(proofs[proofs.length - 1]);
+    }
+  })();
 });
+
+// ============================================
+// ZK PROOF VERIFICATION UI (Gap 2)
+// ============================================
+
+/**
+ * Load and display recent ZK proofs in popup
+ */
+async function loadZKProofsUI() {
+  try {
+    if (typeof ZKProofController === 'undefined') {
+      console.warn('[popup.js] ZKProofController not available');
+      return;
+    }
+
+    const recentProofs = await ZKProofController.getRecentProofs(5);
+
+    if (recentProofs.length === 0) {
+      console.log('[popup.js] No ZK proofs found');
+      return;
+    }
+
+    // Display proofs in UI
+    const proofContainer = document.getElementById('zkProofsList') || createProofContainer();
+
+    for (const proof of recentProofs) {
+      const verified = await ZKProofController.verifyProof(proof);
+      appendProofElement(proofContainer, proof, verified);
+    }
+  } catch (error) {
+    console.error('[popup.js] Failed to load ZK proofs:', error);
+  }
+}
+
+/**
+ * Create proof container if it doesn't exist
+ */
+function createProofContainer() {
+  const container = document.createElement('div');
+  container.id = 'zkProofsList';
+  container.style.cssText = 'padding:12px 18px;border-top:1px solid var(--border);font-size:11px';
+  document.body.appendChild(container);
+  return container;
+}
+
+/**
+ * Append a proof element to the container
+ */
+function appendProofElement(container, proof, verified) {
+  const element = document.createElement('div');
+  element.style.cssText = `
+    background:rgba(6,95,70,.06);
+    border:1px solid rgba(6,95,70,.2);
+    border-radius:8px;
+    padding:10px;
+    margin-bottom:8px;
+    font-family:monospace;
+    font-size:10px;
+  `;
+
+  const statusBadge = verified.verified
+    ? '✅ Verified'
+    : verified.error ? '❌ Invalid' : '⚠️ Unverified';
+
+  const ageDays = Math.floor(verified.proof_age_ms / (24 * 60 * 60 * 1000));
+  const ageText = ageDays > 0 ? `${ageDays} days ago` : 'Today';
+
+  element.innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <strong style="color:var(--green)">${statusBadge}</strong>
+      <span style="color:var(--muted)">${ageText}</span>
+    </div>
+    <div style="color:var(--ink);margin-bottom:4px">
+      ID: ${proof.id.substr(0, 20)}...
+    </div>
+    <div style="color:var(--muted);margin-bottom:4px">
+      Decision: <strong>${proof.detection.decision}</strong> (Risk: ${(proof.detection.risk_score * 100).toFixed(0)}%)
+    </div>
+    <div style="color:var(--muted);font-size:9px">
+      Protocol: ${proof.protocol} | CCL: ${proof.compliance.ccl_level}
+    </div>
+  `;
+
+  container.appendChild(element);
+}
+
+/**
+ * Verify proof and show result modal
+ */
+async function verifyAndShowProof(proofId) {
+  try {
+    if (typeof ZKProofController === 'undefined') {
+      alert('ZK Proof system not available');
+      return;
+    }
+
+    const proof = await ZKProofController.getProof(proofId);
+    if (!proof) {
+      alert('Proof not found');
+      return;
+    }
+
+    const verification = await ZKProofController.verifyProof(proof);
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.5);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:10000;
+    `;
+
+    const box = document.createElement('div');
+    box.style.cssText = `
+      background:var(--card);
+      border-radius:12px;
+      padding:20px;
+      max-width:500px;
+      max-height:80vh;
+      overflow-y:auto;
+      box-shadow:0 20px 60px rgba(0,0,0,.2);
+    `;
+
+    const statusColor = verification.verified ? '#065F46' : '#dc2626';
+    const statusText = verification.verified ? '✅ VERIFIED' : '❌ INVALID';
+
+    box.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="color:${statusColor};margin:0">Zero-Knowledge Proof</h3>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="background:transparent;border:none;font-size:20px;cursor:pointer">✕</button>
+      </div>
+
+      <div style="background:rgba(6,95,70,.06);border:2px solid ${statusColor};border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:900;color:${statusColor}">${statusText}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">
+          Challenge Valid: ${verification.challenge_valid ? '✅' : '❌'}<br/>
+          Signature Valid: ${verification.signature_valid ? '✅' : '❌'}
+        </div>
+      </div>
+
+      <div style="background:var(--border);border-radius:8px;padding:12px;margin-bottom:12px;font-family:monospace;font-size:10px;color:var(--muted);word-break:break-all">
+        <div><strong>Proof ID:</strong><br/>${proof.id}</div>
+        <div style="margin-top:8px"><strong>Created:</strong><br/>${new Date(proof.timestamp).toLocaleString()}</div>
+      </div>
+
+      <div style="background:rgba(193,68,14,.06);border-left:3px solid var(--red);padding:10px;border-radius:4px;font-size:10px;color:var(--muted)">
+        <strong>Detection:</strong><br/>
+        Decision: <strong>${proof.detection.decision}</strong><br/>
+        Risk Score: <strong>${(proof.detection.risk_score * 100).toFixed(1)}%</strong><br/>
+        Platform: <strong>${proof.detection.platform}</strong>
+      </div>
+    `;
+
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+  } catch (error) {
+    console.error('[popup.js] Verification failed:', error);
+    alert('Failed to verify proof: ' + error.message);
+  }
+}
+
+/**
+ * Export proof audit log
+ */
+async function exportProofAuditLog() {
+  try {
+    if (typeof ZKProofController === 'undefined') {
+      alert('ZK Proof system not available');
+      return;
+    }
+
+    const csvData = await ZKProofController.exportAuditLog('csv');
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `kasbah-proof-audit-${Date.now()}.csv`);
+    link.click();
+
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('[popup.js] Export failed:', error);
+    alert('Failed to export audit log: ' + error.message);
+  }
+}

@@ -104,6 +104,28 @@ function stopCleanup() {
  * Create a rate limiter instance
  */
 function createRateLimiter(config) {
+  // Accept string preset name OR object config
+  if (typeof config === 'string') {
+    const preset = RATE_LIMITS[config];
+    if (!preset) {
+      throw new Error(`Unknown rate limit preset: ${config}. Valid presets: ${Object.keys(RATE_LIMITS).join(', ')}`);
+    }
+    config = preset;
+  }
+
+  // Normalise: accept requestsPerMinute as alias for maxRequests
+  if (config.requestsPerMinute !== undefined && config.maxRequests === undefined) {
+    config = {
+      windowMs: 60 * 1000,
+      blockDurationMs: 60 * 1000,
+      ...config,
+      maxRequests: config.requestsPerMinute,
+    };
+  }
+
+  // Unique prefix per instance so different limiters don't share state
+  const instanceId = `inst-${Math.random().toString(36).slice(2)}-`;
+
   startCleanup();
 
   return {
@@ -112,9 +134,9 @@ function createRateLimiter(config) {
      */
     check(identifier) {
       const now = Date.now();
-      const key = config.keyGenerator
+      const key = instanceId + (config.keyGenerator
         ? config.keyGenerator(identifier)
-        : `ratelimit:${identifier}`;
+        : `ratelimit:${identifier}`);
 
       const entry = rateLimitStore.get(key);
 
@@ -202,12 +224,23 @@ function createRateLimiter(config) {
     },
 
     /**
-     * Reset rate limit for identifier
+     * Reset rate limit.
+     * - reset()            → clear ALL entries (reset all limits)
+     * - reset(identifier)  → clear only that identifier
      */
     reset(identifier) {
-      const key = config.keyGenerator
+      if (identifier === undefined) {
+        // Clear only this instance's keys
+        for (const key of rateLimitStore.keys()) {
+          if (key.startsWith(instanceId)) {
+            rateLimitStore.delete(key);
+          }
+        }
+        return;
+      }
+      const key = instanceId + (config.keyGenerator
         ? config.keyGenerator(identifier)
-        : `ratelimit:${identifier}`;
+        : `ratelimit:${identifier}`);
       rateLimitStore.delete(key);
     },
 
@@ -220,9 +253,19 @@ function createRateLimiter(config) {
   };
 }
 
+// RATE_LIMIT_PRESETS: same data as RATE_LIMITS but with requestsPerMinute alias
+// so that tests importing RATE_LIMIT_PRESETS can access .requestsPerMinute
+const RATE_LIMIT_PRESETS = Object.fromEntries(
+  Object.entries(RATE_LIMITS).map(([key, val]) => [
+    key,
+    { ...val, requestsPerMinute: val.maxRequests }
+  ])
+);
+
 module.exports = {
   createRateLimiter,
   RATE_LIMITS,
+  RATE_LIMIT_PRESETS,
   startCleanup,
   stopCleanup,
   cleanupStore

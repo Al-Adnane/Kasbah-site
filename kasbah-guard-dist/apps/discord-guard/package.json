@@ -1,0 +1,33 @@
+{
+  "name": "@kasbah/discord-guardian",
+  "version": "1.0.0",
+  "description": "Discord bot for detecting and blocking secrets, PII, and phishing links",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test tests/*.test.js",
+    "lint": "eslint src/"
+  },
+  "keywords": [
+    "discord",
+    "security",
+    "moderation",
+    "kasbah",
+    "secret-detection"
+  ],
+  "author": "Kasbah Guard",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "@kasbah/detector": "^1.0.0",
+    "dotenv": "^16.4.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

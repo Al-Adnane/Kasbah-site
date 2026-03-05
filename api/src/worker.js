@@ -1146,6 +1146,23 @@ async function handleValidateIntent(request, env) {
   if (!intent || typeof intent !== 'string') return err('intent must be a non-empty string');
   if (intent.length > 32768) return err('intent exceeds maximum length of 32768 characters');
 
+  // ── Phase 0: KV cache check (1-hour TTL for LLM results) ──
+  const intentHash = await (async () => {
+    const enc = new TextEncoder().encode(intent + ':' + policy_id);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  })();
+  const cacheKey = `cai:${intentHash}`;
+  if (env.KASBAH_KV) {
+    const cached = await env.KASBAH_KV.get(cacheKey, 'json');
+    if (cached) {
+      const authzResult = await authzCheck(payload.userId, 'validate-intent', 'intent', intent, request, env);
+      if (!authzResult.allowed) return err(`AuthZ denied (${authzResult.stage}): ${authzResult.reason}`, 403);
+      return json({ ok: true, ...cached, from_cache: true,
+        ...(authzResult.skipped ? {} : { authz: { ticket_id: authzResult.ticket_id, audit_entry_id: authzResult.audit_entry_id, ccl_level: authzResult.ccl_level } }) });
+    }
+  }
+
   // ── Phase 1: Local deterministic check ──
   const localResult = _caiValidateIntentLocal(intent, policy_id);
 
@@ -1182,12 +1199,20 @@ async function handleValidateIntent(request, env) {
           models_successful: multiModelResult.models_successful,
           agreement_ratio: multiModelResult.agreement_ratio,
           has_strong_consensus: multiModelResult.has_strong_consensus,
+          // CAI critique-revise outputs (Bai et al., 2022)
+          critique: multiModelResult.critique || null,
+          revised_intent: multiModelResult.revised_intent || null,
         };
       }
     } catch (err) {
       // Graceful degradation: use local result if multi-model fails
       console.error('[validateIntent] Multi-model routing failed:', err.message);
     }
+  }
+
+  // ── Phase 3: Cache result for 1 hour (only LLM-escalated results — local results are cheap) ──
+  if (env.KASBAH_KV && result.escalated_to_multimodel) {
+    await env.KASBAH_KV.put(cacheKey, JSON.stringify(result), { expirationTtl: 3600 });
   }
 
   // AuthZ pipeline check (gated by AUTHZ_ENABLED)

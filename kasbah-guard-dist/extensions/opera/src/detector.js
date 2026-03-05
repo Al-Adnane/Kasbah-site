@@ -38,6 +38,16 @@
 var PATTERN_VERSION = "1.0.0";
 var PATTERN_EPOCH = 1772236800; // 2026-02-27
 
+// CCL Risk Framework (v1.0.0) — inspired by Basel III/FSOC
+function getCCLLevel(risk) {
+  if (risk < 10) return { level: 0, label: 'benign', action: 'none' };
+  if (risk < 30) return { level: 1, label: 'low', action: 'log' };
+  if (risk < 50) return { level: 2, label: 'moderate', action: 'warn' };
+  if (risk < 70) return { level: 3, label: 'high', action: 'block' };
+  if (risk < 90) return { level: 4, label: 'critical', action: 'compliance_receipt' };
+  return { level: 5, label: 'systemic', action: 'escalate' };
+}
+
 // ── Item C: EWMA bidirectional threshold feedback state ──
 // λ=0.9 smooth: each FP report nudges threshold up by +2 pt.
 // Persisted in memory; reset on extension restart (acceptable — session-scoped).
@@ -68,7 +78,9 @@ function applyFeedbackEWMA(isFalsePositive) {
 function _laplaceNoise(sensitivity, epsilon) {
   var scale = sensitivity / epsilon;
   // Box-Muller approach approximated via uniform: Laplace = scale * sign(u-0.5) * ln(1-2|u-0.5|)
-  var u = Math.random();
+  var arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  var u = arr[0] / 0xFFFFFFFF;
   var sign = u >= 0.5 ? 1 : -1;
   return sign * scale * Math.log(1 - 2 * Math.abs(u - 0.5));
 }
@@ -114,7 +126,7 @@ function hashContent(text) { return hybridHash(text || ""); }
  */
 function generateDetectionId() {
   var timestamp = Date.now();
-  var random = Math.random().toString(36).substring(2, 11);
+  var random = Array.from(crypto.getRandomValues(new Uint8Array(6))).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
   return 'det-' + timestamp + '-' + random;
 }
 
@@ -165,6 +177,35 @@ var performanceMonitor = {
     };
   }
 };
+
+// ══════════════════════════════════════════════════════════════
+// E3: reportDetectionLatency — Fire-and-forget sampled telemetry
+// Posts latency + risk to api.bekasbah.com at 1% sample rate.
+// Never throws, never blocks detection.
+// ══════════════════════════════════════════════════════════════
+function reportDetectionLatency(latency_ms, risk) {
+  try {
+    if (latency_ms <= 0) return;
+    if (Math.random() >= 0.01) return; // 1% sampling
+    var payload = JSON.stringify({
+      latency_ms: latency_ms,
+      risk: risk,
+      version: '1.0.0',
+      timestamp: Date.now(),
+      source: 'detector'
+    });
+    if (typeof fetch === 'function') {
+      fetch('https://api.bekasbah.com/api/telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true
+      }).catch(function() {}); // silent fail
+    }
+  } catch (e) {
+    // Silent fail — never break detection
+  }
+}
 
 // ══════════════════════════════════════════════════════════════
 // SESSION SCORE HISTORY — for SII sessionHealth computation
@@ -561,7 +602,8 @@ function moat3BrittlenessCheck(tiers, score) {
 var _m4_tickets = {};
 var _m4_MAX_AGE_MS = 5000;
 function moat4IssueTicket() {
-  var id = hybridHash(Date.now() + ":" + Math.random());
+  var _tb = new Uint32Array(1); crypto.getRandomValues(_tb);
+  var id = hybridHash(Date.now() + ":" + _tb[0]);
   _m4_tickets[id] = { issued: Date.now(), consumed: false };
   // Prune old tickets
   var now = Date.now();
@@ -1014,7 +1056,7 @@ function generateDetectionProof(reasons, score, decision) {
   var ledgerEntry = hybridHash(_lastLedgerHash + ":" + sig);
   _lastLedgerHash = ledgerEntry;
   return {
-    decision_id: hybridHash(ts + ":" + Math.random()),
+    decision_id: hybridHash(ts + ":" + (function(){var _db=new Uint32Array(1);crypto.getRandomValues(_db);return _db[0];})()),
     timestamp: isoTs,
     decision_mode: DECISION_MODE,
     input_classification: reasons,
@@ -2097,6 +2139,7 @@ function classify(text) {
   var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
   var latency_ms = perfEnd - perfStart;
   performanceMonitor.recordLatency(latency_ms);
+  reportDetectionLatency(latency_ms, score); // E3: sampled fire-and-forget telemetry
   recordSessionScore(score); // for SII sessionHealth stdDev
 
   // ── MOAT V1: Create threat fingerprint for federated intelligence ──
@@ -2132,6 +2175,7 @@ function classify(text) {
   else if (score >= 40) consensusDecision = 'WARN';
   else consensusDecision = 'ALLOW';
 
+  var ccl = getCCLLevel(score);
   return {
     risk: Math.floor(score),
     decision: consensusDecision,
@@ -2177,7 +2221,8 @@ function classify(text) {
       var latencyScore = Math.max(0.01, 1 - Math.min(p95, 2000) / 2000);
 
       return parseFloat((Math.pow(hookHealth, 0.30) * Math.pow(patternInt, 0.30) * Math.pow(sessionHealth, 0.25) * Math.pow(latencyScore, 0.15)).toFixed(4));
-    })()
+    })(),
+    ccl: ccl
   };
 
   // ── TELEMETRY v1.0.0: Record detection for model learning ──
@@ -2356,6 +2401,7 @@ if (typeof module !== 'undefined' && module.exports) {
     lanzatechTransform, beeodiversityBoost, soilSecurityAggregate, fungiCorrelation, breatheEasyFilter,
     createDetectionFingerprint, detectContextType, getAnonymizedDeviceId,
     loadThreatsConsensus, getConsensusMultiplier,
-    PATTERN_VERSION, DECISION_MODE, FEATURES
+    PATTERN_VERSION, DECISION_MODE, FEATURES,
+    getCCLLevel
   };
 }

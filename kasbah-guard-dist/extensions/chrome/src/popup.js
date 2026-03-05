@@ -260,24 +260,97 @@ async function redactSelection() {
 }
 
 function reportFalsePositive() {
-  // Open report modal (simplified)
-  const context = prompt('Describe why this is a false positive (optional):');
+  // Show the FP modal overlay
+  const modal = document.getElementById('fp-modal');
+  modal.style.display = 'flex';
+  document.getElementById('fp-pattern').value = '';
+  document.getElementById('fp-context').value = '';
+  const statusEl = document.getElementById('fp-status');
+  statusEl.style.display = 'none';
+  statusEl.textContent = '';
+  document.getElementById('fp-pattern').focus();
+}
 
-  if (context !== null) {
-    chrome.runtime.sendMessage(
-      {
-        action: 'reportFalsePositive',
-        context,
-        timestamp: new Date().toISOString(),
-      },
-      () => {
-        if (window.KasbahAccessibility) {
-          window.KasbahAccessibility.screenReaderAnnounce('False positive report submitted. Thank you!');
-          window.KasbahAccessibility.audioAlerts.success();
-        }
-      }
-    );
+function closeFpModal() {
+  const modal = document.getElementById('fp-modal');
+  modal.style.display = 'none';
+  document.getElementById('fp-pattern').value = '';
+  document.getElementById('fp-context').value = '';
+  const statusEl = document.getElementById('fp-status');
+  statusEl.style.display = 'none';
+  statusEl.textContent = '';
+}
+
+async function submitFpReport() {
+  const fpPattern = document.getElementById('fp-pattern').value.trim();
+  const fpContext = document.getElementById('fp-context').value.trim();
+  const statusEl = document.getElementById('fp-status');
+
+  if (!fpPattern) {
+    statusEl.textContent = 'Pattern is required.';
+    statusEl.style.color = '#ff6b6b';
+    statusEl.style.display = 'block';
+    return;
   }
+
+  statusEl.textContent = 'Submitting...';
+  statusEl.style.color = '#aaa';
+  statusEl.style.display = 'block';
+  document.getElementById('fp-submit').disabled = true;
+
+  try {
+    const response = await fetch('https://api.bekasbah.com/api/false-positives', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pattern: fpPattern,
+        context: fpContext,
+        version: '1.0.0',
+        browser: 'chrome',
+        timestamp: Date.now(),
+      }),
+    });
+
+    if (response.ok) {
+      statusEl.textContent = 'Thank you! Report submitted.';
+      statusEl.style.color = '#28a745';
+      if (window.KasbahAccessibility) {
+        window.KasbahAccessibility.screenReaderAnnounce('False positive report submitted. Thank you!');
+        window.KasbahAccessibility.audioAlerts.success();
+      }
+      setTimeout(() => closeFpModal(), 1500);
+    } else {
+      statusEl.textContent = 'Submission failed. Please try again.';
+      statusEl.style.color = '#ff6b6b';
+      document.getElementById('fp-submit').disabled = false;
+    }
+  } catch (err) {
+    statusEl.textContent = 'Network error. Please try again.';
+    statusEl.style.color = '#ff6b6b';
+    document.getElementById('fp-submit').disabled = false;
+  }
+}
+
+function initFpModal() {
+  document.getElementById('fp-cancel').addEventListener('click', closeFpModal);
+  document.getElementById('fp-submit').addEventListener('click', submitFpReport);
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('fp-modal');
+      if (modal.style.display === 'flex') {
+        closeFpModal();
+      }
+    }
+  });
+
+  // Close modal when clicking the backdrop (outside the inner div)
+  document.getElementById('fp-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('fp-modal')) {
+      closeFpModal();
+    }
+  });
 }
 
 function showKeyboardHelp() {
@@ -451,7 +524,7 @@ function initThreatIntelligence() {
  * Generate unique ID for proofs
  */
 function generateId() {
-  return 'proof-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  return 'proof-' + Date.now() + '-' + Array.from(crypto.getRandomValues(new Uint8Array(6))).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
 }
 
 /**
@@ -492,7 +565,7 @@ async function generateComplianceProof(detection) {
 
     // Step 1: Create ZK proof (no content revealed to verifier)
     const zkProof = new ZKProof(
-      `zk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      `zk-${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b=>b.toString(16).padStart(2,'0')).join('')}`,
       detection.content_hash || await sha256Async(detection.content || ''),
       detection.decision,
       detection.risk || 0
@@ -886,6 +959,7 @@ function setupBlockchainRegistrationHandler() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initPopup();
+  initFpModal();
   initThreatIntelligence();
 
   // PHASE A Task 2: Initialize proof handlers

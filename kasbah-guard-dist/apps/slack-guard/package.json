@@ -1,0 +1,29 @@
+{
+  "name": "@kasbah/slack-guard",
+  "version": "1.0.0",
+  "description": "Slack bot for detecting and blocking secrets, PII, and sensitive data",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "slack",
+    "security",
+    "dlp",
+    "kasbah",
+    "secret-detection"
+  ],
+  "author": "Kasbah Guard",
+  "license": "MIT",
+  "dependencies": {
+    "@slack/bolt": "^3.18.0",
+    "@kasbah/detector": "^1.0.0",
+    "dotenv": "^16.4.1",
+    "winston": "^3.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
