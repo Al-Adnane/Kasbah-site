@@ -303,7 +303,7 @@ export default function IncidentPage() {
           maxWidth: '600px',
           margin: '0 auto',
           fontSize: '13px',
-          color: DESIGN.text',
+          color: DESIGN.text,
         }}>
           <strong style={{ color: DESIGN.red }}>100% Private:</strong> All detection runs locally in your browser. No data is sent to servers. No logging. No tracking.
         </div>
