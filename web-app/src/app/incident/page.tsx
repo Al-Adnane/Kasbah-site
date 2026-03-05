@@ -12,6 +12,35 @@ const DESIGN = {
   radius: '12px',
 };
 
+const DETECTION_PATTERNS = [
+  { name: 'AWS Access Key', regex: /AKIA[0-9A-Z]{16}/, risk: 85 },
+  { name: 'GitHub Personal Token', regex: /ghp_[A-Za-z0-9_]{36,}/, risk: 90 },
+  { name: 'OpenAI API Key', regex: /sk-[A-Za-z0-9]{20,}/, risk: 85 },
+  { name: 'Slack Bot Token', regex: /xoxb-[A-Za-z0-9_-]{10,}/, risk: 80 },
+  { name: 'Stripe API Key', regex: /sk_(?:live|test)_[A-Za-z0-9]{20,}/, risk: 90 },
+  { name: 'Social Security Number', regex: /\b\d{3}-\d{2}-\d{4}\b/, risk: 95 },
+  { name: 'Credit Card', regex: /\b(?:\d[ -]*?){13,19}\b/, risk: 95 },
+  { name: 'Database URL', regex: /(?:mongodb|postgres|mysql):\/\/[^\s]+/, risk: 85 },
+  { name: 'Discord Token', regex: /[MN][A-Za-z\d_-]{23,25}\.[\w-]{6}\.[\w-]{27}/, risk: 80 },
+  { name: 'Private Key', regex: /-----BEGIN (?:RSA|EC|OPENSSH) PRIVATE KEY-----/, risk: 100 },
+];
+
+function detectSecrets(text: string) {
+  const found: any[] = [];
+  let maxRisk = 0;
+
+  DETECTION_PATTERNS.forEach(pattern => {
+    try {
+      if (pattern.regex.test(text)) {
+        found.push(pattern);
+        maxRisk = Math.max(maxRisk, pattern.risk);
+      }
+    } catch (e) {}
+  });
+
+  return { violations: found, maxRisk };
+}
+
 export default function IncidentPage() {
   const [inputText, setInputText] = useState('');
   const [violations, setViolations] = useState<any[]>([]);
@@ -93,9 +122,73 @@ export default function IncidentPage() {
         </div>
       </div>
 
-      {/* PLACEHOLDER FOR SECTIONS 2-4 */}
+      {/* SECTION 2: PERSONAL SCAN */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '80px 40px', borderTop: `1px solid ${DESIGN.border}` }}>
+        <h2 style={{ fontSize: '42px', fontWeight: 900, marginBottom: '12px', textAlign: 'center' }}>
+          Let's Check Your Risk
+        </h2>
+        <p style={{ fontSize: '16px', color: DESIGN.muted, textAlign: 'center', maxWidth: '600px', margin: '0 auto 40px' }}>
+          Paste any code snippet below. 100% private—all detection runs in your browser.
+        </p>
+
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <textarea
+            value={inputText}
+            onChange={(e) => {
+              setInputText(e.target.value);
+              if (e.target.value.trim()) {
+                const result = detectSecrets(e.target.value);
+                setViolations(result.violations);
+                setMaxRisk(result.maxRisk);
+              } else {
+                setViolations([]);
+                setMaxRisk(0);
+              }
+            }}
+            placeholder="Paste code here..."
+            style={{
+              width: '100%',
+              height: '200px',
+              border: `1px solid ${DESIGN.border}`,
+              borderRadius: DESIGN.radius,
+              padding: '16px',
+              fontFamily: "'Inter', monospace",
+              fontSize: '14px',
+              color: DESIGN.text,
+              background: '#fff',
+              resize: 'none',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+
+          {violations.length > 0 && (
+            <div style={{ marginTop: '24px', padding: '20px', background: '#FEE2E2', border: `1px solid #FECACA`, borderRadius: DESIGN.radius }}>
+              <p style={{ fontWeight: 700, color: '#991B1B', marginBottom: '12px' }}>
+                ⚠️ We found {violations.length} secret{violations.length > 1 ? 's' : ''}:
+              </p>
+              {violations.map((v, i) => (
+                <div key={i} style={{ fontSize: '14px', color: '#7F1D1D', marginBottom: '8px' }}>
+                  <strong>{v.name}</strong> (Risk: {v.risk}/100)
+                </div>
+              ))}
+              <p style={{ fontSize: '13px', marginTop: '12px', color: '#991B1B' }}>
+                You were probably about to paste this into ChatGPT or Slack. Kasbah catches it first.
+              </p>
+            </div>
+          )}
+
+          {inputText.trim() && violations.length === 0 && (
+            <div style={{ marginTop: '24px', padding: '20px', background: '#F0FDF4', border: `1px solid #BBFF00`, borderRadius: DESIGN.radius }}>
+              <p style={{ fontWeight: 700, color: '#15803D' }}>✓ No secrets detected</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* PLACEHOLDER FOR SECTIONS 3-4 */}
       <div style={{ padding: '400px 40px', textAlign: 'center', color: DESIGN.muted }}>
-        Sections 2-4 coming next...
+        Sections 3-4 coming next...
       </div>
     </div>
   );
