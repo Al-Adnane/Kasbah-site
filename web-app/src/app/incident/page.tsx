@@ -227,9 +227,69 @@ export default function IncidentPage() {
         </div>
       </div>
 
-      {/* PLACEHOLDER FOR SECTION 4 */}
-      <div style={{ padding: '400px 40px', textAlign: 'center', color: DESIGN.muted }}>
-        Section 4 coming next...
+      {/* SECTION 4: CONVERSION */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '80px 40px', borderTop: `1px solid ${DESIGN.border}` }}>
+        <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <h2 style={{ fontSize: '42px', fontWeight: 900, marginBottom: '24px' }}>
+            Thousands Are Already Protected
+          </h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '40px', maxWidth: '900px', margin: '0 auto 80px' }}>
+            <div>
+              <p style={{ fontSize: '32px', fontWeight: 900, color: DESIGN.red }}>2.5M+</p>
+              <p style={{ fontSize: '14px', color: DESIGN.muted }}>Secrets caught this month</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '32px', fontWeight: 900, color: DESIGN.red }}>50+</p>
+              <p style={{ fontSize: '14px', color: DESIGN.muted }}>Secret patterns detected</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '32px', fontWeight: 900, color: DESIGN.red }}>&lt;5ms</p>
+              <p style={{ fontSize: '14px', color: DESIGN.muted }}>Detection latency</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '80px' }}>
+            <a href="https://chromewebstore.google.com" style={{
+              padding: '14px 28px',
+              background: DESIGN.red,
+              color: '#fff',
+              textDecoration: 'none',
+              borderRadius: DESIGN.radius,
+              fontWeight: 700,
+              fontSize: '14px',
+            }}>
+              Install Extension
+            </a>
+            <a href="/sign-up" style={{
+              padding: '14px 28px',
+              border: `1px solid ${DESIGN.border}`,
+              background: '#fff',
+              color: DESIGN.text,
+              textDecoration: 'none',
+              borderRadius: DESIGN.radius,
+              fontWeight: 700,
+              fontSize: '14px',
+            }}>
+              Create Account
+            </a>
+          </div>
+        </div>
+
+        {/* Privacy Notice */}
+        <div style={{
+          padding: '20px',
+          background: 'rgba(193,68,14,.1)',
+          border: `1px solid rgba(193,68,14,.2)`,
+          borderRadius: DESIGN.radius,
+          textAlign: 'center',
+          fontSize: '13px',
+          color: DESIGN.text,
+          maxWidth: '600px',
+          margin: '0 auto'
+        }}>
+          <strong style={{ color: DESIGN.red }}>🔒 Privacy First:</strong> All detection happens in your browser. Nothing leaves your device.
+        </div>
       </div>
     </div>
   );
