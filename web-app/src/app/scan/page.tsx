@@ -258,7 +258,7 @@ export default function ScanPage() {
 
         {/* PRIVACY NOTICE */}
         <div style={{ marginTop: '48px', padding: '20px', background: 'rgba(193,68,14,.1)', border: '1px solid rgba(193,68,14,.2)', borderRadius: '12px', textAlign: 'center', fontSize: '13px', color: '#0F172A' }}>
-          <strong style={{ color: '#C1440E', fontWeight: 700 }}>🔒 Privacy First:</strong> All detection happens in your browser. Your data never leaves your device. We don't store, log, or see anything you scan.
+          <strong style={{ color: '#C1440E', fontWeight: 700 }}>🔒 Privacy First:</strong> All detection happens in your browser. Your data never leaves your device. We don&apos;t store, log, or see anything you scan.
         </div>
       </div>
     </div>

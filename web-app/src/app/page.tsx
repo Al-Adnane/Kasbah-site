@@ -280,7 +280,7 @@ export default function Home() {
                 &lt;5ms Detection
               </h3>
               <p className="text-gray-600 text-lg">
-                Lightning-fast scanning that doesn't interrupt your workflow
+                Lightning-fast scanning that doesn&apos;t interrupt your workflow
               </p>
             </div>
 

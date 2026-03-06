@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useUser, useClerk, SignOutButton } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -141,7 +143,7 @@ export default function Dashboard() {
             Welcome back, {user?.firstName}!
           </h2>
           <p className="text-muted-foreground">
-            Here's what's happening with your security
+            Here&apos;s what&apos;s happening with your security
           </p>
         </div>
 
