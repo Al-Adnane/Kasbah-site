@@ -11,32 +11,45 @@ const DESIGN = {
   border: '#E8E2DB',
 };
 
+// Universal patterns — explained in plain language
 const DETECTION_PATTERNS = [
-  { name: 'AWS Access Key', regex: /AKIA[0-9A-Z]{16}/, risk: 'Critical' },
-  { name: 'GitHub Token', regex: /ghp_[A-Za-z0-9_]{36,}/, risk: 'High' },
-  { name: 'OpenAI API Key', regex: /sk-[A-Za-z0-9]{20,}/, risk: 'High' },
-  { name: 'Slack Bot Token', regex: /xoxb-[A-Za-z0-9_-]{10,}/, risk: 'High' },
-  { name: 'Stripe Secret Key', regex: /sk_(?:live|test)_[A-Za-z0-9]{20,}/, risk: 'Critical' },
-  { name: 'Social Security Number', regex: /\b\d{3}-\d{2}-\d{4}\b/, risk: 'Critical' },
-  { name: 'Credit Card Number', regex: /\b(?:\d[ -]*?){13,19}\b/, risk: 'Critical' },
-  { name: 'Database URL', regex: /(?:mongodb|postgres|mysql):\/\/[^\s]+/, risk: 'High' },
-  { name: 'Private Key', regex: /-----BEGIN (?:RSA|EC|OPENSSH) PRIVATE KEY-----/, risk: 'Critical' },
+  { name: 'Social Security Number', regex: /\b\d{3}-\d{2}-\d{4}\b/, risk: 'Critical', plain: 'ID number' },
+  { name: 'Credit Card Number', regex: /\b(?:4[0-9]{3}|5[1-5][0-9]{2}|3[47][0-9]{2})[- ]?[0-9]{4}[- ]?[0-9]{4}[- ]?[0-9]{4}\b/, risk: 'Critical', plain: 'Payment info' },
+  { name: 'Password', regex: /(?:password|passwd|pwd)\s*[:=]\s*\S{6,}/i, risk: 'High', plain: 'Password' },
+  { name: 'API Key', regex: /AKIA[0-9A-Z]{16}/, risk: 'Critical', plain: 'Cloud credential' },
+  { name: 'GitHub Token', regex: /ghp_[A-Za-z0-9_]{36,}/, risk: 'High', plain: 'Access token' },
+  { name: 'Private Key', regex: /-----BEGIN (?:RSA|EC|OPENSSH) PRIVATE KEY-----/, risk: 'Critical', plain: 'Encryption key' },
+  { name: 'Database URL', regex: /(?:mongodb|postgres|mysql):\/\/[^\s]+/, risk: 'High', plain: 'Database access' },
+  { name: 'Email + personal context', regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,}\b.*(?:ssn|social|dob|birth|salary|income)/is, risk: 'High', plain: 'Personal record' },
 ];
 
-const EXAMPLE_CODE = `import boto3
+// What gets typed in Act 1 — relatable to anyone who uses AI
+const EXAMPLE_MESSAGE = `Can you help me analyze this client file and write a summary?
 
-# Deploy infrastructure to AWS
-client = boto3.client(
-    's3',
-    aws_access_key_id="AKIAIOSFODNN7EXAMPLE",
-    aws_secret_access_key="wJalrXUtnFEMI/K7MDENG",
-    region_name='us-east-1'
-)
+Name: Sarah Johnson
+Date of Birth: March 12, 1985
+SSN: 547-22-1234
+Credit Card: 4532 1234 5678 9999
+Annual Income: $87,500
 
-# "Can you help me fix this connection error?"`;
+She's applying for a mortgage. Can you check if anything looks off?`;
+
+// Detected items shown in Act 2
+const ACT2_FINDINGS = [
+  { label: 'Social Security Number', value: '547-22-1234', severity: 'Critical' },
+  { label: 'Credit Card Number', value: '4532 1234 5678 9999', severity: 'Critical' },
+];
+
+// Examples for Act 3 — different roles, all relatable
+const EXAMPLES = [
+  { label: 'Client record', text: 'Name: James Miller\nSSN: 382-55-9021\nDate of birth: 08/14/1979\nCredit card: 4532-9876-5432-1098\n\nCan you summarize this for the intake form?' },
+  { label: 'HR document', text: 'Employee: Maria Santos\nSalary: $112,000\nSSN: 219-44-7823\nPerformance score: 3.2/5\n\nHelp me write her annual review.' },
+  { label: 'Login credentials', text: 'Here are the staging credentials:\nusername: admin@company.com\npassword: Sup3rS3cr3t!\n\nCan you help me debug why the login is failing?' },
+  { label: 'Medical info', text: 'Patient: Robert Chen, DOB 1962-03-08\nDiagnosis: Type 2 diabetes\nSSN: 601-77-4312\n\nDraft a referral letter to the specialist.' },
+];
 
 function detectSecrets(text: string) {
-  const found: { name: string; risk: string }[] = [];
+  const found: { name: string; risk: string; plain: string }[] = [];
   DETECTION_PATTERNS.forEach(p => {
     try { if (p.regex.test(text)) found.push(p); } catch (_) {}
   });
@@ -44,55 +57,49 @@ function detectSecrets(text: string) {
 }
 
 export default function IncidentPage() {
-  // Act 1
   const [typed, setTyped] = useState('');
   const [act1Phase, setAct1Phase] = useState<'typing' | 'sent' | 'revealed'>('typing');
   const typingDone = useRef(false);
 
-  // Act 2
   const act2Ref = useRef<HTMLDivElement>(null);
   const [act2Phase, setAct2Phase] = useState<'idle' | 'scanning' | 'blocked'>('idle');
   const act2Triggered = useRef(false);
 
-  // Act 3
   const [chatInput, setChatInput] = useState('');
-  const [detections, setDetections] = useState<{ name: string; risk: string }[]>([]);
+  const [detections, setDetections] = useState<{ name: string; risk: string; plain: string }[]>([]);
 
-  // Auto-type Act 1
   useEffect(() => {
     let i = 0;
     const tick = setInterval(() => {
-      if (i < EXAMPLE_CODE.length) {
-        setTyped(EXAMPLE_CODE.slice(0, i + 1));
+      if (i < EXAMPLE_MESSAGE.length) {
+        setTyped(EXAMPLE_MESSAGE.slice(0, i + 1));
         i++;
       } else {
         clearInterval(tick);
         if (!typingDone.current) {
           typingDone.current = true;
-          setTimeout(() => setAct1Phase('sent'), 700);
-          setTimeout(() => setAct1Phase('revealed'), 2200);
+          setTimeout(() => setAct1Phase('sent'), 600);
+          setTimeout(() => setAct1Phase('revealed'), 2000);
         }
       }
-    }, 28);
+    }, 22);
     return () => clearInterval(tick);
   }, []);
 
-  // Intersection observer for Act 2
   useEffect(() => {
     const el = act2Ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !act2Triggered.current) {
         act2Triggered.current = true;
-        setTimeout(() => setAct2Phase('scanning'), 400);
-        setTimeout(() => setAct2Phase('blocked'), 2000);
+        setTimeout(() => setAct2Phase('scanning'), 500);
+        setTimeout(() => setAct2Phase('blocked'), 2200);
       }
-    }, { threshold: 0.35 });
+    }, { threshold: 0.3 });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
 
-  // Real-time detection Act 3
   const handleInput = (text: string) => {
     setChatInput(text);
     setDetections(detectSecrets(text));
@@ -117,44 +124,47 @@ export default function IncidentPage() {
         </Link>
         <div style={{ display: 'flex', gap: '4px' }}>
           <Link href="/" style={{ color: DESIGN.muted, fontSize: '13px', fontWeight: 500, textDecoration: 'none', padding: '6px 12px', borderRadius: '8px' }}>Home</Link>
-          <span style={{ color: DESIGN.text, fontSize: '13px', fontWeight: 500, padding: '6px 12px', background: '#F7F4F0', borderRadius: '8px' }}>Experience Kasbah</span>
+          <span style={{ color: DESIGN.text, fontSize: '13px', fontWeight: 500, padding: '6px 12px', background: '#F7F4F0', borderRadius: '8px' }}>See How It Works</span>
         </div>
       </nav>
 
-      {/* ─── ACT 1: THE HOOK ─── */}
+      {/* ── ACT 1: THE HOOK ── */}
       <section style={{
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '120px 24px 80px',
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '48px', maxWidth: '680px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '44px', maxWidth: '640px' }}>
           <p style={{
             fontSize: '12px', fontWeight: 700, letterSpacing: '0.12em',
-            textTransform: 'uppercase', color: DESIGN.red, marginBottom: '20px',
+            textTransform: 'uppercase', color: DESIGN.red, marginBottom: '18px',
           }}>
-            Right now — this is happening
+            This happens every day
           </p>
           <h1 style={{
-            fontSize: 'clamp(40px, 6vw, 62px)', fontWeight: 900,
+            fontSize: 'clamp(38px, 5.5vw, 60px)', fontWeight: 900,
             letterSpacing: '-0.05em', lineHeight: 1.08, margin: 0,
           }}>
-            You&apos;re sharing more<br />than you think.
+            You&apos;re sharing more<br />than you realize.
           </h1>
+          <p style={{ fontSize: '17px', color: DESIGN.muted, marginTop: '20px', lineHeight: 1.7 }}>
+            Every day, people paste sensitive information into AI tools without thinking twice.
+            Watch what just happened.
+          </p>
         </div>
 
-        {/* Simulated ChatGPT window */}
+        {/* ChatGPT-style window */}
         <div style={{
-          width: '100%', maxWidth: '680px',
+          width: '100%', maxWidth: '660px',
           background: '#fff', borderRadius: '16px',
           border: `1px solid ${DESIGN.border}`,
-          boxShadow: '0 8px 48px rgba(0,0,0,0.08)',
+          boxShadow: '0 8px 48px rgba(0,0,0,0.09)',
           overflow: 'hidden',
         }}>
           {/* Window chrome */}
           <div style={{
             padding: '12px 18px', borderBottom: `1px solid ${DESIGN.border}`,
-            display: 'flex', alignItems: 'center', gap: '8px',
-            background: '#FAFAFA',
+            display: 'flex', alignItems: 'center', gap: '8px', background: '#FAFAFA',
           }}>
             <div style={{ display: 'flex', gap: '6px' }}>
               <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#FF5F57' }} />
@@ -166,7 +176,7 @@ export default function IncidentPage() {
             </span>
           </div>
 
-          {/* Chat bubble */}
+          {/* Message */}
           <div style={{ padding: '24px 20px' }}>
             <div style={{ display: 'flex', gap: '12px' }}>
               <div style={{
@@ -178,59 +188,48 @@ export default function IncidentPage() {
               <div style={{
                 flex: 1, background: '#F7F7F8', borderRadius: '12px',
                 padding: '14px 16px',
-                fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-                fontSize: '12px', lineHeight: 1.75, color: DESIGN.text,
-                whiteSpace: 'pre', overflowX: 'auto',
-                minHeight: '100px',
+                fontSize: '13px', lineHeight: 1.8, color: DESIGN.text,
+                whiteSpace: 'pre-wrap', minHeight: '80px',
               }}>
                 {typed}
                 {act1Phase === 'typing' && (
                   <span style={{
-                    display: 'inline-block', width: '2px', height: '13px',
+                    display: 'inline-block', width: '2px', height: '14px',
                     background: DESIGN.text, marginLeft: '1px',
-                    verticalAlign: 'text-bottom',
-                    animation: 'blink 0.9s infinite',
+                    verticalAlign: 'text-bottom', animation: 'blink 0.9s infinite',
                   }} />
                 )}
               </div>
             </div>
 
-            {/* Send row */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
               {act1Phase === 'typing' && (
-                <div style={{
-                  padding: '8px 20px', background: '#10A37F', color: '#fff',
-                  borderRadius: '8px', fontSize: '13px', fontWeight: 600, opacity: 0.4,
-                }}>
+                <div style={{ padding: '8px 20px', background: '#10A37F', color: '#fff', borderRadius: '8px', fontSize: '13px', fontWeight: 600, opacity: 0.4 }}>
                   Send →
                 </div>
               )}
               {act1Phase === 'sent' && (
-                <div style={{
-                  padding: '8px 20px', background: '#10A37F', color: '#fff',
-                  borderRadius: '8px', fontSize: '13px', fontWeight: 600,
-                  animation: 'fadeIn 0.4s ease',
-                }}>
+                <div style={{ padding: '8px 20px', background: '#10A37F', color: '#fff', borderRadius: '8px', fontSize: '13px', fontWeight: 600, animation: 'fadeIn 0.4s ease' }}>
                   Sent — Processing...
                 </div>
               )}
               {act1Phase === 'revealed' && (
                 <div style={{
-                  padding: '12px 20px',
+                  padding: '13px 20px',
                   background: '#FEF2F2', border: '1px solid #FECACA',
                   borderRadius: '10px', fontSize: '13px', fontWeight: 700,
                   color: '#991B1B', animation: 'fadeIn 0.6s ease',
+                  lineHeight: 1.5,
                 }}>
-                  ⚠ Your AWS credentials just left your machine.
+                  ⚠ Sarah&apos;s SSN and credit card just reached OpenAI&apos;s servers.
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Scroll cue */}
         {act1Phase === 'revealed' && (
-          <div style={{ marginTop: '52px', textAlign: 'center', animation: 'fadeIn 1s ease' }}>
+          <div style={{ marginTop: '48px', textAlign: 'center', animation: 'fadeIn 1s ease' }}>
             <p style={{ fontSize: '15px', color: DESIGN.muted, marginBottom: '14px' }}>
               What if it never got that far?
             </p>
@@ -239,7 +238,7 @@ export default function IncidentPage() {
         )}
       </section>
 
-      {/* ─── ACT 2: THE REPLAY ─── */}
+      {/* ── ACT 2: THE REPLAY ── */}
       <section ref={act2Ref} style={{
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
@@ -247,97 +246,86 @@ export default function IncidentPage() {
         borderTop: `1px solid ${DESIGN.border}`,
         background: '#FAFAF9',
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '52px', maxWidth: '620px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '52px', maxWidth: '580px' }}>
           <h2 style={{
-            fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 900,
+            fontSize: 'clamp(30px, 4.5vw, 46px)', fontWeight: 900,
             letterSpacing: '-0.04em', marginBottom: '16px', lineHeight: 1.1,
           }}>
             The same moment.<br />With Kasbah active.
           </h2>
           <p style={{ fontSize: '15px', color: DESIGN.muted, lineHeight: 1.75 }}>
-            Before a single character reaches the AI — Kasbah has already read it,
-            flagged it, and stopped it. You keep working. The secret stays safe.
+            Before your message reaches the AI, Kasbah reads it silently.
+            Sensitive information is flagged and stopped — you keep working, the data stays safe.
           </p>
         </div>
 
         <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 80px 1fr',
-          maxWidth: '880px', width: '100%', alignItems: 'center',
+          display: 'grid', gridTemplateColumns: '1fr 72px 1fr',
+          maxWidth: '840px', width: '100%', alignItems: 'center',
         }}>
-          {/* Left: code */}
+          {/* Left: the message */}
           <div style={{
             background: '#fff', borderRadius: '14px 0 0 14px',
-            border: `1px solid ${DESIGN.border}`, borderRight: 'none',
-            overflow: 'hidden',
+            border: `1px solid ${DESIGN.border}`, borderRight: 'none', overflow: 'hidden',
           }}>
-            <div style={{ padding: '12px 16px', borderBottom: `1px solid ${DESIGN.border}`, background: '#F9FAFB' }}>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: DESIGN.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Your code</span>
+            <div style={{ padding: '11px 16px', borderBottom: `1px solid ${DESIGN.border}`, background: '#F9FAFB' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: DESIGN.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Your message to ChatGPT</span>
             </div>
-            <div style={{ padding: '18px 16px', fontFamily: 'monospace', fontSize: '12px', lineHeight: 2, color: DESIGN.text }}>
-              <div style={{ color: DESIGN.muted }}>aws_access_key_id =</div>
+            <div style={{ padding: '16px', fontSize: '13px', lineHeight: 1.9, color: DESIGN.text }}>
+              <div>Can you analyze this client file?</div>
+              <div style={{ color: DESIGN.muted, marginTop: '8px' }}>Name: Sarah Johnson</div>
               <div style={{
                 color: act2Phase !== 'idle' ? '#DC2626' : DESIGN.text,
                 background: act2Phase !== 'idle' ? '#FEF2F2' : 'transparent',
                 padding: act2Phase !== 'idle' ? '1px 6px' : '0',
-                borderRadius: '4px',
-                fontWeight: act2Phase !== 'idle' ? 700 : 400,
-                transition: 'all 0.5s',
-                display: 'inline-block',
-              }}>
-                &quot;AKIAIOSFODNN7EXAMPLE&quot;
-              </div>
-              <div style={{ color: DESIGN.muted, marginTop: '4px' }}>aws_secret_access_key =</div>
+                borderRadius: '4px', fontWeight: act2Phase !== 'idle' ? 700 : 400,
+                transition: 'all 0.5s', display: 'inline-block',
+              }}>SSN: 547-22-1234</div>
               <div style={{
                 color: act2Phase !== 'idle' ? '#DC2626' : DESIGN.text,
                 background: act2Phase !== 'idle' ? '#FEF2F2' : 'transparent',
                 padding: act2Phase !== 'idle' ? '1px 6px' : '0',
-                borderRadius: '4px',
-                fontWeight: act2Phase !== 'idle' ? 700 : 400,
-                transition: 'all 0.5s 0.25s',
-                display: 'inline-block',
-              }}>
-                &quot;wJalrXUtnFEMI/K7...&quot;
-              </div>
+                borderRadius: '4px', fontWeight: act2Phase !== 'idle' ? 700 : 400,
+                transition: 'all 0.5s 0.2s', display: 'inline-block', marginTop: '2px',
+              }}>Card: 4532 1234 5678 9999</div>
             </div>
           </div>
 
-          {/* Center: intercept indicator */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0 4px' }}>
-            {act2Phase === 'idle' && (
-              <div style={{ fontSize: '20px', color: DESIGN.muted }}>→</div>
-            )}
+          {/* Center: intercept */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            {act2Phase === 'idle' && <div style={{ fontSize: '18px', color: DESIGN.muted }}>→</div>}
             {act2Phase === 'scanning' && (
               <>
                 <div style={{
-                  width: '40px', height: '40px', borderRadius: '50%',
+                  width: '38px', height: '38px', borderRadius: '50%',
                   border: `3px solid ${DESIGN.red}`, borderTopColor: 'transparent',
                   animation: 'spin 0.7s linear infinite',
                 }} />
-                <span style={{ fontSize: '10px', fontWeight: 700, color: DESIGN.red, textAlign: 'center' }}>Scanning</span>
+                <span style={{ fontSize: '10px', fontWeight: 700, color: DESIGN.red }}>Checking</span>
               </>
             )}
             {act2Phase === 'blocked' && (
               <>
                 <div style={{
-                  width: '40px', height: '40px', borderRadius: '50%',
+                  width: '38px', height: '38px', borderRadius: '50%',
                   background: DESIGN.red, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', color: '#fff', fontSize: '18px', fontWeight: 900,
+                  justifyContent: 'center', color: '#fff', fontSize: '16px', fontWeight: 900,
                   animation: 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                 }}>✕</div>
-                <span style={{ fontSize: '10px', fontWeight: 700, color: DESIGN.red, textAlign: 'center' }}>BLOCKED</span>
+                <span style={{ fontSize: '10px', fontWeight: 700, color: DESIGN.red }}>STOPPED</span>
               </>
             )}
           </div>
 
-          {/* Right: Kasbah panel */}
+          {/* Right: Kasbah result */}
           <div style={{
             background: '#fff', borderRadius: '0 14px 14px 0',
             border: `1px solid ${act2Phase === 'blocked' ? '#FECACA' : DESIGN.border}`,
-            borderLeft: 'none',
-            overflow: 'hidden', transition: 'border-color 0.4s',
+            borderLeft: 'none', overflow: 'hidden', transition: 'border-color 0.4s',
           }}>
             <div style={{
-              padding: '12px 16px', borderBottom: `1px solid ${act2Phase === 'blocked' ? '#FECACA' : DESIGN.border}`,
+              padding: '11px 16px',
+              borderBottom: `1px solid ${act2Phase === 'blocked' ? '#FECACA' : DESIGN.border}`,
               background: act2Phase === 'blocked' ? '#FEF2F2' : '#F9FAFB',
               transition: 'all 0.4s',
             }}>
@@ -352,42 +340,37 @@ export default function IncidentPage() {
                   color: act2Phase === 'blocked' ? '#991B1B' : DESIGN.muted,
                   transition: 'color 0.4s',
                 }}>
-                  {act2Phase === 'blocked' ? 'Kasbah — Threat Intercepted' : 'Kasbah Guard — Monitoring'}
+                  {act2Phase === 'blocked' ? 'Kasbah — Sensitive data found' : 'Kasbah Guard — Watching'}
                 </span>
               </div>
             </div>
-            <div style={{ padding: '18px 16px', minHeight: '140px' }}>
+            <div style={{ padding: '16px', minHeight: '130px' }}>
               {act2Phase === 'idle' && (
                 <div style={{ fontSize: '12px', color: DESIGN.muted, lineHeight: 1.8 }}>
-                  <div>Watching input...</div>
-                  <div style={{ color: '#CBD5E1', marginTop: '4px' }}>No threats detected</div>
+                  <div>Monitoring your input...</div>
+                  <div style={{ color: '#CBD5E1', marginTop: '4px' }}>Nothing flagged yet</div>
                 </div>
               )}
               {act2Phase === 'scanning' && (
-                <div style={{ fontSize: '12px', color: DESIGN.muted, lineHeight: 2, fontFamily: 'monospace' }}>
-                  <div>✓ Credit card patterns</div>
-                  <div>✓ SSN patterns</div>
-                  <div style={{ color: DESIGN.red }}>→ Cloud credentials...</div>
+                <div style={{ fontSize: '12px', color: DESIGN.muted, lineHeight: 2 }}>
+                  <div>✓ Payment information</div>
+                  <div>✓ Health records</div>
+                  <div style={{ color: DESIGN.red }}>→ Identity information...</div>
                 </div>
               )}
               {act2Phase === 'blocked' && (
                 <div style={{ animation: 'fadeIn 0.5s ease' }}>
-                  {[
-                    { name: 'AWS Access Key', val: 'AKIAIOSFODNN7EXAMPLE' },
-                    { name: 'AWS Secret Key', val: 'wJalrXUtnFEMI/K7...' },
-                  ].map((item, i) => (
+                  {ACT2_FINDINGS.map((item, i) => (
                     <div key={i} style={{
                       marginBottom: '10px', padding: '10px 12px',
-                      background: '#FEF2F2', borderRadius: '8px',
-                      border: '1px solid #FECACA',
+                      background: '#FEF2F2', borderRadius: '8px', border: '1px solid #FECACA',
                     }}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#991B1B', marginBottom: '3px' }}>{item.name}</div>
-                      <div style={{ fontFamily: 'monospace', fontSize: '10px', color: '#7F1D1D', marginBottom: '5px' }}>{item.val}</div>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#991B1B', marginBottom: '2px' }}>{item.label}</div>
+                      <div style={{ fontSize: '11px', color: '#7F1D1D', marginBottom: '5px', fontFamily: 'monospace' }}>{item.value}</div>
                       <div style={{
                         fontSize: '10px', fontWeight: 700, color: '#fff',
-                        background: DESIGN.red, padding: '2px 8px', borderRadius: '4px',
-                        display: 'inline-block',
-                      }}>Critical — Transmission blocked</div>
+                        background: DESIGN.red, padding: '2px 8px', borderRadius: '4px', display: 'inline-block',
+                      }}>{item.severity} — Blocked</div>
                     </div>
                   ))}
                 </div>
@@ -397,119 +380,115 @@ export default function IncidentPage() {
         </div>
 
         {act2Phase === 'blocked' && (
-          <div style={{ marginTop: '52px', textAlign: 'center', animation: 'fadeIn 0.8s ease' }}>
+          <div style={{ marginTop: '48px', textAlign: 'center', animation: 'fadeIn 0.8s ease' }}>
             <p style={{ fontSize: '15px', color: DESIGN.muted, marginBottom: '14px' }}>
-              Now try it with your own code.
+              Try it with your own text.
             </p>
             <div style={{ animation: 'bounce 2s infinite', fontSize: '22px', color: DESIGN.muted }}>↓</div>
           </div>
         )}
       </section>
 
-      {/* ─── ACT 3: YOUR TURN ─── */}
+      {/* ── ACT 3: YOUR TURN ── */}
       <section style={{
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '80px 24px',
         borderTop: `1px solid ${DESIGN.border}`,
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px', maxWidth: '580px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '36px', maxWidth: '560px' }}>
           <h2 style={{
-            fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 900,
-            letterSpacing: '-0.04em', marginBottom: '16px', lineHeight: 1.1,
+            fontSize: 'clamp(30px, 4.5vw, 46px)', fontWeight: 900,
+            letterSpacing: '-0.04em', marginBottom: '14px', lineHeight: 1.1,
           }}>
             Your turn.
           </h2>
           <p style={{ fontSize: '15px', color: DESIGN.muted, lineHeight: 1.75 }}>
-            Paste any code below — exactly like you would into ChatGPT or Claude.
-            Detection runs 100% in your browser. Nothing leaves your machine.
+            Type or paste anything you&apos;d normally send to an AI tool.
+            Kasbah tells you instantly if something sensitive is in there.
+            Nothing leaves your browser.
           </p>
         </div>
 
-        <div style={{ width: '100%', maxWidth: '700px' }}>
-          {/* Chat window */}
+        <div style={{ width: '100%', maxWidth: '680px' }}>
           <div style={{
             background: '#fff', borderRadius: '16px',
             border: `1px solid ${isBlocked ? '#FECACA' : DESIGN.border}`,
-            boxShadow: isBlocked
-              ? '0 8px 40px rgba(193,68,14,0.14)'
-              : '0 4px 28px rgba(0,0,0,0.07)',
+            boxShadow: isBlocked ? '0 8px 40px rgba(193,68,14,0.14)' : '0 4px 28px rgba(0,0,0,0.07)',
             overflow: 'hidden', transition: 'all 0.35s',
           }}>
-            {/* Header */}
+            {/* Status bar */}
             <div style={{
-              padding: '13px 20px', borderBottom: `1px solid ${isBlocked ? '#FECACA' : DESIGN.border}`,
+              padding: '12px 20px',
+              borderBottom: `1px solid ${isBlocked ? '#FECACA' : DESIGN.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               background: isBlocked ? '#FEF2F2' : '#FAFAFA', transition: 'all 0.35s',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{
                   width: '7px', height: '7px', borderRadius: '50%',
-                  background: isBlocked ? DESIGN.red : '#22C55E',
-                  transition: 'background 0.35s',
+                  background: isBlocked ? DESIGN.red : '#22C55E', transition: 'background 0.35s',
                 }} />
                 <span style={{
                   fontSize: '12px', fontWeight: 600,
                   color: isBlocked ? '#991B1B' : DESIGN.muted, transition: 'color 0.35s',
                 }}>
-                  {isBlocked ? 'Kasbah Guard — Threat Detected' : 'Kasbah Guard — Active & Watching'}
+                  {isBlocked ? 'Kasbah — Sensitive information detected' : 'Kasbah Guard — Watching'}
                 </span>
               </div>
-              <span style={{ fontSize: '11px', color: DESIGN.muted }}>100% local · zero data sent</span>
+              <span style={{ fontSize: '11px', color: DESIGN.muted }}>Nothing leaves your device</span>
             </div>
 
-            {/* Textarea */}
-            <div style={{ padding: '20px 20px 12px' }}>
+            {/* Input */}
+            <div style={{ padding: '18px 20px 12px' }}>
               <textarea
                 value={chatInput}
                 onChange={e => handleInput(e.target.value)}
-                placeholder={`Paste your code here, exactly like you would in ChatGPT...\n\nFor example:\n  aws_access_key_id = "AKIAIOSFODNN7EXAMPLE"\n  DATABASE_URL = "postgres://user:pass@host/db"`}
+                placeholder={"Type anything you'd normally send to ChatGPT or Claude...\n\nFor example: a client's details, a document with personal info,\na password, or anything that feels sensitive."}
                 style={{
-                  width: '100%', height: '200px', border: 'none', outline: 'none',
-                  resize: 'none', fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-                  fontSize: '13px', color: DESIGN.text, lineHeight: 1.75,
+                  width: '100%', height: '190px', border: 'none', outline: 'none',
+                  resize: 'none', fontSize: '13px', color: DESIGN.text, lineHeight: 1.8,
                   background: 'transparent', boxSizing: 'border-box',
+                  fontFamily: 'Inter, system-ui, sans-serif',
                 }}
               />
             </div>
 
-            {/* Detections */}
+            {/* Findings */}
             {isBlocked && (
               <div style={{
                 padding: '14px 20px', borderTop: '1px solid #FECACA',
                 background: '#FEF2F2', animation: 'fadeIn 0.3s ease',
               }}>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: '#991B1B', marginBottom: '10px' }}>
-                  {detections.length} secret{detections.length > 1 ? 's' : ''} detected — blocked before transmission
+                  {detections.length} sensitive item{detections.length > 1 ? 's' : ''} found — this would have been shared with the AI
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {detections.map((d, i) => (
                     <div key={i} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '7px 12px', background: '#fff', borderRadius: '8px',
-                      border: '1px solid #FECACA',
+                      padding: '8px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #FECACA',
                     }}>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#7F1D1D' }}>{d.name}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#7F1D1D' }}>{d.name}</span>
                       <span style={{
                         fontSize: '11px', fontWeight: 700, color: '#fff',
-                        background: DESIGN.red, padding: '2px 10px', borderRadius: '4px',
-                      }}>
-                        {d.risk}
-                      </span>
+                        background: d.risk === 'Critical' ? DESIGN.red : '#EA580C',
+                        padding: '2px 10px', borderRadius: '4px',
+                      }}>{d.risk}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Footer / Send */}
+            {/* Footer */}
             <div style={{
-              padding: '14px 20px',
+              padding: '13px 20px',
               borderTop: `1px solid ${isBlocked ? '#FECACA' : DESIGN.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <span style={{ fontSize: '12px', color: DESIGN.muted }}>
-                {chatInput.trim() && !isBlocked ? 'No secrets found — safe to send' : !chatInput.trim() ? 'Try pasting code with credentials' : ''}
+                {chatInput.trim() && !isBlocked ? '✓ Nothing sensitive found — safe to send' : !chatInput.trim() ? 'Start typing to see Kasbah in action' : ''}
               </span>
               <button
                 disabled={isBlocked}
@@ -523,70 +502,62 @@ export default function IncidentPage() {
                   transition: 'all 0.3s',
                 }}
               >
-                {isBlocked ? '⊘ Blocked by Kasbah' : 'Send to AI →'}
+                {isBlocked ? '⊘ Blocked' : 'Send to AI →'}
               </button>
             </div>
           </div>
 
-          {/* Quick example pills */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-            {[
-              { label: 'AWS Key', text: 'aws_access_key_id = "AKIAIOSFODNN7EXAMPLE"' },
-              { label: 'GitHub Token', text: 'token = "ghp_1234567890abcdefghijklmnopqrstuvwxyz"' },
-              { label: 'Database URL', text: 'DATABASE_URL = "postgres://admin:secret@prod.db.io:5432/app"' },
-              { label: 'SSN', text: 'customer_ssn = "123-45-6789"' },
-            ].map(ex => (
-              <button
-                key={ex.label}
-                onClick={() => handleInput(ex.text)}
-                style={{
-                  padding: '6px 14px', background: '#fff',
-                  border: `1px solid ${DESIGN.border}`, borderRadius: '100px',
-                  fontSize: '12px', fontWeight: 600, color: DESIGN.muted, cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = DESIGN.red; e.currentTarget.style.color = DESIGN.red; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = DESIGN.border; e.currentTarget.style.color = DESIGN.muted; }}
-              >
-                Try: {ex.label}
-              </button>
-            ))}
+          {/* Try-it pills */}
+          <div style={{ marginTop: '14px' }}>
+            <p style={{ fontSize: '12px', color: DESIGN.muted, marginBottom: '10px' }}>Try an example:</p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {EXAMPLES.map(ex => (
+                <button
+                  key={ex.label}
+                  onClick={() => handleInput(ex.text)}
+                  style={{
+                    padding: '7px 16px', background: '#fff',
+                    border: `1px solid ${DESIGN.border}`, borderRadius: '100px',
+                    fontSize: '12px', fontWeight: 600, color: DESIGN.muted, cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = DESIGN.red; e.currentTarget.style.color = DESIGN.red; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = DESIGN.border; e.currentTarget.style.color = DESIGN.muted; }}
+                >
+                  {ex.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <p style={{ fontSize: '12px', color: DESIGN.muted, textAlign: 'center', marginTop: '16px' }}>
-            Detection is 100% local. Your code never leaves your browser.
-          </p>
         </div>
       </section>
 
-      {/* ─── ACT 4: THE NEW REALITY ─── */}
+      {/* ── ACT 4: THE NEW REALITY ── */}
       <section style={{
-        padding: '120px 24px',
-        textAlign: 'center',
-        background: DESIGN.text,
-        color: '#fff',
+        padding: '120px 24px', textAlign: 'center',
+        background: DESIGN.text, color: '#fff',
         borderTop: `1px solid ${DESIGN.border}`,
       }}>
         <p style={{
           fontSize: '12px', fontWeight: 700, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)',
-          marginBottom: '28px',
+          textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '28px',
         }}>
           The new reality
         </p>
         <h2 style={{
-          fontSize: 'clamp(36px, 6vw, 58px)', fontWeight: 900,
-          letterSpacing: '-0.04em', lineHeight: 1.08,
-          maxWidth: '680px', margin: '0 auto 24px',
+          fontSize: 'clamp(34px, 5.5vw, 56px)', fontWeight: 900,
+          letterSpacing: '-0.04em', lineHeight: 1.1,
+          maxWidth: '640px', margin: '0 auto 22px',
         }}>
           You never have to think<br />about this again.
         </h2>
         <p style={{
-          fontSize: '16px', color: 'rgba(255,255,255,0.55)',
-          maxWidth: '480px', margin: '0 auto 52px', lineHeight: 1.8,
+          fontSize: '16px', color: 'rgba(255,255,255,0.5)',
+          maxWidth: '460px', margin: '0 auto 50px', lineHeight: 1.85,
         }}>
-          Kasbah runs silently in your browser. Every time you open ChatGPT, Claude,
-          or Gemini — it&apos;s already watching. You work exactly the same way.
-          Except now you&apos;re protected.
+          Kasbah works silently in the background. Every time you open ChatGPT, Claude,
+          or Gemini — it&apos;s already there. You work exactly the same way.
+          Except now, sensitive information stays where it belongs.
         </p>
         <a
           href="https://chromewebstore.google.com/detail/kasbah-guard/XXXX"
@@ -599,32 +570,17 @@ export default function IncidentPage() {
         >
           Install Kasbah Guard — It&apos;s Free
         </a>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', marginTop: '20px' }}>
+        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.25)', marginTop: '20px' }}>
           Chrome · Firefox · Edge · Opera · Safari — no account required
         </p>
       </section>
 
       <style>{`
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(8px); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes popIn {
-          0% { transform: scale(0.5); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
       `}</style>
     </div>
   );
