@@ -59,8 +59,8 @@ paths = [
   "web-app/.next/",
   # Demo/webapp page — contains intentional example API payloads for UI demo
   "public/webapp.html",
-  # Incident page — contains obviously fake demo credentials for interactive UI
-  "web-app/src/app/incident/page.tsx",
+  # Experience page — contains obviously fake demo credentials for interactive UI
+  "web-app/src/app/experience/page.tsx",
   # Public detector.js — synced copy of extension detector with selfTest patterns
   "public/detector.js",
 ]
