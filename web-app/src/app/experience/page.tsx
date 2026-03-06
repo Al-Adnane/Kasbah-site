@@ -532,119 +532,300 @@ export default function IncidentPage() {
         </div>
       </section>
 
-      {/* ── ACT 4 (INTERLUDE): GO FURTHER ── */}
+      {/* ── PRO: THE BLIND SPOT ── */}
       <section style={{
-        padding: '100px 24px',
         borderTop: `1px solid ${DESIGN.border}`,
-        background: '#FAFAF9',
+        background: DESIGN.text,
+        padding: '100px 24px 80px',
+        color: '#fff',
       }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '72px' }}>
             <p style={{
               fontSize: '12px', fontWeight: 700, letterSpacing: '0.12em',
-              textTransform: 'uppercase', color: DESIGN.red, marginBottom: '16px',
-            }}>For teams & organisations</p>
+              textTransform: 'uppercase', color: DESIGN.red, marginBottom: '18px',
+            }}>Kasbah Pro</p>
             <h2 style={{
-              fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 900,
-              letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '14px',
+              fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 900,
+              letterSpacing: '-0.05em', lineHeight: 1.08,
+              margin: '0 auto 20px', maxWidth: '680px',
             }}>
-              The free extension protects you.<br />Kasbah Pro protects your whole team.
+              The free tier protects you.<br />
+              <span style={{ color: 'rgba(255,255,255,0.35)' }}>It can&apos;t protect everyone else.</span>
             </h2>
-            <p style={{ fontSize: '15px', color: DESIGN.muted, maxWidth: '520px', margin: '0 auto', lineHeight: 1.75 }}>
-              When one person on your team leaks a credential, everyone is exposed.
-              Kasbah Pro gives security teams visibility and control across the organisation.
+            <p style={{
+              fontSize: '16px', color: 'rgba(255,255,255,0.5)',
+              maxWidth: '500px', margin: '0 auto', lineHeight: 1.8,
+            }}>
+              One person on your team leaking a credential exposes everyone.
+              Pro gives you the tools to see it, stop it, and prove you did.
             </p>
           </div>
 
-          {/* Feature comparison */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '48px' }}>
-            {/* Free */}
-            <div style={{
-              background: '#fff', borderRadius: '16px',
-              border: `1px solid ${DESIGN.border}`,
-              padding: '28px', overflow: 'hidden',
-            }}>
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: DESIGN.muted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Free — Always</div>
-                <div style={{ fontSize: '28px', fontWeight: 900, letterSpacing: '-0.03em' }}>$0</div>
-              </div>
-              {[
-                'Browser extension for Chrome, Firefox, Edge, Safari',
-                'Real-time detection across ChatGPT, Claude, Gemini',
-                '50+ secret formats: API keys, SSNs, credit cards',
-                '100% local — nothing ever sent to servers',
-                'Works instantly, no account required',
-              ].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '12px', alignItems: 'flex-start' }}>
-                  <span style={{ color: '#22C55E', fontWeight: 700, fontSize: '14px', flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: '13px', color: DESIGN.muted, lineHeight: 1.5 }}>{f}</span>
-                </div>
-              ))}
-              <a href="https://chromewebstore.google.com/detail/kasbah-guard/idikjiajiomhekkkpfkhnpfepfgknokc"
-                style={{
-                  display: 'block', marginTop: '24px', padding: '11px 20px',
-                  background: '#F7F4F0', color: DESIGN.text,
-                  textDecoration: 'none', borderRadius: '10px',
-                  fontWeight: 700, fontSize: '14px', textAlign: 'center',
-                }}>
-                Install Free Extension
-              </a>
-            </div>
-
-            {/* Pro */}
-            <div style={{
-              background: DESIGN.text, borderRadius: '16px',
-              border: `1px solid ${DESIGN.text}`,
-              padding: '28px', overflow: 'hidden', position: 'relative',
-            }}>
-              <div style={{
-                position: 'absolute', top: '16px', right: '16px',
-                fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
-                textTransform: 'uppercase', color: DESIGN.red,
-                background: 'rgba(193,68,14,0.15)', padding: '3px 10px', borderRadius: '100px',
-              }}>Coming soon</div>
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Pro — Teams</div>
-                <div style={{ fontSize: '28px', fontWeight: 900, letterSpacing: '-0.03em', color: '#fff' }}>Early access</div>
-              </div>
-              {[
-                'Everything in Free, for every seat',
-                'Admin dashboard — see what each team member is exposing',
-                'Policy controls — block paste, warn, or log by data type',
-                'Audit log — full history of flagged events per user',
-                'Slack & email alerts when sensitive data is detected',
-                'SSO / SAML for enterprise identity providers',
-              ].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '12px', alignItems: 'flex-start' }}>
-                  <span style={{ color: DESIGN.red, fontWeight: 700, fontSize: '14px', flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{f}</span>
-                </div>
-              ))}
-              <a href="mailto:yo@bekasbah.com?subject=Kasbah Pro Early Access"
-                style={{
-                  display: 'block', marginTop: '24px', padding: '11px 20px',
-                  background: DESIGN.red, color: '#fff',
-                  textDecoration: 'none', borderRadius: '10px',
-                  fontWeight: 700, fontSize: '14px', textAlign: 'center',
-                }}>
-                Request Early Access
-              </a>
-            </div>
-          </div>
-
-          {/* Enterprise note */}
+          {/* ── HERO FEATURE 1: Custom Patterns ── */}
           <div style={{
-            textAlign: 'center', padding: '20px',
-            border: `1px solid ${DESIGN.border}`, borderRadius: '12px',
-            background: '#fff',
+            marginBottom: '32px', borderRadius: '20px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            overflow: 'hidden',
           }}>
-            <p style={{ fontSize: '13px', color: DESIGN.muted, margin: 0 }}>
-              Need a custom deployment, on-premise install, or compliance reporting?{' '}
-              <a href="mailto:yo@bekasbah.com" style={{ color: DESIGN.red, fontWeight: 600, textDecoration: 'none' }}>
-                Talk to us →
-              </a>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '340px' }}>
+              {/* Text side */}
+              <div style={{ padding: '48px 44px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  background: 'rgba(193,68,14,0.2)', border: '1px solid rgba(193,68,14,0.4)',
+                  borderRadius: '100px', padding: '4px 12px', marginBottom: '24px',
+                  width: 'fit-content',
+                }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: DESIGN.red, display: 'inline-block' }} />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: DESIGN.red, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Pro exclusive</span>
+                </div>
+                <h3 style={{
+                  fontSize: 'clamp(22px, 3vw, 32px)', fontWeight: 900,
+                  letterSpacing: '-0.04em', lineHeight: 1.15,
+                  color: '#fff', marginBottom: '16px',
+                }}>
+                  Teach Kasbah<br />your secrets.
+                </h3>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.8, marginBottom: '24px' }}>
+                  Generic tools catch generic secrets. Your company has its own:
+                  internal project codenames, proprietary model IDs, client account
+                  numbers, unreleased product names. Kasbah Pro learns what&apos;s
+                  sensitive <em>for you</em> — and catches it everywhere.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {[
+                    'Add custom regex patterns from your admin dashboard',
+                    'Works across every employee\'s browser instantly',
+                    'Update patterns in real-time — no reinstall needed',
+                  ].map((t, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <span style={{ color: DESIGN.red, fontWeight: 700, flexShrink: 0, marginTop: '1px' }}>→</span>
+                      <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{t}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Visual side: custom pattern editor mockup */}
+              <div style={{
+                background: 'rgba(0,0,0,0.3)',
+                borderLeft: '1px solid rgba(255,255,255,0.06)',
+                padding: '32px 28px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                fontFamily: 'monospace',
+              }}>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginBottom: '16px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Custom patterns — your workspace</div>
+                {[
+                  { label: 'Project codename', pattern: 'NOVA-[A-Z0-9]{6}', status: 'active' },
+                  { label: 'Client account ID', pattern: 'ACC-\\d{8}', status: 'active' },
+                  { label: 'Internal model ID', pattern: 'mdl_[a-z0-9]{12}', status: 'active' },
+                  { label: '+ Add pattern', pattern: '', status: 'add' },
+                ].map((row, i) => (
+                  <div key={i} style={{
+                    marginBottom: '8px', padding: '12px 14px',
+                    background: row.status === 'add' ? 'transparent' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${row.status === 'add' ? 'rgba(193,68,14,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                    borderRadius: '8px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    {row.status === 'add' ? (
+                      <span style={{ fontSize: '12px', color: DESIGN.red, fontWeight: 600 }}>+ Add custom pattern</span>
+                    ) : (
+                      <>
+                        <div>
+                          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '3px' }}>{row.label}</div>
+                          <div style={{ fontSize: '12px', color: '#fff' }}>{row.pattern}</div>
+                        </div>
+                        <div style={{
+                          width: '7px', height: '7px', borderRadius: '50%', background: '#22C55E', flexShrink: 0,
+                        }} />
+                      </>
+                    )}
+                  </div>
+                ))}
+                <div style={{
+                  marginTop: '12px', padding: '10px 14px',
+                  background: 'rgba(193,68,14,0.1)', border: '1px solid rgba(193,68,14,0.2)',
+                  borderRadius: '8px', fontSize: '12px', color: DESIGN.red,
+                }}>
+                  ⚠ &quot;NOVA-A8F3K2&quot; detected in ChatGPT — blocked
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── HERO FEATURE 2: Real-time Alerts ── */}
+          <div style={{
+            marginBottom: '48px', borderRadius: '20px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            overflow: 'hidden',
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '340px' }}>
+              {/* Visual side: Slack alert mockup */}
+              <div style={{
+                background: 'rgba(0,0,0,0.3)',
+                borderRight: '1px solid rgba(255,255,255,0.06)',
+                padding: '32px 28px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              }}>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginBottom: '16px', letterSpacing: '0.06em', textTransform: 'uppercase' }}># kasbah-alerts</div>
+
+                {/* Slack message mockup */}
+                {[
+                  {
+                    time: '09:14 AM', user: 'Kasbah Guard', avatar: '🛡',
+                    title: 'Critical — AWS credential detected',
+                    body: 'james.r@company.com almost sent an AWS Access Key to ChatGPT. Blocked before transmission.',
+                    tag: 'AWS Access Key · Critical',
+                    tagColor: DESIGN.red,
+                  },
+                  {
+                    time: '11:32 AM', user: 'Kasbah Guard', avatar: '🛡',
+                    title: 'Warning — Client SSN in prompt',
+                    body: 'sarah.m@company.com pasted what appears to be a Social Security Number into Claude.',
+                    tag: 'SSN · High',
+                    tagColor: '#EA580C',
+                  },
+                ].map((msg, i) => (
+                  <div key={i} style={{
+                    marginBottom: '12px', padding: '14px',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderLeft: `3px solid ${msg.tagColor}`,
+                    borderRadius: '8px',
+                  }}>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: '18px', flexShrink: 0 }}>{msg.avatar}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>{msg.user}</span>
+                          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{msg.time}</span>
+                        </div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: msg.tagColor, marginBottom: '4px' }}>{msg.title}</div>
+                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{msg.body}</div>
+                        <div style={{
+                          marginTop: '8px', display: 'inline-block',
+                          fontSize: '10px', fontWeight: 700,
+                          color: msg.tagColor, background: `${msg.tagColor}20`,
+                          padding: '2px 8px', borderRadius: '4px',
+                        }}>{msg.tag}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Text side */}
+              <div style={{ padding: '48px 44px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  background: 'rgba(193,68,14,0.2)', border: '1px solid rgba(193,68,14,0.4)',
+                  borderRadius: '100px', padding: '4px 12px', marginBottom: '24px',
+                  width: 'fit-content',
+                }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: DESIGN.red, display: 'inline-block' }} />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: DESIGN.red, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Pro exclusive</span>
+                </div>
+                <h3 style={{
+                  fontSize: 'clamp(22px, 3vw, 32px)', fontWeight: 900,
+                  letterSpacing: '-0.04em', lineHeight: 1.15,
+                  color: '#fff', marginBottom: '16px',
+                }}>
+                  Know before<br />it becomes an incident.
+                </h3>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.8, marginBottom: '24px' }}>
+                  The free extension warns the person at the keyboard.
+                  Pro alerts <em>you</em> — immediately, in Slack or email —
+                  the moment anyone on your team nearly exposes something critical.
+                  You don&apos;t find out in a post-mortem. You find out in real time.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {[
+                    'Instant Slack alerts with user, data type & severity',
+                    'Email digest — daily or per-event, your choice',
+                    'PagerDuty & webhook support for your existing stack',
+                  ].map((t, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <span style={{ color: DESIGN.red, fontWeight: 700, flexShrink: 0, marginTop: '1px' }}>→</span>
+                      <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{t}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Other Pro features — compact row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '48px' }}>
+            {[
+              {
+                icon: '👁',
+                title: 'Team visibility',
+                desc: 'See every near-miss across your organisation in a single real-time dashboard.',
+              },
+              {
+                icon: '🚫',
+                title: 'Enforce, don\'t just warn',
+                desc: 'Set policy to hard-block paste — not just alert — for critical data types.',
+              },
+              {
+                icon: '📋',
+                title: 'Compliance evidence',
+                desc: 'One-click SOC 2, HIPAA, and GDPR audit reports. Prove it to anyone.',
+              },
+            ].map((f, i) => (
+              <div key={i} style={{
+                padding: '24px', borderRadius: '14px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+              }}>
+                <div style={{ fontSize: '24px', marginBottom: '12px' }}>{f.icon}</div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>{f.title}</div>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{f.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div style={{
+            textAlign: 'center', padding: '48px',
+            background: 'rgba(193,68,14,0.08)',
+            border: '1px solid rgba(193,68,14,0.2)',
+            borderRadius: '20px',
+          }}>
+            <p style={{ fontSize: '13px', fontWeight: 700, color: DESIGN.red, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
+              Limited early access
+            </p>
+            <h3 style={{
+              fontSize: 'clamp(22px, 3vw, 34px)', fontWeight: 900,
+              letterSpacing: '-0.04em', color: '#fff', marginBottom: '12px', lineHeight: 1.2,
+            }}>
+              One leak from your team costs more<br />than a year of Pro.
+            </h3>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', marginBottom: '32px', lineHeight: 1.7 }}>
+              We&apos;re onboarding early teams now. No pricing yet — tell us about your team and we&apos;ll be in touch.
+            </p>
+            <a
+              href="mailto:yo@bekasbah.com?subject=Kasbah Pro — Early Access Request"
+              style={{
+                display: 'inline-block', padding: '14px 40px',
+                background: DESIGN.red, color: '#fff',
+                textDecoration: 'none', borderRadius: '12px',
+                fontWeight: 800, fontSize: '15px',
+              }}
+            >
+              Request Early Access
+            </a>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)', marginTop: '16px' }}>
+              Or email us directly at yo@bekasbah.com
             </p>
           </div>
+
         </div>
       </section>
 
