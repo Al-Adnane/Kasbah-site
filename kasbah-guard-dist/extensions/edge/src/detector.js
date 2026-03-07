@@ -179,33 +179,9 @@ var performanceMonitor = {
 };
 
 // ══════════════════════════════════════════════════════════════
-// E3: reportDetectionLatency — Fire-and-forget sampled telemetry
-// Posts latency + risk to api.bekasbah.com at 1% sample rate.
-// Never throws, never blocks detection.
+// REMOVED: reportDetectionLatency telemetry function
+// All detection now runs 100% locally with no external calls
 // ══════════════════════════════════════════════════════════════
-function reportDetectionLatency(latency_ms, risk) {
-  try {
-    if (latency_ms <= 0) return;
-    if (Math.random() >= 0.01) return; // 1% sampling
-    var payload = JSON.stringify({
-      latency_ms: latency_ms,
-      risk: risk,
-      version: '1.0.0',
-      timestamp: Date.now(),
-      source: 'detector'
-    });
-    if (typeof fetch === 'function') {
-      fetch('https://api.bekasbah.com/api/telemetry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload,
-        keepalive: true
-      }).catch(function() {}); // silent fail
-    }
-  } catch (e) {
-    // Silent fail — never break detection
-  }
-}
 
 // ══════════════════════════════════════════════════════════════
 // SESSION SCORE HISTORY — for SII sessionHealth computation
@@ -228,106 +204,9 @@ function sessionScoreStdDev() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// TELEMETRY MANAGER v1.0.0 — PRIVACY-FIRST LEARNING
-// Collects anonymized metrics for model improvement (100% learning)
-// Sends: latency stats, pattern frequency, detection counts
-// Privacy: No secrets, no user data, anonymized device ID
+// REMOVED: telemetryManager - All processing is now 100% local
+// No data leaves the user's device
 // ══════════════════════════════════════════════════════════════
-var telemetryManager = {
-  startTime: Date.now(),
-  detectionsCount: 0,
-  blockedCount: 0,
-  allowedCount: 0,
-  patternFrequency: {},
-
-  recordDetection: function(result) {
-    this.detectionsCount++;
-    var decision = result.decision || 'ALLOW';
-
-    if (decision === 'DENY') {
-      this.blockedCount++;
-    } else {
-      this.allowedCount++;
-    }
-
-    // Track pattern frequency (aggregated, no content)
-    if (result.tiers && result.tiers.length > 0) {
-      for (var i = 0; i < result.tiers.length; i++) {
-        var pattern = result.tiers[i].name || 'unknown';
-        this.patternFrequency[pattern] = (this.patternFrequency[pattern] || 0) + 1;
-      }
-    }
-  },
-
-  getMetrics: function() {
-    var uptimeMs = Date.now() - this.startTime;
-    var uptimeMins = Math.round(uptimeMs / 60000);
-
-    // Get latency stats
-    var latencyStats = performanceMonitor.getMetrics();
-
-    // Get pattern stats (confidence, etc.)
-    var patternStats_copy = {};
-    for (var key in patternStats) {
-      patternStats_copy[key] = patternStats[key];
-    }
-
-    return {
-      detections_count: this.detectionsCount,
-      blocked_count: this.blockedCount,
-      allowed_count: this.allowedCount,
-      detections_by_pattern: this.patternFrequency,
-      latency_ms: latencyStats,
-      pattern_stats: patternStats_copy,
-      uptime_minutes: uptimeMins,
-      extension_version: '1.1.1',
-      engine_version: PATTERN_VERSION,
-      browser: detectPlatform(),
-      os: typeof navigator !== 'undefined' ? (navigator.platform || 'unknown') : 'unknown',
-      timestamp: new Date().toISOString()
-    };
-  },
-
-  sendTelemetry: function() {
-    var metrics = this.getMetrics();
-
-    // Send to background.js via message
-    try {
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({
-          type: 'TELEMETRY',
-          data: metrics
-        }, function() {
-          // Silent success
-        });
-      }
-    } catch (e) {
-      // Silent fail - don't break extension
-    }
-  },
-
-  start: function() {
-    var self = this;
-    // Send telemetry every 5 minutes
-    setInterval(function() {
-      self.sendTelemetry();
-    }, 5 * 60 * 1000);
-
-    // Also send on page unload
-    if (typeof window !== 'undefined') {
-      window.addEventListener('beforeunload', function() {
-        self.sendTelemetry();
-      });
-    }
-  }
-};
-
-// Start telemetry manager
-if (typeof window !== 'undefined') {
-  window.addEventListener('load', function() {
-    telemetryManager.start();
-  });
-}
 
 // ══════════════════════════════════════════════════════════════
 // MOAT V1: Threat Fingerprinting for Federated Intelligence
@@ -381,74 +260,10 @@ function getAnonymizedDeviceId() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// MOAT V1 Phase 2: Consensus Scoring (opt-in, disabled by default)
-//
-// When enabled (threatIntelligence: true in storage), downloads
-// aggregate threat pattern multipliers from the Kasbah network.
-// This is a one-way READ — no user content, no identifiers, no
-// paste data is ever sent. Only risk multipliers are received.
-//
-// Disabled by default to honour "100% local" default behaviour.
-// Users can enable via Settings → "Network threat intelligence".
+// REMOVED: MOAT V1 Phase 2 Consensus Scoring (federated threat intelligence)
+// This feature has been removed to ensure 100% local operation.
+// All threat detection now runs entirely on the user's device.
 // ══════════════════════════════════════════════════════════════
-var threatConsensusCache = null;
-var consensusCacheExpiry = 0;
-
-async function loadThreatsConsensus() {
-  // Gate: enabled by default, opt-out via Settings → "Network threat intelligence"
-  var enabled = await new Promise((resolve) => {
-    chrome.storage.local.get(['threatIntelligence'], (d) => resolve(d.threatIntelligence !== false));
-  });
-  if (!enabled) return null;
-
-  var now = Date.now();
-
-  // Return cached consensus if still valid (5-minute TTL)
-  if (threatConsensusCache && now < consensusCacheExpiry) {
-    return threatConsensusCache;
-  }
-
-  try {
-    // Fetch consensus from API — READ ONLY, no user data sent
-    // Item C: add Bearer auth header so server can rate-limit per org
-    var orgToken = await new Promise((resolve) => {
-      chrome.storage.local.get(['orgToken'], (d) => resolve(d.orgToken || ''));
-    });
-    var consensusHeaders = { 'Content-Type': 'application/json' };
-    if (orgToken) consensusHeaders['Authorization'] = 'Bearer ' + orgToken;
-    var response = await fetch('https://api.bekasbah.com/api/v2/threats/consensus', {
-      method: 'GET',
-      headers: consensusHeaders
-    });
-
-    if (response.ok) {
-      var data = await response.json();
-      if (data.ok && data.consensus_threats) {
-        threatConsensusCache = data.consensus_threats;
-        consensusCacheExpiry = now + 300000;  // 5-min cache TTL
-        return threatConsensusCache;
-      }
-    }
-  } catch (e) {
-    console.log('[Moat V1 Phase 2] Consensus fetch failed (non-fatal):', e.message);
-  }
-
-  return null;
-}
-
-function getConsensusMultiplier(pattern) {
-  if (!threatConsensusCache || !pattern) return 1.0;
-
-  // Find pattern in consensus data
-  for (var i = 0; i < threatConsensusCache.length; i++) {
-    var consensus = threatConsensusCache[i];
-    if (consensus.pattern_type === pattern) {
-      return consensus.risk_multiplier || 1.0;
-    }
-  }
-
-  return 1.0;
-}
 
 // ══════════════════════════════════════════════════════════════
 // Luhn Checksum Validation (credit card verification)
@@ -2139,7 +1954,7 @@ function classify(text) {
   var perfEnd = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
   var latency_ms = perfEnd - perfStart;
   performanceMonitor.recordLatency(latency_ms);
-  reportDetectionLatency(latency_ms, score); // E3: sampled fire-and-forget telemetry
+  // E3 telemetry REMOVED: reportDetectionLatency was deleted in v1.0.0 — all local detection, no telemetry calls
   recordSessionScore(score); // for SII sessionHealth stdDev
 
   // ── MOAT V1: Create threat fingerprint for federated intelligence ──
