@@ -20,7 +20,7 @@ const DETECTION_PATTERNS = [
   { name: 'GitHub Token', regex: /ghp_[A-Za-z0-9_]{36,}/, risk: 'High', plain: 'Access token' },
   { name: 'Private Key', regex: /-----BEGIN (?:RSA|EC|OPENSSH) PRIVATE KEY-----/, risk: 'Critical', plain: 'Encryption key' },
   { name: 'Database URL', regex: /(?:mongodb|postgres|mysql):\/\/[^\s]+/, risk: 'High', plain: 'Database access' },
-  { name: 'Email + personal context', regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,}\b.*(?:ssn|social|dob|birth|salary|income)/is, risk: 'High', plain: 'Personal record' },
+  { name: 'Email + personal context', regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,}\b.*(?:ssn|social|dob|birth|salary|income)/i, risk: 'High', plain: 'Personal record' },
 ];
 
 // What gets typed in Act 1 — relatable to anyone who uses AI
@@ -808,19 +808,33 @@ export default function IncidentPage() {
               One leak from your team costs more<br />than a year of Pro.
             </h3>
             <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', marginBottom: '32px', lineHeight: 1.7 }}>
-              We&apos;re onboarding early teams now. No pricing yet — tell us about your team and we&apos;ll be in touch.
+              See our plans for individuals, professionals, and teams.
             </p>
-            <a
-              href="mailto:yo@bekasbah.com?subject=Kasbah Pro — Early Access Request"
-              style={{
-                display: 'inline-block', padding: '14px 40px',
-                background: DESIGN.red, color: '#fff',
-                textDecoration: 'none', borderRadius: '12px',
-                fontWeight: 800, fontSize: '15px',
-              }}
-            >
-              Request Early Access
-            </a>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link
+                href="/pricing"
+                style={{
+                  display: 'inline-block', padding: '14px 40px',
+                  background: DESIGN.red, color: '#fff',
+                  textDecoration: 'none', borderRadius: '12px',
+                  fontWeight: 800, fontSize: '15px',
+                }}
+              >
+                View Plans &amp; Pricing
+              </Link>
+              <a
+                href="mailto:yo@bekasbah.com?subject=Kasbah Business — Early Access"
+                style={{
+                  display: 'inline-block', padding: '14px 40px',
+                  background: 'rgba(255,255,255,0.08)', color: '#fff',
+                  textDecoration: 'none', borderRadius: '12px',
+                  fontWeight: 800, fontSize: '15px',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                }}
+              >
+                Talk to Sales
+              </a>
+            </div>
             <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)', marginTop: '16px' }}>
               Or email us directly at yo@bekasbah.com
             </p>

@@ -17,7 +17,7 @@ let lastReport = 0;
 export async function initMonitoring() {
   // Check if user opted in
   const config = await chrome.storage.local.get(['telemetryEnabled']);
-  telemetryEnabled = config.telemetryEnabled !== false; // Default true
+  telemetryEnabled = config.telemetryEnabled === true; // Default false — opt-in required
   
   // Start performance observer
   startPerformanceObserver();

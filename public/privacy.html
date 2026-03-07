@@ -86,7 +86,7 @@
 
   <h2>In plain English</h2>
   <p>When you're about to send something to an AI tool, Kasbah checks it locally — like a spell checker that runs on your device, not in the cloud. It never uploads your text. <strong>No account or login is required.</strong> Install it and it works immediately, entirely offline.</p>
-  <p>The extension contacts our API only for two purposes: anonymous error reporting (if the extension crashes) and anonymous usage telemetry — both stripped of any content or personal data before transmission. See details below.</p>
+  <p>The extension may contact our API in up to four situations — all stripped of any content or personal data. Anonymous usage telemetry is <strong>off by default</strong> and requires explicit opt-in in Settings. See details below.</p>
 
   <h2>What we never collect</h2>
   <ul class="never-list">
@@ -102,8 +102,10 @@
 
   <h2>What we do collect</h2>
   <ul class="do-list">
-    <li><strong>Anonymous error reports</strong> — if the extension encounters an unexpected error, a stripped error message (URLs and secrets removed) is sent to <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">api.bekasbah.com/api/sentry</code>. No content, no identity, no URLs from your browsing. Error type, extension version, and timestamp only.</li>
-    <li><strong>Anonymous usage telemetry</strong> — aggregate feature usage metrics (e.g., how many interceptions occurred) sent to <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">api.bekasbah.com/api/telemetry</code>. Never includes content or identity.</li>
+    <li><strong>Anonymous error reports</strong> — if the extension encounters an unexpected error, a stripped error message (URLs and secrets removed) is sent to <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">api.bekasbah.com/api/sentry</code>. No content, no identity, no URLs from your browsing. Error type, extension version, and timestamp only. <em>Always on (crashes only).</em></li>
+    <li><strong>Anonymous usage telemetry (opt-in, off by default)</strong> — if you enable it in Settings, aggregate performance metrics are sent to <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">api.bekasbah.com/api/telemetry</code>. Payload: detection risk score (number), decision (allow/warn/block), pattern type (e.g. "AWS key"), latency in ms, extension version, timestamp. Never includes your actual content, secrets, or any identifying information. Sampled at 1% of detection events.</li>
+    <li><strong>False positive reports (user-initiated only)</strong> — if you manually click "Report false positive" in the popup, the pattern type and any optional context you provide are sent to <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">api.bekasbah.com/api/false-positives</code>. This is never automatic — only when you explicitly choose to submit. Payload: pattern type, your optional note, browser name, extension version, timestamp.</li>
+    <li><strong>Module availability check</strong> — on startup, the extension checks <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px">api.bekasbah.com/api/zchat1/status</code> to determine which advanced analysis modules are available. This is a GET request with no user data transmitted.</li>
     <li>Nothing else. No account, no email, no password.</li>
   </ul>
 

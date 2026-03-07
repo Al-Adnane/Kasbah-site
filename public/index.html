@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kasbah Guard — Stop Data Leaks to AI</title>
-  <meta name="description" content="Browser extension that catches passwords, API keys, credit cards, and client data before they reach ChatGPT or any AI tool. 100% local. Zero servers.">
+  <meta name="description" content="Browser extension that catches passwords, API keys, credit cards, and client data before they reach ChatGPT or any AI tool. All detection runs locally in your browser.">
   <meta property="og:title" content="Kasbah Guard — One paste away from a leak">
-  <meta property="og:description" content="Kasbah catches API keys, credentials, credit cards, and client data before they reach any AI tool — entirely on your device. Nothing sent to us.">
+  <meta property="og:description" content="Kasbah catches API keys, credentials, credit cards, and client data before they reach any AI tool. Detection runs in your browser — your content never reaches our servers.">
   <meta property="og:image" content="https://bekasbah.com/og-v2.png">
   <meta property="og:url" content="https://bekasbah.com/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Kasbah Guard — One paste away from a leak">
-  <meta name="twitter:description" content="Kasbah catches API keys, credentials, credit cards, and client data before they reach any AI tool — entirely on your device. Nothing sent to us.">
+  <meta name="twitter:description" content="Kasbah catches API keys, credentials, credit cards, and client data before they reach any AI tool. Detection runs in your browser — your content never reaches our servers.">
   <meta name="twitter:image" content="https://bekasbah.com/og-v2.png">
   <link rel="canonical" href="https://bekasbah.com/"/>
   <link rel="icon" href="/logo-200.png"/>
@@ -24,7 +24,7 @@
     "name": "Kasbah Guard",
     "applicationCategory": "SecurityApplication",
     "operatingSystem": "Chrome, Firefox, Edge, Safari, macOS",
-    "description": "Browser extension that catches passwords, API keys, credit cards, and client data before they reach ChatGPT or any AI tool. 100% local. Zero servers.",
+    "description": "Browser extension that catches passwords, API keys, credit cards, and client data before they reach ChatGPT or any AI tool. All detection runs locally in your browser.",
     "url": "https://bekasbah.com",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "aggregateRating": { "@type": "AggregateRating", "ratingValue": "5", "ratingCount": "1" }
@@ -334,6 +334,7 @@
     <a href="/how-it-works">How it works</a>
     <a href="/detection">Detection</a>
     <a href="https://app.bekasbah.com/experience">Experience</a>
+    <a href="https://app.bekasbah.com/pricing">Pricing</a>
     <a href="/benchmark.html">Benchmark</a>
     <a href="/privacy">Privacy</a>
     <a id="nav-cta" class="n-cta" href="https://chromewebstore.google.com/detail/kasbah-guard/idikjiajiomhekkkpfkhnpfepfgknokc" target="_blank" rel="noopener">
@@ -349,7 +350,7 @@
     <h1>One paste away<br>from a <em>leak.</em></h1>
 
     <p class="hero-sub">
-      Kasbah catches API keys, credentials, credit cards, and client data before they reach any AI tool — entirely on your device. Nothing sent to us.
+      Kasbah catches API keys, credentials, credit cards, and client data before they reach any AI tool. Detection runs entirely in your browser — your content never reaches our servers.
     </p>
 
     <div class="install-wrap">
@@ -439,8 +440,8 @@
 <!-- TRUST -->
 <div class="trust">
   <div class="trust-inner">
-    <div class="t-item"><div class="t-val">100<span class="r">%</span></div><div class="t-lbl">local processing</div></div>
-    <div class="t-item"><div class="t-val"><span class="r">0</span></div><div class="t-lbl">bytes sent to our servers</div></div>
+    <div class="t-item"><div class="t-val">100<span class="r">%</span></div><div class="t-lbl">local detection</div></div>
+    <div class="t-item"><div class="t-val"><span class="r">0</span></div><div class="t-lbl">content sent to servers</div></div>
     <div class="t-item"><div class="t-val">&lt;<span class="r">10</span>ms</div><div class="t-lbl">detection speed</div></div>
     <div class="t-item"><div class="t-val"><span class="r">91</span>/100</div><div class="t-lbl">accuracy <a href="/detection" style="color:var(--red);font-size:11px;font-weight:700;text-decoration:none">→</a></div></div>
   </div>
@@ -513,6 +514,32 @@
   </form>
 </section>
 
+<!-- HOW WE STAY TRUSTWORTHY -->
+<section style="background:#F7F4F0;border-top:1px solid #E8E2DB;padding:72px 40px">
+  <div style="max-width:860px;margin:0 auto">
+    <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#C1440E;margin:0 0 16px">Transparency</p>
+    <h2 style="font-size:28px;font-weight:800;color:#0F172A;margin:0 0 40px;line-height:1.25">How we stay trustworthy</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px">
+      <div>
+        <p style="font-weight:700;color:#0F172A;margin:0 0 8px">The extension is free. Always.</p>
+        <p style="color:#64748B;font-size:14px;line-height:1.6;margin:0">We don't charge for the browser extension. We make money from professional tools — CLI, VS Code, SDK, API — and enterprise plans with team management and compliance features. The extension's business model is to be the thing you trust, so you upgrade when you need more.</p>
+      </div>
+      <div>
+        <p style="font-weight:700;color:#0F172A;margin:0 0 8px">We don't sell data. Ever.</p>
+        <p style="color:#64748B;font-size:14px;line-height:1.6;margin:0">No behavioral profiles. No ad targeting. No brokering. Your content never reaches our servers — detection runs locally in your browser. The only thing we receive (if you opt in) is anonymous performance metrics: detection speed and risk scores, never your actual text.</p>
+      </div>
+      <div>
+        <p style="font-weight:700;color:#0F172A;margin:0 0 8px">No crypto. No blockchain. No gimmicks.</p>
+        <p style="color:#64748B;font-size:14px;line-height:1.6;margin:0">Kasbah is a detection engine. It uses regex, entropy scoring, and ML classifiers — proven, auditable techniques. That's it. We removed blockchain integration that was added during early development because it added no value and raised legitimate trust concerns.</p>
+      </div>
+      <div>
+        <p style="font-weight:700;color:#0F172A;margin:0 0 8px">Telemetry is opt-in and off by default.</p>
+        <p style="color:#64748B;font-size:14px;line-height:1.6;margin:0">Anonymous usage metrics are disabled until you explicitly enable them in the extension Settings. When enabled, we receive detection speed and risk score numbers — never your content. You can toggle this at any time. Full details in our <a href="/privacy" style="color:#C1440E">privacy policy</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-in">
@@ -521,6 +548,7 @@
       <a href="/how-it-works">How it works</a>
       <a href="/detection">Detection</a>
       <a href="https://app.bekasbah.com/experience">Experience</a>
+      <a href="https://app.bekasbah.com/pricing">Pricing</a>
       <a href="/benchmark.html">Benchmark</a>
       <a href="/accessibility/">Accessibility</a>
       <a href="/privacy">Privacy</a>
