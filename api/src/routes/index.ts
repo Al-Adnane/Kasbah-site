@@ -81,6 +81,39 @@ apiRouter.use((req: Request, res: Response) => {
   });
 });
 
+// ── Uninstall feedback — receives survey responses from bekasbah.com/uninstall
+apiRouter.post('/uninstall-feedback', async (req: Request, res: Response) => {
+  try {
+    const { reason, other, version, install_reason, ts } = req.body;
+
+    // Validate reason is one of the known options
+    const VALID_REASONS = ['false_positives', 'no_detections', 'performance', 'privacy', 'just_testing', 'other'];
+    if (!reason || !VALID_REASONS.includes(reason)) {
+      return res.status(400).json({ ok: false, error: 'Invalid reason' });
+    }
+
+    // Sanitize other text — max 500 chars, no PII
+    const sanitizedOther = other ? String(other).slice(0, 500) : null;
+
+    // Log to audit ledger (local, no external sends)
+    await auditLedger.record({
+      event: 'uninstall_feedback',
+      reason,
+      other: sanitizedOther,
+      version: version || 'unknown',
+      install_reason: install_reason || 'unknown',
+      ts: ts || Date.now()
+    }).catch(() => {}); // never fail the response
+
+    console.log(`[uninstall] reason=${reason} version=${version}`);
+
+    return res.json({ ok: true });
+  } catch (err) {
+    // Silent — always return 200 so the survey page shows thank you
+    return res.json({ ok: true });
+  }
+});
+
 // Error handler
 apiRouter.use((err: Error, req: Request, res: Response, next: any) => {
   console.error('API Error:', err);

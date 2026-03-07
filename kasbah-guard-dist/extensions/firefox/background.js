@@ -1,11 +1,10 @@
 // Kasbah Guard - Background Service Worker v2.0.0
-// 100% BROWSER INDEPENDENT — NO Guard service, NO server calls
+// 100% BROWSER INDEPENDENT — All processing runs locally, no server calls
 try { importScripts('src/zk_proof_verifier.js'); } catch (e) { console.warn('[background] zk_proof_verifier not loaded:', e); }
 try { importScripts('src/zk_proof_controller.js'); } catch (e) { console.warn('[background] zk_proof_controller not loaded:', e); }
 let badgeFlashTimeout = null;
 
-// ── Local Audit Ledger (Gap 1.3) ───────────────────────────────────────────
-// Hash-chained decision log stored entirely in chrome.storage.local.
+// ── Local Audit Ledger — Hash-chained decision log stored entirely in chrome.storage.local
 // Each entry: { id, ts, event, data, prevHash, hash }
 // SHA-256(prevHash + id + ts + event + JSON(data)) — tamper-evident, offline.
 const _AUDIT_KEY = 'kasbah_audit_ledger';
@@ -33,59 +32,20 @@ function appendAuditEntry(event, data) {
   });
 }
 
-// ── Sentry Error Tracking (v2.0.0) ────────────────────────────────────────
-// Privacy-first error tracking: no URLs, no user data, no secrets
-const SENTRY_ENDPOINT = 'https://api.bekasbah.com/api/sentry';
-const SENTRY_ENABLED = typeof fetch !== 'undefined';
+// ── REMOVED: Sentry Error Tracking
+// All error logging is now local-only for privacy
+// No data is sent to external servers
+// ─────────────────────────────────────────────────────────────────────────────
 
-function sendSentryError(type, message, stack, context = {}) {
-  if (!SENTRY_ENABLED) return;
-
-  // Privacy-first: strip sensitive data
-  const sanitizedMessage = message.toString()
-    .replace(/http[s]?:\/\/[^\s]+/g, '[URL]')
-    .replace(/\d{3}-\d{2}-\d{4}/g, '[SSN]')
-    .replace(/4[0-9]{12}(?:[0-9]{3})?/g, '[CC]');
-
-  const event = {
-    type,
-    message: sanitizedMessage,
-    stack: stack ? stack.toString().split('\n').slice(0, 5).join('\n') : '',
-    context: {
-      extensionVersion: '2.0.0',
-      browser: 'chrome',
-      timestamp: new Date().toISOString(),
-      ...context
-    }
-  };
-
-  fetch(SENTRY_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(event)
-  }).catch(() => {}); // Silent fail - don't break extension on network error
-}
-
-// Global error handler
-self.addEventListener('error', (event) => {
-  sendSentryError('extension_error', event.message, event.filename + ':' + event.lineno, {
-    errorType: 'uncaughtError'
-  });
+chrome.runtime.onInstalled.addListener((details) => {
+  chrome.runtime.setUninstallURL(
+    'https://bekasbah.com/uninstall?v=' +
+    chrome.runtime.getManifest().version +
+    '&reason=' + (details.reason || 'unknown')
+  );
 });
-
-// Promise rejection handler
-self.addEventListener('unhandledrejection', (event) => {
-  sendSentryError('unhandled_rejection', event.reason, '', {
-    errorType: 'rejectionError'
-  });
-});
-
-
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[Kasbah Guard] Extension v2.0.0 installed — 6-verb interception across 30+ AI platforms');
-  chrome.storage.local.set({ guardEnabled: true, notifications: true, version: '2.0.0' });
-});
 
 // ── Suspend / Startup handlers (adversarial race fix) ──────────────────────
 // Saves pending state before service worker suspends so nothing is lost

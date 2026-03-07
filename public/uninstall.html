@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kasbah Guard — Before you go</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #FEFCFA;
+      --text:   #0F172A;
+      --red:    #C1440E;
+      --muted:  #64748B;
+      --border: #E8E2DB;
+      --card:   #FFFFFF;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .wrap {
+      max-width: 520px;
+      width: 100%;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: var(--red);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .logo-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .sub {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .question {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--red);
+      margin-bottom: 14px;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: var(--card);
+    }
+
+    .option:hover {
+      border-color: var(--red);
+      background: rgba(193, 68, 14, 0.04);
+    }
+
+    .option input[type="radio"] {
+      accent-color: var(--red);
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .option input[type="radio"]:checked + .option-label {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    .option.selected {
+      border-color: var(--red);
+      background: rgba(193, 68, 14, 0.06);
+    }
+
+    .option-label {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .other-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--card);
+      resize: none;
+      margin-bottom: 24px;
+      display: none;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .other-input:focus {
+      border-color: var(--red);
+    }
+
+    .other-input.visible {
+      display: block;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      letter-spacing: -0.01em;
+    }
+
+    .submit-btn:hover { opacity: 0.88; }
+    .submit-btn:disabled { opacity: 0.4; cursor: default; }
+
+    .note {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 16px;
+      line-height: 1.5;
+    }
+
+    /* Thank you state */
+    .thankyou {
+      display: none;
+      text-align: center;
+      padding: 40px 0;
+    }
+
+    .thankyou .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .thankyou h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .thankyou p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .reinstall-link {
+      display: inline-block;
+      padding: 12px 24px;
+      border: 1.5px solid var(--red);
+      border-radius: 8px;
+      color: var(--red);
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .reinstall-link:hover {
+      background: rgba(193, 68, 14, 0.06);
+    }
+
+    .form-wrap { transition: opacity 0.2s; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">
+      <div class="logo-mark">🛡️</div>
+      <span class="logo-name">Kasbah Guard</span>
+    </div>
+
+    <div class="form-wrap" id="formWrap">
+      <h1>Sorry to see you go.</h1>
+      <p class="sub">One question — takes 10 seconds. Your answer directly shapes what we fix next.</p>
+
+      <p class="question">Why did you uninstall?</p>
+
+      <div class="options" id="options">
+        <label class="option" onclick="select(this)">
+          <input type="radio" name="reason" value="false_positives">
+          <span class="option-label">Too many false positives — it blocked things it shouldn't have</span>
+        </label>
+        <label class="option" onclick="select(this)">
+          <input type="radio" name="reason" value="no_detections">
+          <span class="option-label">Nothing happened — I never saw it do anything</span>
+        </label>
+        <label class="option" onclick="select(this)">
+          <input type="radio" name="reason" value="performance">
+          <span class="option-label">It slowed down my browser</span>
+        </label>
+        <label class="option" onclick="select(this)">
+          <input type="radio" name="reason" value="privacy">
+          <span class="option-label">Privacy concerns about what it accesses</span>
+        </label>
+        <label class="option" onclick="select(this)">
+          <input type="radio" name="reason" value="just_testing">
+          <span class="option-label">I was just testing it out</span>
+        </label>
+        <label class="option" onclick="select(this)" id="otherOption">
+          <input type="radio" name="reason" value="other">
+          <span class="option-label">Something else</span>
+        </label>
+      </div>
+
+      <textarea
+        class="other-input"
+        id="otherText"
+        placeholder="Tell us what went wrong..."
+        rows="3"
+      ></textarea>
+
+      <button class="submit-btn" id="submitBtn" disabled onclick="submit()">
+        Send feedback
+      </button>
+      <p class="note">Anonymous · No account needed · Takes 10 seconds</p>
+    </div>
+
+    <div class="thankyou" id="thankyou">
+      <div class="icon">🙏</div>
+      <h2>Thank you — that genuinely helps.</h2>
+      <p>We read every response. If you ever want to give it another shot, we'll have improved.</p>
+      <a class="reinstall-link" href="https://bekasbah.com">Back to bekasbah.com</a>
+    </div>
+  </div>
+
+  <script>
+    // Read URL params passed by the extension
+    const params = new URLSearchParams(location.search);
+    const extVersion = params.get('v') || 'unknown';
+    const installReason = params.get('reason') || 'unknown';
+
+    function select(label) {
+      document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+      label.classList.add('selected');
+
+      const val = label.querySelector('input').value;
+      const otherText = document.getElementById('otherText');
+      if (val === 'other') {
+        otherText.classList.add('visible');
+        otherText.focus();
+      } else {
+        otherText.classList.remove('visible');
+      }
+
+      document.getElementById('submitBtn').disabled = false;
+    }
+
+    async function submit() {
+      const selected = document.querySelector('input[name="reason"]:checked');
+      if (!selected) return;
+
+      const reason = selected.value;
+      const other = reason === 'other' ? document.getElementById('otherText').value.trim() : '';
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      try {
+        await fetch('https://api.bekasbah.com/api/uninstall-feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reason,
+            other: other || null,
+            version: extVersion,
+            install_reason: installReason,
+            ts: Date.now()
+          })
+        });
+      } catch (_) {
+        // Silent fail — still show thank you
+      }
+
+      document.getElementById('formWrap').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('formWrap').style.display = 'none';
+        document.getElementById('thankyou').style.display = 'block';
+      }, 200);
+    }
+  </script>
+</body>
+</html>

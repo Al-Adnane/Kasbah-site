@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script defer data-domain="bekasbah.com" src="https://plausible.io/js/script.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How Kasbah Makes Money — Business Model</title>
+  <meta name="description" content="Kasbah Guard's business model explained. Free browser extension, paid developer tools, enterprise plans. No data selling, no ads, no tracking.">
+  <link rel="icon" href="/logo-200.png"/>
+  <style>
+    :root{--kasbah:#C1440E;--dark:#1a1a2e;--light:#FEFCFA;--gray:#6B7280;--border:#e5e7eb;--white:#ffffff}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--dark);background:var(--white);line-height:1.7}
+    .container{max-width:760px;margin:0 auto;padding:48px 24px 80px}
+    .back{display:inline-block;margin-bottom:24px;font-size:13px;font-weight:700;color:var(--gray);text-decoration:none}
+    .back:hover{color:var(--dark)}
+    h1{font-size:36px;font-weight:900;margin-bottom:8px}
+    .subtitle{font-size:18px;color:var(--gray);margin-bottom:40px}
+    h2{font-size:22px;font-weight:800;margin-top:40px;margin-bottom:12px;color:var(--dark)}
+    h3{font-size:17px;font-weight:700;margin-top:24px;margin-bottom:8px}
+    p,ul{font-size:15px;color:#3f3f46;margin-bottom:14px}
+    ul{padding-left:20px}
+    li{margin-bottom:6px}
+    a{color:var(--kasbah)}
+    .card{background:var(--light);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+    .card h3{margin-top:0;color:var(--kasbah)}
+    .highlight{border-left:4px solid var(--kasbah);padding-left:20px;margin:24px 0}
+    .tier-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:24px 0}
+    @media(max-width:768px){.tier-grid{grid-template-columns:1fr}}
+    .tier{background:var(--light);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center}
+    .tier-price{font-size:28px;font-weight:900;color:var(--kasbah);margin:8px 0}
+    .tier-name{font-size:16px;font-weight:800}
+    .tier-desc{font-size:13px;color:var(--gray);margin-top:4px}
+    .promise{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+    @media(max-width:600px){.promise{grid-template-columns:1fr}}
+    .promise-item{background:var(--light);border-radius:10px;padding:20px;text-align:center}
+    .promise-icon{font-size:28px;margin-bottom:8px}
+    .promise-text{font-size:14px;font-weight:600}
+    footer{text-align:center;padding:40px 24px;font-size:13px;color:var(--gray);border-top:1px solid var(--border)}
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back" href="/">&larr; Back to Kasbah</a>
+  <h1>How Kasbah Makes Money</h1>
+  <p class="subtitle">We believe in transparency. Here's exactly how our business works.</p>
+
+  <h2>The Short Version</h2>
+  <p>The browser extension is free. We make money from professional developer tools and enterprise security features. We don't sell data, run ads, or track behavior.</p>
+
+  <h2>Three Tiers</h2>
+  <div class="tier-grid">
+    <div class="tier">
+      <div class="tier-name">Individual</div>
+      <div class="tier-price">Free</div>
+      <div class="tier-desc">Browser extension with full detection. No account needed. Works offline.</div>
+    </div>
+    <div class="tier" style="border-color: var(--kasbah);">
+      <div class="tier-name">Professional</div>
+      <div class="tier-price">$9/mo</div>
+      <div class="tier-desc">CLI, VS Code, SDK, API access. For developers who need detection in their workflow.</div>
+    </div>
+    <div class="tier">
+      <div class="tier-name">Business</div>
+      <div class="tier-price">$29/seat/mo</div>
+      <div class="tier-desc">Enterprise dashboard, policies, audit logs, compliance reports, SSO.</div>
+    </div>
+  </div>
+
+  <h2>Why Is the Extension Free?</h2>
+  <p>The extension is our trust builder. It proves that our detection engine works — locally, privately, and accurately. When developers or security teams need more (CLI scanning, team policies, compliance reports), they upgrade to paid tools.</p>
+  <p>This is the same model used by companies like Figma (free personal, paid teams), Slack (free basic, paid enterprise), and 1Password (free trials, paid subscriptions). The free tier creates value and trust. Paid tiers add workflow integration and team features.</p>
+
+  <h2>What We Will Never Do</h2>
+  <div class="promise">
+    <div class="promise-item">
+      <div class="promise-icon">🚫</div>
+      <div class="promise-text">Sell your data</div>
+    </div>
+    <div class="promise-item">
+      <div class="promise-icon">🚫</div>
+      <div class="promise-text">Show ads</div>
+    </div>
+    <div class="promise-item">
+      <div class="promise-icon">🚫</div>
+      <div class="promise-text">Track your behavior</div>
+    </div>
+    <div class="promise-item">
+      <div class="promise-icon">🚫</div>
+      <div class="promise-text">Use blockchain or crypto</div>
+    </div>
+  </div>
+
+  <h2>What the Free Extension Includes</h2>
+  <ul>
+    <li>50+ secret detection patterns (API keys, credentials, SSNs, credit cards, healthcare data)</li>
+    <li>ML-powered scoring with gradient-boosted classifier</li>
+    <li>19-moat egress gate (intercepts fetch, XHR, WebSocket, forms, and more)</li>
+    <li>6 encoding decoders (Base64, hex, ROT13, URL, Unicode, HTML entities)</li>
+    <li>24+ AI platform support (ChatGPT, Claude, Gemini, Copilot, etc.)</li>
+    <li>100% local processing — zero data sent to servers</li>
+    <li>No account required. Works offline. Self-healing hooks.</li>
+  </ul>
+
+  <h2>What Paid Plans Add</h2>
+  <h3>Professional ($9/mo)</h3>
+  <ul>
+    <li><strong>CLI tool</strong> — Scan files, watch directories, pipe from stdin, CI/CD integration</li>
+    <li><strong>VS Code extension</strong> — Inline detection, one-click redaction, clipboard scanning</li>
+    <li><strong>SDK</strong> — npm package for Node.js, browsers, Cloudflare Workers, Deno</li>
+    <li><strong>API access</strong> — REST endpoints for server-side scanning</li>
+    <li><strong>Constitutional AI</strong> — Intent validation for prompt injection/jailbreak detection</li>
+    <li><strong>Custom patterns</strong> — Define your own detection rules</li>
+    <li><strong>Git pre-commit hooks</strong> — Catch secrets before they reach the repo</li>
+  </ul>
+
+  <h3>Business ($29/seat/mo)</h3>
+  <ul>
+    <li><strong>Enterprise dashboard</strong> — Real-time threat feed, deployment monitoring</li>
+    <li><strong>Policy enforcement</strong> — Block, warn, or log by data type, per team, per role</li>
+    <li><strong>Audit log</strong> — Hash-chained, tamper-proof, exportable (JSON, CSV)</li>
+    <li><strong>Compliance reports</strong> — SOC 2, HIPAA, GDPR, PCI-DSS, CCPA, FERPA</li>
+    <li><strong>Team management</strong> — RBAC, invitations, per-user tracking</li>
+    <li><strong>SSO/SAML</strong> — Okta, Azure AD, Google Workspace</li>
+    <li><strong>Alerts</strong> — Slack, email, PagerDuty, webhooks</li>
+    <li><strong>On-premise option</strong> — Self-hosted with Kubernetes manifests</li>
+  </ul>
+
+  <h2>Telemetry</h2>
+  <p>Anonymous performance telemetry (detection speed, risk scores — never your content) is <strong>off by default</strong>. You can opt in from the extension settings. We use this data only to improve detection accuracy. See our <a href="/privacy.html">privacy policy</a> for exact payloads.</p>
+
+  <div class="highlight">
+    <p><strong>Bottom line:</strong> We make money by building tools developers and security teams want to pay for. The extension earns your trust. The paid tools earn revenue. Your data stays yours.</p>
+  </div>
+</div>
+
+<footer>
+  <p>Kasbah Guard v1.0.0 · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="mailto:yo@bekasbah.com">yo@bekasbah.com</a></p>
+</footer>
+</body>
+</html>
