@@ -20,6 +20,9 @@ export default function Home() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
+              <Link href="/experience" className="text-gray-600 hover:text-[#C1440E] font-bold transition-colors">
+                Experience
+              </Link>
               <Link href="/scanner" className="text-gray-600 hover:text-[#C1440E] font-medium transition-colors">
                 Scanner
               </Link>
@@ -63,6 +66,7 @@ export default function Home() {
           {mobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-gray-100">
               <div className="flex flex-col space-y-4">
+                <Link href="/experience" className="text-gray-600 hover:text-[#C1440E] font-bold">Experience</Link>
                 <Link href="/scanner" className="text-gray-600 hover:text-[#C1440E] font-medium">Scanner</Link>
                 <Link href="/files" className="text-gray-600 hover:text-[#C1440E] font-medium">Files</Link>
                 <Link href="/dashboard" className="text-gray-600 hover:text-[#C1440E] font-medium">Dashboard</Link>
@@ -94,14 +98,14 @@ export default function Home() {
               Stop accidental leaks before they happen.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/scanner" className="btn-primary text-lg px-8 py-4">
-                Start Scanning Free
+              <Link href="/experience" className="btn-primary text-lg px-8 py-4 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold">
+                Experience the Power
                 <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>
-              <Link href="/dashboard" className="btn-secondary text-lg px-8 py-4 bg-transparent border-white text-white hover:bg-white hover:text-[#C1440E]">
-                View Dashboard
+              <Link href="/sign-up" className="btn-secondary text-lg px-8 py-4 bg-transparent border-white text-white hover:bg-white hover:text-[#C1440E]">
+                Get Started Free
               </Link>
             </div>
 
@@ -250,6 +254,27 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Experience the Power Section */}
+      <section className="py-20 bg-gradient-to-r from-[#C1440E]/10 to-[#C1440E]/5 border-y border-[#C1440E]/20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-block px-4 py-2 bg-[#C1440E]/20 rounded-full mb-6">
+            <span className="text-[#C1440E] font-bold text-sm uppercase tracking-wider">Try It Now</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            Experience the Power<br />of Kasbah
+          </h2>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+            See real-time detection in action. Paste your secrets into our live scanner and watch Kasbah identify them instantly. No signup required.
+          </p>
+          <Link href="/experience" className="inline-flex items-center gap-2 bg-[#C1440E] hover:bg-[#A63609] text-white font-bold py-4 px-10 rounded-lg text-lg transition-colors">
+            Experience Kasbah Live
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </Link>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -309,11 +334,11 @@ export default function Home() {
             Join thousands of developers and teams who trust Kasbah Guard
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/sign-up" className="btn-primary text-lg px-8 py-4 bg-white text-[#C1440E] hover:bg-gray-100">
-              Get Started Free
+            <Link href="/experience" className="btn-primary text-lg px-8 py-4 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold">
+              Experience Kasbah Live
             </Link>
-            <Link href="/dashboard" className="btn-secondary text-lg px-8 py-4">
-              View Demo
+            <Link href="/sign-up" className="btn-secondary text-lg px-8 py-4">
+              Get Started Free
             </Link>
           </div>
         </div>
@@ -336,6 +361,7 @@ export default function Home() {
             <div>
               <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Products</h4>
               <ul className="space-y-2">
+                <li><Link href="/experience" className="text-yellow-400 hover:text-yellow-300 font-semibold transition-colors">Experience</Link></li>
                 <li><Link href="/scanner" className="text-gray-300 hover:text-white transition-colors">Web Scanner</Link></li>
                 <li><Link href="/files" className="text-gray-300 hover:text-white transition-colors">File Scanner</Link></li>
                 <li><Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors">Dashboard</Link></li>

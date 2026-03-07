@@ -1,4 +1,0 @@
-Contact: mailto:yo@bekasbah.com
-Policy: https://bekasbah.com/verify
-Preferred-Languages: en, fr
-Canonical: https://bekasbah.com/.well-known/security.txt
