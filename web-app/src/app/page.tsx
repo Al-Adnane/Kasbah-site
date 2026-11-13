@@ -293,7 +293,7 @@ export default function Home() {
                 140+ Detection Patterns
               </h3>
               <p className="text-gray-600 text-lg">
-                Detect AWS keys, GitHub tokens, SSNs, credit cards, and more with 95% accuracy
+                Detect AWS keys, GitHub tokens, SSNs, credit cards, and more with ~91% accuracy on internal tests
               </p>
             </div>
 
