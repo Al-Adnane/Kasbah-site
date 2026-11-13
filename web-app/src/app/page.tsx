@@ -132,12 +132,12 @@ export default function Home() {
               <div className="text-gray-600 font-medium">Detection Patterns</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#C1440E] mb-2">&lt;5ms</div>
-              <div className="text-gray-600 font-medium">Detection Speed</div>
+              <div className="text-4xl md:text-5xl font-bold text-[#C1440E] mb-2">In-browser</div>
+              <div className="text-gray-600 font-medium">No server round-trip</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#C1440E] mb-2">95%</div>
-              <div className="text-gray-600 font-medium">Accuracy Rate</div>
+              <div className="text-4xl md:text-5xl font-bold text-[#C1440E] mb-2">6</div>
+              <div className="text-gray-600 font-medium">Interception points</div>
             </div>
           </div>
         </div>
@@ -293,7 +293,7 @@ export default function Home() {
                 140+ Detection Patterns
               </h3>
               <p className="text-gray-600 text-lg">
-                Detect AWS keys, GitHub tokens, SSNs, credit cards, and more with ~91% accuracy on internal tests
+                Detect AWS keys, GitHub tokens, SSNs, credit cards, and more using regex, entropy scoring, and a TF-IDF classifier
               </p>
             </div>
 
@@ -302,10 +302,10 @@ export default function Home() {
                 <span className="text-4xl">⚡</span>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
-                &lt;5ms Detection
+                In-Browser Detection
               </h3>
               <p className="text-gray-600 text-lg">
-                Lightning-fast scanning that doesn&apos;t interrupt your workflow
+                Runs locally — scanning happens on your device without sending content to any server
               </p>
             </div>
 

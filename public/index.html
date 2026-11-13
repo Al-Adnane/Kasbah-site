@@ -350,7 +350,7 @@
     <h1>One paste away<br>from a <em>leak.</em></h1>
 
     <p class="hero-sub">
-      Kasbah catches API keys, credentials, credit cards, and client data before they reach any AI tool. Detection runs entirely in your browser — your content never reaches our servers.
+      Kasbah catches API keys, credentials, credit cards, and client data before they reach any AI tool. Detection runs entirely in your browser using regex, entropy scoring, and a TF-IDF classifier — no data leaves your device during detection.
     </p>
 
     <div class="install-wrap">
@@ -438,10 +438,10 @@
 <!-- TRUST -->
 <div class="trust">
   <div class="trust-inner">
-    <div class="t-item"><div class="t-val">100<span class="r">%</span></div><div class="t-lbl">local detection</div></div>
-    <div class="t-item"><div class="t-val"><span class="r">0</span></div><div class="t-lbl">content sent to servers</div></div>
-    <div class="t-item"><div class="t-val">&lt;<span class="r">10</span>ms</div><div class="t-lbl">detection speed</div></div>
-    <div class="t-item"><div class="t-val"><span class="r">91</span>/100</div><div class="t-lbl">accuracy, self-tested <a href="/detection" style="color:var(--red);font-size:11px;font-weight:700;text-decoration:none">→</a></div></div>
+    <div class="t-item"><div class="t-val">In-browser</div><div class="t-lbl">detection — runs locally</div></div>
+    <div class="t-item"><div class="t-val">Regex<span class="r"> + </span>ML</div><div class="t-lbl">auditable techniques</div></div>
+    <div class="t-item"><div class="t-val">6</div><div class="t-lbl">interception points</div></div>
+    <div class="t-item"><div class="t-val">Free</div><div class="t-lbl">browser extension, always <a href="/detection" style="color:var(--red);font-size:11px;font-weight:700;text-decoration:none">→</a></div></div>
   </div>
 </div>
 
@@ -470,7 +470,7 @@
     <h2 class="s-h">Invisible until you need it</h2>
     <p class="s-sub">Install once. It runs silently. You only see it when you're about to share something you shouldn't.</p>
     <div class="steps">
-      <div class="step"><p class="step-n">Step 01</p><h3>Install</h3><p>One click from the extension store. No account needed. 30 seconds total.</p></div>
+      <div class="step"><p class="step-n">Step 01</p><h3>Install</h3><p>One click from the extension store. No account needed.</p></div>
       <div class="step"><p class="step-n">Step 02</p><h3>Work normally</h3><p>ChatGPT, Claude, Gemini — everything works as usual. Kasbah watches for 6 moments: send, paste, upload, edit, browse, download.</p></div>
       <div class="step"><p class="step-n">Step 03</p><h3>Get protected</h3><p>Low risk: silent. Medium: a small heads-up. High risk: a modal shows what was found. You always decide.</p></div>
     </div>
@@ -489,7 +489,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;gap:40px;flex-wrap:wrap">
       <div class="ent-text">
         <h2>Questions?</h2>
-        <p>Whether you're a consultant, freelancer, founder, or team — we'd love to hear from you. A human responds within a day.</p>
+        <p>Whether you're a consultant, freelancer, founder, or team — we'd love to hear from you.</p>
       </div>
       <div class="ent-actions">
         <a class="ent-btn ent-primary" href="mailto:yo@bekasbah.com">yo@bekasbah.com</a>
@@ -528,7 +528,7 @@
       </div>
       <div>
         <p style="font-weight:700;color:#0F172A;margin:0 0 8px">No crypto. No blockchain. No gimmicks.</p>
-        <p style="color:#64748B;font-size:14px;line-height:1.6;margin:0">Kasbah is a detection engine. It uses regex, entropy scoring, and ML classifiers — proven, auditable techniques. That's it. We removed blockchain integration that was added during early development because it added no value and raised legitimate trust concerns.</p>
+        <p style="color:#64748B;font-size:14px;line-height:1.6;margin:0">Kasbah is a detection engine. It uses regex, entropy scoring, and ML classifiers — proven, auditable techniques. That's it. No blockchain, no speculative cryptography, no gimmicks.</p>
       </div>
       <div>
         <p style="font-weight:700;color:#0F172A;margin:0 0 8px">Telemetry is opt-in and off by default.</p>
